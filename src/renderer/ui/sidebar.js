@@ -1,28 +1,26 @@
 /**
- * Sidebar Logic: Session Control, Stream Toggles, Profile
+ * Sidebar Logic: Session Control, Source Toggles, Profile
  */
 import { addLog } from '../utils/logger.js';
 
 // DOM Elements
 const elements = {
-    // Session Control
     btnStart: document.getElementById('btn-start-session'),
     btnStop: document.getElementById('btn-stop-session'),
 
-    // Toggles
     toggleMic: document.getElementById('toggle-mic'),
     toggleScreen: document.getElementById('toggle-screen'),
     toggleCamera: document.getElementById('toggle-camera'),
     toggleAudio: document.getElementById('toggle-audio'),
 
-    // Status Indicator
+    statusBadge: document.getElementById('statusBadge'),
     statusText: document.getElementById('statusText'),
-    healthDot: document.getElementById('healthDot'),
 
-    // Profile
     profileContainer: document.getElementById('userProfileContainer'),
     profileMenu: document.getElementById('profileMenu'),
-    menuLogoutBtn: document.getElementById('menuLogoutBtn')
+    menuLogoutBtn: document.getElementById('menuLogoutBtn'),
+
+    settingsSection: document.getElementById('settingsSection'),
 };
 
 // State
@@ -30,18 +28,15 @@ let activeSessionId = null;
 
 // --- Initialization ---
 export async function initSidebar(onStartSessionCallback) {
-    // 1. Initial Config & Profile Load
     loadConfigToUI();
-    initSettingsLogic();
     initProfileLogic();
-    resetToggles(); // Initialize toggles to checked state
+    initSettingsLogic();
+    resetToggles();
 
-    // 2. Bind Session Controls
     if (elements.btnStart) {
-        elements.btnStart.addEventListener('click', async () => {
-            // Disable button prevents double-click
+        elements.btnStart.addEventListener('click', () => {
             if (elements.btnStart.disabled) return;
-            onStartSessionCallback(); // Trigger start in renderer
+            onStartSessionCallback();
         });
     }
 
@@ -52,7 +47,6 @@ export async function initSidebar(onStartSessionCallback) {
         });
     }
 
-    // 3. Bind Stream Toggles
     bindToggleEvents();
 }
 
@@ -61,132 +55,108 @@ export async function initSidebar(onStartSessionCallback) {
 export function setSessionActive(sessionId) {
     activeSessionId = sessionId;
 
-    // UI Updates
-    if (elements.btnStart) {
-        elements.btnStart.disabled = false;
-        elements.btnStart.style.display = 'none';
-    }
+    if (elements.btnStart) elements.btnStart.classList.add('hidden');
     if (elements.btnStop) {
         elements.btnStop.style.display = 'flex';
+        elements.btnStop.classList.remove('hidden');
     }
 
-    // Status Indicator
+    if (elements.statusBadge) {
+        elements.statusBadge.className = 'status-badge recording';
+    }
     if (elements.statusText) {
-        elements.statusText.textContent = ' Recording';
-        elements.statusText.style.color = 'var(--error)';
-    }
-    if (elements.healthDot) {
-        elements.healthDot.style.background = 'var(--error)';
-        elements.healthDot.style.animation = 'pulse 1s infinite';
+        elements.statusText.textContent = 'Recording';
     }
 
-    // Enable Toggles
     enableToggles(true);
-    // Ensure they show as ON
     resetToggles();
 }
 
 export function setSessionLoading() {
     if (elements.btnStart) {
         elements.btnStart.disabled = true;
-        elements.btnStart.innerHTML = '<span class="material-icons spin" style="font-size: 16px;">sync</span> Starting...';
+        elements.btnStart.classList.add('loading');
+    }
+    if (elements.statusBadge) {
+        elements.statusBadge.className = 'status-badge starting';
     }
     if (elements.statusText) {
-        elements.statusText.textContent = 'Starting...';
-        elements.statusText.style.color = 'var(--warning)';
-    }
-    if (elements.healthDot) {
-        elements.healthDot.style.background = 'var(--warning)';
+        elements.statusText.textContent = 'Starting';
     }
 }
 
 export function resetSessionUI() {
     activeSessionId = null;
 
-    // UI Updates
     if (elements.btnStart) {
+        elements.btnStart.classList.remove('hidden', 'loading');
         elements.btnStart.style.display = 'flex';
         elements.btnStart.disabled = false;
-        elements.btnStart.innerHTML = '<span class="material-icons" style="font-size: 18px;">fiber_manual_record</span> Start Recording';
     }
     if (elements.btnStop) {
         elements.btnStop.style.display = 'none';
     }
 
-    // Status Indicator
+    if (elements.statusBadge) {
+        elements.statusBadge.className = 'status-badge';
+    }
     if (elements.statusText) {
         elements.statusText.textContent = 'Ready';
-        elements.statusText.style.color = 'var(--text-secondary)';
-    }
-    if (elements.healthDot) {
-        elements.healthDot.style.background = 'var(--success)';
-        elements.healthDot.style.animation = 'none';
     }
 
-    // Reset/Disable Toggles
     enableToggles(false);
     resetToggles();
 }
 
 async function stopSession() {
     if (!activeSessionId) return;
-
     try {
         const result = await window.recorderAPI.stopSession(activeSessionId);
         if (result.success) {
-            addLog('✅ Recording stopped', 'success');
-            resetSessionUI();
+            addLog('Recording stopped', 'success');
         } else {
-            addLog(`❌ Failed to stop: ${result.error}`, 'error');
-            resetSessionUI();
+            addLog(`Failed to stop: ${result.error}`, 'error');
         }
+        resetSessionUI();
     } catch (error) {
-        addLog(`❌ Stop error: ${error.message}`, 'error');
+        addLog(`Stop error: ${error.message}`, 'error');
         resetSessionUI();
     }
 }
 
-// Removed updateStatus function
-
-// --- Stream Toggles ---
+// --- Source Toggle Buttons ---
 
 function bindToggleEvents() {
-    // Mic
-    if (elements.toggleMic) {
-        elements.toggleMic.addEventListener('change', (e) => handleToggle('mic', e.target.checked));
-    }
-    // Screen
-    if (elements.toggleScreen) {
-        elements.toggleScreen.addEventListener('change', (e) => handleToggle('screen', e.target.checked));
-    }
-    // Camera
-    if (elements.toggleCamera) {
-        elements.toggleCamera.addEventListener('change', (e) => handleToggle('camera', e.target.checked));
-    }
-    // System Audio (mapped to 'system_audio' track name usually, check binary spec)
-    // Binary spec calls it "system_audio" for track name in session, but commands take list of strings.
-    // Assuming "system_audio" is the string.
-    if (elements.toggleAudio) {
-        elements.toggleAudio.addEventListener('change', (e) => handleToggle('system_audio', e.target.checked));
+    const toggleMap = [
+        { el: elements.toggleMic, track: 'mic' },
+        { el: elements.toggleScreen, track: 'screen' },
+        { el: elements.toggleAudio, track: 'system_audio' },
+        { el: elements.toggleCamera, track: 'camera' },
+    ];
+
+    for (const { el, track } of toggleMap) {
+        if (!el) continue;
+        el.addEventListener('click', () => {
+            if (el.classList.contains('disabled')) return;
+            const isActive = el.classList.toggle('active');
+            handleToggle(track, isActive);
+        });
     }
 }
 
-async function handleToggle(trackName, isChecked) {
-    // Special handling for Camera Window
+async function handleToggle(trackName, isActive) {
     if (trackName === 'camera') {
         try {
-            await window.recorderAPI.toggleCamera(isChecked);
-            addLog(isChecked ? 'Camera On' : 'Camera Off', 'info');
+            await window.recorderAPI.toggleCamera(isActive);
+            addLog(isActive ? 'Camera On' : 'Camera Off', 'info');
         } catch (err) {
             console.error(err);
         }
         return;
     }
 
-    // If Checked (ON) -> Resume
-    // If Unchecked (OFF) -> Pause
     try {
-        if (isChecked) {
+        if (isActive) {
             addLog(`Resuming ${trackName}...`);
             await window.recorderAPI.resumeTracks(activeSessionId, [trackName]);
         } else {
@@ -194,64 +164,57 @@ async function handleToggle(trackName, isChecked) {
             await window.recorderAPI.pauseTracks(activeSessionId, [trackName]);
         }
     } catch (error) {
-        addLog(`❌ Failed to toggle ${trackName}: ${error.message}`, 'error');
-        // Revert toggle state on error?
+        addLog(`Failed to toggle ${trackName}: ${error.message}`, 'error');
     }
 }
 
 function enableToggles(enabled) {
     const toggles = [elements.toggleMic, elements.toggleScreen, elements.toggleAudio];
-    toggles.forEach(t => {
-        if (t) t.disabled = !enabled;
-    });
+    for (const t of toggles) {
+        if (!t) continue;
+        if (enabled) {
+            t.classList.remove('disabled');
+            t.disabled = false;
+        } else {
+            t.classList.add('disabled');
+            t.disabled = true;
+        }
+    }
 }
 
 function resetToggles() {
-    // Reset to "Checked" (assuming default is ON) or whatever default state
-    // Actually default state is usually ON.
     const toggles = [elements.toggleMic, elements.toggleScreen, elements.toggleAudio];
-    toggles.forEach(t => {
-        if (t) t.checked = true;
-    });
+    for (const t of toggles) {
+        if (t) t.classList.add('active');
+    }
 }
 
-// --- Permissions ---
-// (Permissions are now handled by global permission modal on startup)
-
-
-// --- Settings & Profile (Copied/Adapted from config.js) ---
+// --- Settings ---
 
 function initSettingsLogic() {
-    // History Button Listener
     const historyBtn = document.getElementById('historyBtn');
     if (historyBtn) {
         historyBtn.addEventListener('click', () => {
             if (window.recorderAPI && window.recorderAPI.openHistoryWindow) {
                 window.recorderAPI.openHistoryWindow();
-            } else {
-                console.error("History API not available");
             }
         });
     }
 }
 
+// --- Profile ---
+
 async function loadConfigToUI() {
     try {
         const config = await window.configAPI.getConfig();
-
-        // Update Profile Name
-        let displayName = "VideoDB User";
-        if (config.userName) {
-            displayName = config.userName;
-        }
+        let displayName = config.userName || 'VideoDB User';
 
         const tooltip = document.getElementById('userNameTooltip');
         const menuName = document.getElementById('menuUserName');
         if (tooltip) tooltip.textContent = displayName;
         if (menuName) menuName.textContent = displayName;
-
     } catch (err) {
-        console.error("Failed to load config", err);
+        console.error('Failed to load config', err);
     }
 }
 
@@ -262,8 +225,7 @@ function initProfileLogic() {
         profileContainer.addEventListener('click', (e) => {
             e.stopPropagation();
             const isVisible = profileMenu.classList.toggle('visible');
-            if (isVisible) profileContainer.classList.add('menu-open');
-            else profileContainer.classList.remove('menu-open');
+            profileContainer.classList.toggle('menu-open', isVisible);
         });
 
         document.addEventListener('click', () => {

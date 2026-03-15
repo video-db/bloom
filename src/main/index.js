@@ -37,13 +37,15 @@ let isShuttingDown = false;
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
-    width: 468,
-    height: 720,
-    minHeight: 720,
-    maxHeight: 960,
-    minWidth: 444,
-    maxWidth: 600,
+    width: 380,
+    height: 340,
+    minHeight: 300,
+    maxHeight: 420,
+    minWidth: 340,
+    maxWidth: 480,
     resizable: true,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 16, y: 16 },
     webPreferences: {
       preload: PRELOAD_SCRIPT,
       contextIsolation: true,

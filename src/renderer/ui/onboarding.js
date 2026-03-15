@@ -5,6 +5,7 @@ export async function initOnboarding() {
     const toggleApiKeyBtn = document.getElementById('toggleApiKey');
     const connectBtn = document.getElementById('connectBtn');
     const errorMsg = document.getElementById('onboardingError');
+    const getApiKeyLink = document.getElementById('getApiKeyLink');
 
     // Load current settings
     const currentSettings = await window.configAPI.getConfig();
@@ -13,15 +14,23 @@ export async function initOnboarding() {
     if (!currentSettings.accessToken) {
         modal.classList.add('visible');
     } else {
-        // Already onboarded
         return true;
+    }
+
+    // External link for API key
+    if (getApiKeyLink) {
+        getApiKeyLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.configAPI.openExternalLink('https://console.videodb.io/dashboard');
+        });
     }
 
     // Toggle API key visibility
     toggleApiKeyBtn.addEventListener('click', () => {
         const type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
         apiKeyInput.setAttribute('type', type);
-        toggleApiKeyBtn.textContent = type === 'password' ? '👁️' : '🔒';
+        const icon = toggleApiKeyBtn.querySelector('.material-icons');
+        if (icon) icon.textContent = type === 'password' ? 'visibility' : 'visibility_off';
     });
 
     // Connect button

@@ -1,22 +1,37 @@
-# Node
+# Dependencies
 node_modules/
-npm-debug.log*
 
-# Python
-__pycache__/
-*.py[cod]
-venv/
-.env
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Electron
+# Build output
 dist/
 out/
 
 # Database
 *.db
-videodb-recorder
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Config files with secrets
+config.json
+auth_config.json
+
+# Runtime artifacts
+videodb-recorder.lock
 runtime.json

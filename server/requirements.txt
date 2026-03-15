@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-python-dotenv
-pydantic-settings
-requests
-sqlalchemy
-pycloudflared
-videodb==0.4.0

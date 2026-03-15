@@ -8,14 +8,13 @@ We welcome contributions! Here's how to get started:
 git clone https://github.com/video-db/async-recorder.git
 cd async-recorder
 npm install
-npm run setup
 npm start
 ```
 
 ## Development
 
-- **Run**: `npm start` - starts both Python backend and Electron app
-- **Backend**: Python code in `server/` auto-reloads on changes
+- **Run**: `npm start` - launches the Electron app directly
+- **Backend**: Server logic lives in `frontend/server/` and runs inside the Electron main process
 
 ## Submitting Changes
 

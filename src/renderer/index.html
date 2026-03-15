@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Async Recorder</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        /* ===========================================
+           Theme Variables
+           =========================================== */
+        [data-theme="dark"] {
+            --bg-primary: #141416;
+            --bg-secondary: #1c1c1f;
+            --bg-surface: #232327;
+            --bg-hover: #2a2a2f;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --border: #2a2a2e;
+            --border-light: #333338;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --success: #22c55e;
+            --success-dim: rgba(34, 197, 94, 0.15);
+            --success-hover: #16a34a;
+            --warning: #f59e0b;
+            --warning-dim: rgba(245, 158, 11, 0.15);
+            --error: #ef4444;
+            --error-dim: rgba(239, 68, 68, 0.15);
+            --error-hover: #dc2626;
+            --info: #3b82f6;
+            --toggle-active-bg: rgba(255, 255, 255, 0.08);
+            --toggle-inactive-bg: transparent;
+            --toggle-active-border: var(--border-light);
+            --toggle-inactive-border: var(--border);
+            --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --shadow-modal: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        /* ===========================================
+           Reset & Base
+           =========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            -webkit-app-region: drag;
+        }
+
+        button, input, label, .app-top {
+            -webkit-app-region: no-drag;
+        }
+
+        /* ===========================================
+           Layout
+           =========================================== */
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 12px 24px 24px;
+        }
+
+        .app-top {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            min-height: 32px;
+            gap: 4px;
+        }
+
+        .app-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 14px;
+        }
+
+        /* ===========================================
+           Brand Header
+           =========================================== */
+        .brand-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-logo {
+            height: 28px;
+            border-radius: 6px;
+        }
+
+        .brand-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .brand-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ===========================================
+           Status Badge
+           =========================================== */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            align-self: flex-start;
+            gap: 5px;
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            background: var(--success-dim);
+            color: var(--success);
+        }
+
+        .status-badge .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        .status-badge.recording {
+            background: var(--error-dim);
+            color: var(--error);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .status-badge.recording .status-dot {
+            animation: pulse 1s infinite;
+        }
+
+        .status-badge.starting {
+            background: var(--warning-dim);
+            color: var(--warning);
+        }
+
+        .status-badge.starting .status-dot {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* ===========================================
+           Action Button
+           =========================================== */
+        .btn-action {
+            width: 100%;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: var(--success);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+        }
+
+        .btn-start:hover:not(:disabled) {
+            background: var(--success-hover);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-start:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(34, 197, 94, 0.2);
+        }
+
+        .btn-stop {
+            background: var(--error);
+            color: #fff;
+            display: none;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            background: var(--error-hover);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-stop:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Loading spinner for button */
+        .btn-action.loading {
+            color: transparent;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .btn-action.loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* ===========================================
+           Quick Rename Row
+           =========================================== */
+        .rename-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .rename-input {
+            flex: 1;
+            padding: 7px 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .rename-input:focus {
+            border-color: var(--accent);
+        }
+
+        .rename-save {
+            padding: 7px 14px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .rename-save:hover {
+            background: var(--accent-hover);
+        }
+
+        /* ===========================================
+           Source Toggle Row
+           =========================================== */
+        .source-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 6px;
+            background: var(--bg-surface);
+            border-radius: 8px;
+        }
+
+        .source-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 36px;
+            border: 1px solid var(--toggle-inactive-border);
+            border-radius: 6px;
+            background: var(--toggle-inactive-bg);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .source-toggle:hover:not(.disabled) {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+        }
+
+        .source-toggle.active {
+            background: var(--toggle-active-bg);
+            border-color: var(--toggle-active-border);
+        }
+
+        .source-toggle.active .source-icon {
+            color: var(--success);
+        }
+
+        .source-toggle.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .source-icon {
+            font-size: 20px;
+            color: var(--text-muted);
+            transition: color 0.2s;
+            line-height: 1;
+        }
+
+        .source-toggle[title]::after {
+            content: attr(title);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            border: 1px solid var(--border);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+
+        .source-toggle:hover::after {
+            opacity: 1;
+        }
+
+        /* ===========================================
+           Settings Section
+           =========================================== */
+        .settings-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            border-top: 1px solid var(--border);
+            cursor: pointer;
+            transition: color 0.2s;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .settings-section:hover {
+            color: var(--text-secondary);
+        }
+
+        .settings-section img {
+            flex-shrink: 0;
+        }
+
+        /* ===========================================
+           Header Action Buttons
+           =========================================== */
+        .header-profile {
+            position: relative;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .profile-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid var(--border-light);
+            object-fit: cover;
+            transition: border-color 0.2s;
+        }
+
+        .profile-avatar:hover {
+            border-color: var(--accent);
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            color: var(--text-muted);
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+        }
+
+        .icon-btn .material-icons {
+            font-size: 20px;
+        }
+
+        /* ===========================================
+           Profile Tooltip & Menu
+           =========================================== */
+        .profile-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-card);
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .header-profile:hover .profile-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .header-profile.menu-open .profile-tooltip {
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+
+        .profile-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            min-width: 180px;
+            box-shadow: var(--shadow-modal);
+            z-index: 100;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        .profile-menu.visible {
+            display: flex;
+        }
+
+        .profile-menu-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-menu-item {
+            padding: 10px 15px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .profile-menu-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .profile-menu-item.logout {
+            color: var(--error);
+        }
+
+        .profile-menu-item.logout:hover {
+            background: var(--error-dim);
+        }
+
+        .profile-menu-item img {
+            width: 16px;
+            height: 16px;
+            opacity: 0.8;
+        }
+
+        /* ===========================================
+           Modals
+           =========================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-modal);
+            border: 1px solid var(--border-light);
+            text-align: center;
+            width: 400px;
+        }
+
+        .modal-logo {
+            height: 40px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            object-fit: contain;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .modal-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        /* Compact onboarding — fills window */
+        .onboarding-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 32px;
+            -webkit-app-region: drag;
+        }
+
+        .onboarding-overlay.visible {
+            display: flex;
+        }
+
+        .onboarding-overlay * {
+            -webkit-app-region: no-drag;
+        }
+
+        .onboarding-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .onboarding-header .brand-logo {
+            height: 24px;
+            border-radius: 5px;
+        }
+
+        .onboarding-header .brand-name {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .onboarding-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .onboarding-overlay .input-group {
+            margin-bottom: 10px;
+        }
+
+        .onboarding-overlay .input-group label {
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+
+        .onboarding-overlay .modal-input {
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+
+        .onboarding-overlay .btn-primary {
+            margin-top: 4px;
+            padding: 10px;
+            font-size: 13px;
+            border-radius: 20px;
+        }
+
+        .onboarding-overlay .error-message {
+            font-size: 11px;
+            margin-top: 0;
+            min-height: 0;
+        }
+
+        .onboarding-overlay .label-link {
+            font-size: 10px;
+        }
+
+        /* ===========================================
+           Form Elements
+           =========================================== */
+        .input-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .input-group .label-link {
+            font-size: 11px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .input-group .label-link:hover {
+            text-decoration: underline;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .modal-input:focus {
+            border-color: var(--accent);
+        }
+
+        .modal-input:disabled {
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            border-color: var(--border);
+        }
+
+        .modal-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .password-input-wrapper {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 18px;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .password-toggle:hover {
+            color: var(--text-secondary);
+        }
+
+        .error-message {
+            color: var(--error);
+            font-size: 12px;
+            margin-top: 10px;
+            min-height: 18px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+            margin-top: 16px;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        /* ===========================================
+           Permissions Modal
+           =========================================== */
+        .permission-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-primary);
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .permission-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .permission-icon {
+            font-size: 20px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-surface);
+            border-radius: 50%;
+            color: var(--text-muted);
+        }
+
+        .permission-text h3 {
+            margin: 0 0 2px 0;
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .permission-text p {
+            margin: 0;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .perm-btn {
+            background: var(--info);
+            color: #fff;
+            padding: 7px 14px;
+            border-radius: 6px;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .perm-btn:hover {
+            background: #2563eb;
+        }
+
+        .perm-btn.granted {
+            background: var(--success);
+            pointer-events: none;
+        }
+
+        /* ===========================================
+           Video Player Modal
+           =========================================== */
+        .modal-video {
+            width: 720px;
+            max-width: 90vw;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .modal-video-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-video-header h2 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .btn-close:hover {
+            color: var(--text-primary);
+        }
+
+        /* ===========================================
+           Animations
+           =========================================== */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===========================================
+           Scrollbar
+           =========================================== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ===========================================
+           Utility
+           =========================================== */
+        .hidden { display: none !important; }
+    </style>
+</head>
+
+<body>
+    <!-- ==========================================
+         Main App View
+         ========================================== -->
+    <div id="mainApp" class="app-shell">
+
+        <!-- Top Bar — history + profile, right-aligned alongside traffic lights -->
+        <div class="app-top">
+            <button id="historyBtn" class="icon-btn" title="History">
+                <img src="img/history.png" alt="History" style="width: 18px; height: 18px; opacity: 0.7;">
+            </button>
+            <div id="userProfileContainer" class="header-profile">
+                <img src="img/profile.png" alt="Profile" class="profile-avatar">
+                <span id="userNameTooltip" class="profile-tooltip">Loading...</span>
+                <div id="profileMenu" class="profile-menu">
+                    <div id="menuUserName" class="profile-menu-header">Loading...</div>
+                    <button id="menuLogoutBtn" class="profile-menu-item logout">
+                        <span class="material-icons" style="font-size: 16px;">logout</span> Log Out
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center — vertically centered controls -->
+        <div class="app-center">
+            <div class="brand">
+                <img src="img/logo.jpeg" alt="VideoDB" class="brand-logo">
+                <span class="brand-name">Async Recorder</span>
+            </div>
+
+            <div id="statusBadge" class="status-badge">
+                <div class="status-dot"></div>
+                <span id="statusText">Ready</span>
+            </div>
+
+            <button id="btn-start-session" class="btn-action btn-start">Start Recording</button>
+            <button id="btn-stop-session" class="btn-action btn-stop">Stop Recording</button>
+
+            <div id="renameRow" class="rename-row hidden">
+                <input type="text" id="renameInput" class="rename-input" placeholder="Name this recording..." maxlength="100">
+                <button id="renameSaveBtn" class="rename-save">Save</button>
+            </div>
+
+            <div class="source-row">
+                <button id="toggle-mic" class="source-toggle active disabled" title="Microphone" disabled>
+                    <span class="material-icons source-icon">mic</span>
+                </button>
+                <button id="toggle-screen" class="source-toggle active disabled" title="Screen" disabled>
+                    <span class="material-icons source-icon">monitor</span>
+                </button>
+                <button id="toggle-audio" class="source-toggle active disabled" title="System Audio" disabled>
+                    <span class="material-icons source-icon">volume_up</span>
+                </button>
+                <button id="toggle-camera" class="source-toggle" title="Camera">
+                    <span class="material-icons source-icon">videocam</span>
+                </button>
+            </div>
+
+            <div id="settingsSection" class="settings-section">
+                <img src="img/setting.png" alt="Settings" style="width: 16px; height: 16px; opacity: 0.7;">
+                <span>Recording Settings</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         Permission Modal
+         ========================================== -->
+    <div id="permissionModal" class="modal-overlay">
+        <div class="modal-content" style="width: 450px;">
+            <div class="modal-title">Permissions Required</div>
+            <div id="active-session-view" class="hidden"></div>
+            <div class="modal-subtitle">App requires microphone and screen access.</div>
+            <div class="permission-list">
+                <div class="permission-item" id="perm-item-mic">
+                    <div class="permission-info">
+                        <div class="permission-icon"><span class="material-icons">mic</span></div>
+                        <div class="permission-text">
+                            <h3>Microphone</h3>
+                            <p>Required to capture audio from meetings.</p>
+                        </div>
+                    </div>
+                    <button class="perm-btn" id="btn-grant-mic">Grant Access</button>
+                </div>
+                <div class="permission-item" id="perm-item-screen">
+                    <div class="permission-info">
+                        <div class="permission-icon"><span class="material-icons">monitor</span></div>
+                        <div class="permission-text">
+                            <h3>Screen Recording</h3>
+                            <p>Required to record meeting video.</p>
+                        </div>
+                    </div>
+                    <button class="perm-btn" id="btn-grant-screen">Grant Access</button>
+                </div>
+            </div>
+            <div class="error-message" id="permissionError"></div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         Onboarding (full-window compact)
+         ========================================== -->
+    <div id="onboardingModal" class="onboarding-overlay">
+        <div class="onboarding-header">
+            <img src="img/logo.jpeg" alt="VideoDB" class="brand-logo">
+            <span class="brand-name">Async Recorder</span>
+        </div>
+        <div class="onboarding-subtitle">Enter your API key to start recording.</div>
+
+        <div class="input-group">
+            <label>Your Name</label>
+            <input type="text" id="nameInput" class="modal-input" placeholder="e.g. John Doe">
+        </div>
+
+        <div class="input-group">
+            <div class="label-row">
+                <label>API Key</label>
+                <a href="#" id="getApiKeyLink" class="label-link">Get API Key</a>
+            </div>
+            <div class="password-input-wrapper">
+                <input type="password" id="apiKeyInput" class="modal-input" placeholder="sk-..." style="font-family: monospace;">
+                <button id="toggleApiKey" class="password-toggle"><span class="material-icons">visibility</span></button>
+            </div>
+        </div>
+
+        <div id="onboardingError" class="error-message"></div>
+        <button id="connectBtn" class="btn-primary">Connect</button>
+    </div>
+
+    <!-- ==========================================
+         Settings Modal
+         ========================================== -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-content" style="text-align: left; width: 450px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                <h2 style="margin: 0; font-size: 17px; font-weight: 600; color: var(--text-primary);">Settings</h2>
+                <button id="closeSettingsBtn" class="btn-close">&times;</button>
+            </div>
+            <button id="saveSettingsBtn" class="btn-primary">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         Video Player Modal
+         ========================================== -->
+    <div id="videoPlayerModal" class="modal-overlay">
+        <div class="modal-content modal-video">
+            <div class="modal-video-header">
+                <h2 id="videoPlayerTitle">Recording Playback</h2>
+                <button id="closeVideoPlayerBtn" class="btn-close">&times;</button>
+            </div>
+            <div style="background: #000;">
+                <video id="hlsVideoPlayer" controls style="width: 100%; max-height: 60vh; display: block;"></video>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./renderer.js"></script>
+</body>
+
+</html>

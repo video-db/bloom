@@ -1,7 +1,6 @@
 <!-- PROJECT SHIELDS -->
 [![Electron][electron-shield]][electron-url]
 [![Node][node-shield]][node-url]
-[![Python][python-shield]][python-url]
 [![License][license-shield]][license-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
@@ -24,95 +23,224 @@
     <br />
     <a href="#features">View Features</a>
     ·
-    <a href="#quick-start">Quick Start</a>
+    <a href="#download">Download</a>
     ·
     <a href="https://github.com/video-db/async-recorder/issues">Report Bug</a>
   </p>
 </p>
 
 <p align="center">
-  <strong>Platform Support:</strong> macOS and Windows
+  <img src="assets/home.png" alt="Async Recorder" width="400">
 </p>
+
+---
+
+## Download
+
+- **Apple Silicon (M1/M2/M3/M4)**: [async-recorder-1.5.2-arm64.dmg](https://artifacts.videodb.io/async-recorder/async-recorder-1.5.2-arm64.dmg)
+- **Apple Intel**: [async-recorder-1.5.2-x64.dmg](https://artifacts.videodb.io/async-recorder/async-recorder-1.5.2-x64.dmg)
+
+<p>
+  <em>Pre-built DMGs are available for macOS. Windows users can run from source — see <a href="#development-setup">Development Setup</a>. Linux support coming soon.</em>
+</p>
+
+---
+
+## Installation (Pre-built App)
+
+If you downloaded the pre-built app from the links above:
+
+1. **Mount the DMG** and drag Async Recorder to your Applications folder
+
+2. **Remove quarantine attributes** to allow the app to run:
+   ```bash
+   xattr -cr /Applications/Async\ Recorder.app
+   ```
+
+3. **Launch the app** from Applications or Spotlight
+
+4. **Grant system permissions** when prompted (Microphone and Screen Recording are required)
+
+5. **Enter your VideoDB API key** on first launch ([console.videodb.io](https://console.videodb.io))
 
 ---
 
 ## Features
 
-- Screen + microphone + system audio capture
+- Screen + microphone + system audio capture via [VideoDB Capture SDK](https://docs.videodb.io)
 - Draggable camera bubble overlay
-- In-app video playback
-- Recording history with search
-- Auto-indexing for searchable recordings
+- Real-time session events via WebSocket
+- Recording timer with live duration display
+- Global keyboard shortcut (`Cmd+Shift+R`) to toggle recording
+- System tray icon with recording state and context menu
+- Native toast notifications for recording events
+- Quick rename prompt after each recording
+- Recording history with pipeline status tracking (Recording → Processing → Transcription → Ready)
+- Auto-indexing with transcript generation and subtitles
+- On-demand share link generation
+- In-app video playback (HLS)
 
-## Screenshots
+## Development Setup
 
-| Main Window | Recording |
-|-------------|-----------|
-| ![Main](screenshots/main.png) | ![Recording](screenshots/recording.png) |
+### Prerequisites
 
-| Camera Bubble | History |
-|---------------|---------|
-| ![Camera](screenshots/camera.png) | ![History](screenshots/history.png) |
-
-## Prerequisites
-
-- Node.js 16+
-- Python 3.10+ ([download](https://python.org/downloads/))
+- Node.js 18+
 - VideoDB API Key ([console.videodb.io](https://console.videodb.io))
 
-## Quick Start
+### Quick Start
 
 ```bash
 npm install
-npm run setup    # Enter your VideoDB API key
 npm start
 ```
 
-> **Note**: On first run, close the app and run `npm start` again after setup completes.
+On first launch, grant microphone and screen recording permissions, then enter your name and VideoDB API key.
 
 ## Usage
 
-1. **Connect**: Enter your name and API key on first launch
-2. **Record**: Click "Start Recording" - grant permissions when prompted
-3. **Camera**: Toggle the camera bubble from the sidebar
-4. **Review**: Click the history icon to view past recordings
+1. **Connect** — Enter your name and API key on first launch
+2. **Record** — Click "Start Recording" to capture screen, mic, and system audio
+3. **Camera** — Toggle the camera bubble overlay from source controls
+4. **Review** — Click the history icon to browse past recordings, view transcripts, and share links
+5. **Share** — Click "Share" on any recording to generate a fresh link via the VideoDB API
 
-## Troubleshooting
+## Architecture
 
-### Permissions denied
-- **macOS**: System Settings → Privacy & Security → enable Screen Recording/Microphone/Camera
-- **Windows**: Settings → Privacy → enable Microphone/Camera access
+```mermaid
+graph LR
+    subgraph EA["  Electron App  "]
+        R["Renderer UI"]
+        M["Main Process"]
+        DB[("SQLite")]
+        SDK["VideoDB Node SDK"]
+        R -->|IPC| M
+        M --> DB
+        M --> SDK
+    end
 
-### Backend won't start
-- Delete `server/venv` and run `npm start` again
-- Make sure Python is installed and in PATH
+    subgraph VS["  VideoDB SDK  "]
+        CC["CaptureClient"]
+        WS["WebSocket"]
+        API["Connection API"]
+        BIN["Native Binary"]
+        SDK --> CC & WS & API
+        CC --> BIN
+    end
 
-### Camera not showing
-- Toggle camera off/on in the sidebar
-- Check Camera permission in system settings
+    subgraph LC["  Local Capture  "]
+        SC["Screen Capture"]
+        MIC["Microphone"]
+        SA["System Audio"]
+        BIN --> SC & MIC & SA
+    end
 
-### Reset
-```bash
-# macOS/Linux
-rm -rf server/venv server/users.db runtime.json
+    subgraph VC["  VideoDB Cloud  "]
+        UPLOAD["Upload & Export"]
+        STREAM["HLS Streaming"]
+        IDX["Indexing"]
+        TRX["Transcription"]
+        UPLOAD --> STREAM
+        IDX --> TRX
+    end
 
-# Windows
-rmdir /s /q server\venv
-del server\users.db runtime.json
+    BIN -->|"upload chunks"| UPLOAD
+    WS -->|"session events"| UPLOAD
+    API -->|"index / transcribe"| IDX
+
+    classDef purple fill:#2d2563,stroke:#7c6af7,stroke-width:1.5px,color:#c4b8f8
+    classDef teal   fill:#0d3d38,stroke:#2dd4bf,stroke-width:1.5px,color:#81e8d8
+    classDef coral  fill:#3d1a20,stroke:#f38ba8,stroke-width:1.5px,color:#f9c0cb
+    classDef green  fill:#0d2e1a,stroke:#a6e3a1,stroke-width:1.5px,color:#b8f0c0
+    classDef db     fill:#1a1a2e,stroke:#7c6af7,stroke-width:1.5px,color:#c4b8f8
+
+    class R,M,SDK purple
+    class CC,WS,API,BIN teal
+    class SC,MIC,SA coral
+    class UPLOAD,IDX,TRX,STREAM green
+    class DB db
+
+    style EA fill:#12102a,stroke:#7c6af7,stroke-width:2px,color:#a89ef5
+    style VS fill:#071f1c,stroke:#2dd4bf,stroke-width:2px,color:#5ecfc4
+    style LC fill:#1f0d10,stroke:#f38ba8,stroke-width:2px,color:#f0a0b0
+    style VC fill:#071810,stroke:#a6e3a1,stroke-width:2px,color:#8ed4a0
 ```
-Then run `npm run setup && npm start`
+
+**Recording flow:** The app creates a `CaptureClient` which spawns a native binary to capture screen, mic, and system audio. Chunks are uploaded to VideoDB Cloud in real-time. A WebSocket connection delivers session events (started, stopped, exported) back to the app.
+
+**Post-recording:** Once the video is exported, the app calls the VideoDB API to index spoken words, generate a transcript, and create a subtitled stream — all available for in-app HLS playback or sharing via URL.
 
 ## Project Structure
 
 ```
-├── frontend/        # Electron app (UI)
-│   ├── main.js      # Main process
-│   ├── renderer.js  # UI logic
-│   ├── index.html   # Main window
-│   ├── camera.*     # Camera bubble
-│   └── history.*    # Recording history
-├── server/          # Python backend (FastAPI)
-└── scripts/         # Setup and startup scripts
+src/
+├── main/                       # Electron Main Process
+│   ├── index.js                # App entry point, window creation
+│   ├── db/
+│   │   └── database.js         # SQLite via sql.js
+│   ├── ipc/                    # IPC handlers
+│   │   ├── capture.js          # Recording start/stop, channels
+│   │   ├── permissions.js      # Permission check/request
+│   │   ├── camera.js           # Camera bubble control
+│   │   └── auth.js             # Login, logout, onboarding
+│   ├── lib/                    # Utilities
+│   │   ├── config.js           # App config
+│   │   ├── logger.js           # File + console logging
+│   │   ├── paths.js            # App paths (DB, config, logs)
+│   │   └── videodb-patch.js    # Binary relocation for packaged apps
+│   └── services/
+│       ├── videodb.service.js  # VideoDB SDK wrapper
+│       ├── session.service.js  # Session tokens, WebSocket, sync
+│       └── insights.service.js # Transcript + subtitle indexing
+├── renderer/                   # Renderer scripts (context-isolated)
+│   ├── renderer.js             # Main window UI
+│   ├── history.js              # History window + HLS player
+│   ├── camera.js               # Camera bubble
+│   ├── pages/                  # HTML pages
+│   └── styles/                 # CSS
+└── preload/
+    └── preload.js              # Context bridge (renderer ↔ main)
+
+build/
+├── afterPack.js                # electron-builder hook (codesign, plist patch)
+├── entitlements.mac.plist      # macOS entitlements
+└── icon.icns                   # App icon
+```
+
+## Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VIDEODB_API_URL` | Override the VideoDB API base URL (for dev/staging) | Production API |
+
+Set in a `.env` file at the project root, or as an environment variable.
+
+## Troubleshooting
+
+### Permissions denied
+- **macOS**: System Settings → Privacy & Security → enable Screen Recording / Microphone / Camera
+- **Windows**: Settings → Privacy → enable Microphone / Camera access
+
+### Camera not showing
+- Toggle camera off/on in source controls
+- Check Camera permission in system settings
+
+### Reset
+```bash
+# Delete the app database (stored in Electron userData)
+# macOS
+rm ~/Library/Application\ Support/async-recorder/async-recorder.db
+rm ~/Library/Application\ Support/async-recorder/config.json
+```
+Then run `npm start`
+
+## Building
+
+```bash
+# Build directory (for testing)
+npm run pack
+
+# Build DMG installers (macOS arm64 + x64)
+npm run dist
 ```
 
 ## License
@@ -135,10 +263,8 @@ MIT
 <!-- MARKDOWN LINKS & IMAGES -->
 [electron-shield]: https://img.shields.io/badge/Electron-39.0-47848F?style=for-the-badge&logo=electron&logoColor=white
 [electron-url]: https://www.electronjs.org/
-[node-shield]: https://img.shields.io/badge/Node.js-16+-339933?style=for-the-badge&logo=node.js&logoColor=white
+[node-shield]: https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white
 [node-url]: https://nodejs.org/
-[python-shield]: https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white
-[python-url]: https://www.python.org/
 [license-shield]: https://img.shields.io/github/license/video-db/async-recorder.svg?style=for-the-badge
 [license-url]: https://github.com/video-db/async-recorder/blob/main/LICENSE
 [stars-shield]: https://img.shields.io/github/stars/video-db/async-recorder.svg?style=for-the-badge

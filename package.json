@@ -1,16 +1,10 @@
 {
   "name": "async-recorder",
-  "version": "1.5.0",
+  "version": "1.5.2",
   "description": "A sample Electron application for screen and camera recording using VideoDB Capture SDK",
-  "main": "frontend/main.js",
+  "main": "src/main/index.js",
   "scripts": {
-    "setup": "node -e \"require('child_process').execSync(process.platform==='win32'?'scripts\\\\setup.bat':'./scripts/setup.sh',{stdio:'inherit'})\"",
-    "start": "node -e \"require('child_process').execSync(process.platform==='win32'?'scripts\\\\start-server.bat':'./scripts/start-server.sh',{stdio:'inherit'})\"",
-    "setup:win": "scripts\\setup.bat",
-    "setup:unix": "./scripts/setup.sh",
-    "start:win": "scripts\\start-server.bat",
-    "start:unix": "./scripts/start-server.sh",
-    "electron": "electron .",
+    "start": "electron .",
     "dist": "electron-builder",
     "pack": "electron-builder --dir"
   },
@@ -19,72 +13,59 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "electron": "^39.0.0",
+    "electron": "^39.7.0",
     "electron-builder": "^24.6.4"
   },
   "build": {
     "appId": "com.videodb.async-recorder",
     "productName": "Async Recorder",
     "files": [
-      "frontend/**/*",
-      "package.json",
-      "resources/**/*",
-      "node_modules/videodb/**/*"
+      "src/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/videodb/bin/**"
     ],
     "mac": {
       "identity": null,
+      "icon": "build/icon.icns",
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
         "NSScreenCaptureUsageDescription": "Async Recorder needs screen recording permission to capture your display during sessions.",
         "NSMicrophoneUsageDescription": "Async Recorder needs microphone access to capture audio during sessions.",
         "NSCameraUsageDescription": "Async Recorder needs camera access to capture your webcam during sessions."
       },
-      "hardenedRuntime": true,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
       "target": [
         {
           "target": "dmg",
           "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "x64",
-            "arm64"
+            "arm64",
+            "x64"
           ]
         }
+      ],
+      "artifactName": "async-recorder-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "Async Recorder ${version}",
+      "icon": "build/icon.icns",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        { "x": 140, "y": 200, "type": "file" },
+        { "x": 400, "y": 200, "type": "link", "path": "/Applications" }
       ]
     },
-    "extraResources": [
-      {
-        "from": "resources/manage-service.sh",
-        "to": "manage-service.sh"
-      },
-      {
-        "from": "resources/service-core",
-        "to": "../MacOS/service-core"
-      },
-      {
-        "from": "resources/libservicebridge.dylib",
-        "to": "../MacOS/libservicebridge.dylib"
-      },
-      {
-        "from": "resources/logs",
-        "to": "logs"
-      }
-    ],
-    "asarUnpack": [
-      "node_modules/videodb/**/*"
-    ]
+    "afterPack": "./build/afterPack.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^5.2.1",
-    "sqlite3": "^5.1.7",
-    "videodb": "^0.2.0"
+    "sql.js": "^1.11.0",
+    "videodb": "^0.2.2"
   }
 }

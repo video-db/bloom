@@ -1,0 +1,43 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="barGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FF4D00"/>
+      <stop offset="100%" stop-color="#FF4D00" stop-opacity="0.15"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- macOS icon background -->
+  <rect width="1024" height="1024" rx="228" fill="#0D0B07"/>
+
+  <!-- Scale and center the 280x240 frame content to fill the icon -->
+  <g transform="translate(-406, -82) scale(2.7)">
+    <!-- Frame -->
+    <rect x="200" y="100" width="280" height="240" rx="20" fill="#0D0B07"/>
+
+    <!-- REC badge -->
+    <rect x="216" y="136" width="64" height="24" rx="4" fill="#1A0900" stroke="#3D1500" stroke-width="1"/>
+    <circle cx="230" cy="148" r="6" fill="#FF4D00" filter="url(#glow)"/>
+    <text x="253" y="153" font-family="monospace" font-size="11" font-weight="700" fill="#FF4D00" text-anchor="middle" letter-spacing="2.5">REC</text>
+
+    <!-- Waveform bars -->
+    <rect x="262" y="192" width="6" height="56" rx="3" fill="#FF4D00" opacity="0.6"/>
+    <rect x="276" y="202" width="6" height="36" rx="3" fill="#FF4D00" opacity="0.65"/>
+    <rect x="290" y="188" width="6" height="64" rx="3" fill="#FF4D00" opacity="0.8"/>
+    <rect x="304" y="208" width="6" height="24" rx="3" fill="#FF4D00" opacity="0.5"/>
+    <rect x="318" y="182" width="8" height="76" rx="4" fill="#FF4D00" opacity="1" filter="url(#glow)"/>
+    <rect x="334" y="208" width="6" height="24" rx="3" fill="#FF4D00" opacity="0.5"/>
+    <rect x="348" y="188" width="6" height="64" rx="3" fill="#FF4D00" opacity="0.8"/>
+    <rect x="362" y="202" width="6" height="36" rx="3" fill="#FF4D00" opacity="0.65"/>
+    <rect x="376" y="192" width="6" height="56" rx="3" fill="#FF4D00" opacity="0.6"/>
+    <rect x="390" y="208" width="6" height="24" rx="3" fill="#FF4D00" opacity="0.5"/>
+
+    <!-- Timeline bar -->
+    <rect x="220" y="290" width="240" height="4" rx="2" fill="#1A0900"/>
+    <rect x="220" y="290" width="128" height="4" rx="2" fill="url(#barGrad)"/>
+    <circle cx="348" cy="292" r="6" fill="#FF4D00" filter="url(#glow)"/>
+  </g>
+</svg>

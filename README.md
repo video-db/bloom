@@ -63,22 +63,15 @@ If you downloaded the pre-built app from the links above:
 
 ## Features
 
-- Minimal floating bottom bar that stays on top of all windows
-- Click-through transparent areas — the bar never blocks your apps
-- Screen + microphone + system audio capture via [VideoDB Capture SDK](https://docs.videodb.io)
-- Draggable camera bubble overlay
-- Source toggles (mic, audio, camera, screen) work before and during recording
-- Display picker with multi-monitor support
-- Real-time session events via WebSocket
-- Recording timer with live duration display
-- Global keyboard shortcut (`Cmd+Shift+R`) to toggle recording
-- Context-aware system tray with recording state
-- Native toast notifications for recording events
-- Guided permissions flow with animated previews
-- Library page with sidebar list, search, and inline video player
-- Copy Link with stateful feedback (generating → copied → toast)
-- Sync button to resolve pending recordings from server
-- In-app video playback (HLS)
+- **Screen recording** — Capture screen, microphone, and system audio via [VideoDB Capture SDK](https://docs.videodb.io)
+- **Camera overlay** — Draggable camera bubble during recording
+- **Floating bar** — Always-on-top control bar that never blocks your apps
+- **Multi-monitor** — Display picker to choose which screen to record
+- **Library** — Browse, search, play, rename, and download recordings
+- **Transcription** — Automatic transcript generation with subtitled playback
+- **Chat with video** — Ask questions about your recording via [VideoDB Chat](https://chat.videodb.io)
+- **Share** — One-click shareable link for any recording
+- **Keyboard shortcut** — `Cmd+Shift+R` to start/stop recording from anywhere
 
 ## Development Setup
 

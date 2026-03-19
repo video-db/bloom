@@ -51,11 +51,17 @@ async function initDatabase(filePath) {
   db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_recordings_session_id ON recordings(session_id)');
   db.run('CREATE INDEX IF NOT EXISTS idx_users_access_token ON users(access_token)');
 
-  // Migration: add name column if missing
+  // Migrations
   const cols = db.exec("PRAGMA table_info(recordings)");
   const colNames = (cols[0]?.values || []).map(r => r[1]);
   if (!colNames.includes('name')) {
     db.run("ALTER TABLE recordings ADD COLUMN name TEXT");
+  }
+  if (!colNames.includes('user_id')) {
+    db.run("ALTER TABLE recordings ADD COLUMN user_id INTEGER");
+  }
+  if (!colNames.includes('collection_id')) {
+    db.run("ALTER TABLE recordings ADD COLUMN collection_id TEXT");
   }
 
   saveToFile();
@@ -146,8 +152,8 @@ function createRecording(data) {
   }
 
   db.run(
-    `INSERT INTO recordings (video_id, stream_url, player_url, session_id, created_at, insights, insights_status, name)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO recordings (video_id, stream_url, player_url, session_id, created_at, insights, insights_status, name, user_id, collection_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.video_id || null,
       data.stream_url || null,
@@ -157,6 +163,8 @@ function createRecording(data) {
       data.insights || null,
       data.insights_status || 'pending',
       data.name || null,
+      data.user_id || null,
+      data.collection_id || null,
     ]
   );
   const row = getOne('SELECT last_insert_rowid() as id');
@@ -183,7 +191,10 @@ function updateRecording(id, data) {
   saveToFile();
 }
 
-function getRecordings(limit = 20) {
+function getRecordings(limit = 20, userId = null) {
+  if (userId) {
+    return getAll('SELECT * FROM recordings WHERE user_id = ? ORDER BY created_at DESC LIMIT ?', [userId, limit]);
+  }
   return getAll('SELECT * FROM recordings ORDER BY created_at DESC LIMIT ?', [limit]);
 }
 
@@ -191,7 +202,10 @@ function getRecordingById(id) {
   return getOne('SELECT * FROM recordings WHERE id = ?', [id]);
 }
 
-function getOrphanedRecordings() {
+function getOrphanedRecordings(userId = null) {
+  if (userId) {
+    return getAll('SELECT * FROM recordings WHERE session_id IS NOT NULL AND video_id IS NULL AND user_id = ?', [userId]);
+  }
   return getAll('SELECT * FROM recordings WHERE session_id IS NOT NULL AND video_id IS NULL');
 }
 

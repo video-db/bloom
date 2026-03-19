@@ -60,7 +60,7 @@ function clearSessionToken() {
  */
 async function processIndexingBackground(recordingId, videoId, apiKey) {
   try {
-    updateRecording(recordingId, { insights_status: 'processing' });
+    updateRecording(recordingId, { insights_status: 'indexing' });
     console.log(`[Index] Starting indexing for recording ${recordingId}`);
 
     const result = await indexVideo(videoId, apiKey);
@@ -83,14 +83,10 @@ async function processIndexingBackground(recordingId, videoId, apiKey) {
       updateRecording(recordingId, updates);
       console.log(`[Index] Indexed video ${videoId} successfully`);
     } else {
-      updateRecording(recordingId, { insights_status: 'failed' });
-      console.warn(`[Index] Failed to index video ${videoId}`);
+      console.warn(`[Index] No indexing results for video ${videoId}`);
     }
   } catch (err) {
     console.error(`[Index] Error processing:`, err);
-    try {
-      updateRecording(recordingId, { insights_status: 'failed' });
-    } catch (_) { /* ignore DB errors during error handling */ }
   }
 }
 
@@ -114,13 +110,31 @@ async function syncCaptureSession(sessionId, apiKey, videodbService) {
         console.log(`[Sync] Exported video received: ${session.exportedVideoId}`);
         const recording = findRecordingBySessionId(sessionId);
         if (recording && !recording.video_id) {
-          updateRecording(recording.id, {
+          // Fetch stream URL from the video object (session may not have it)
+          let streamUrl = session.streamUrl;
+          let playerUrl = session.playerUrl;
+          if (!streamUrl) {
+            try {
+              const urls = await videodbService.getShareUrl(apiKey, session.exportedVideoId);
+              streamUrl = urls.streamUrl;
+              playerUrl = playerUrl || urls.playerUrl;
+            } catch (err) {
+              console.warn('[Sync] Could not fetch video stream URL:', err.message);
+            }
+          }
+          const updates = {
             video_id: session.exportedVideoId,
-            stream_url: session.streamUrl,
-            player_url: session.playerUrl,
-            insights_status: 'pending',
-          });
-          processIndexingBackground(recording.id, session.exportedVideoId, apiKey);
+            stream_url: streamUrl,
+            player_url: playerUrl,
+            insights_status: 'ready',
+          };
+          if (session.collectionId && !recording.collection_id) {
+            updates.collection_id = session.collectionId;
+          }
+          updateRecording(recording.id, updates);
+          // Fire-and-forget: index in background — video is already playable
+          processIndexingBackground(recording.id, session.exportedVideoId, apiKey)
+            .catch(err => console.error('[Index] Background indexing failed:', err.message));
         }
         return;
       }
@@ -144,10 +158,10 @@ async function syncCaptureSession(sessionId, apiKey, videodbService) {
 /**
  * On startup, check for recordings that started but never got an export event.
  */
-async function syncOrphanedSessions(apiKey, videodbService) {
+async function syncOrphanedSessions(apiKey, videodbService, userId = null) {
   if (!apiKey) return;
 
-  const orphaned = getOrphanedRecordings();
+  const orphaned = getOrphanedRecordings(userId);
   if (orphaned.length === 0) return;
 
   console.log(`[Sync] Found ${orphaned.length} orphaned recording(s), syncing...`);
@@ -161,10 +175,10 @@ async function syncOrphanedSessions(apiKey, videodbService) {
  * Makes one API call per recording — no retries or polling loop.
  * Used by the manual refresh button in the history window.
  */
-async function checkPendingRecordings(apiKey, videodbService) {
+async function checkPendingRecordings(apiKey, videodbService, userId = null) {
   if (!apiKey) return 0;
 
-  const orphaned = getOrphanedRecordings();
+  const orphaned = getOrphanedRecordings(userId);
   if (orphaned.length === 0) return 0;
 
   let resolved = 0;
@@ -175,13 +189,31 @@ async function checkPendingRecordings(apiKey, videodbService) {
       const session = await videodbService.getCaptureSession(apiKey, rec.session_id);
 
       if (session.exportedVideoId) {
-        updateRecording(rec.id, {
+        // Fetch stream URL from the video object (session may not have it)
+        let streamUrl = session.streamUrl;
+        let playerUrl = session.playerUrl;
+        if (!streamUrl) {
+          try {
+            const urls = await videodbService.getShareUrl(apiKey, session.exportedVideoId);
+            streamUrl = urls.streamUrl;
+            playerUrl = playerUrl || urls.playerUrl;
+          } catch (err) {
+            console.warn('[Refresh] Could not fetch video stream URL:', err.message);
+          }
+        }
+        const updates = {
           video_id: session.exportedVideoId,
-          stream_url: session.streamUrl,
-          player_url: session.playerUrl,
-          insights_status: 'pending',
-        });
-        processIndexingBackground(rec.id, session.exportedVideoId, apiKey);
+          stream_url: streamUrl,
+          player_url: playerUrl,
+          insights_status: 'ready',
+        };
+        if (session.collectionId && !rec.collection_id) {
+          updates.collection_id = session.collectionId;
+        }
+        updateRecording(rec.id, updates);
+        // Fire-and-forget: index in background — video is already playable
+        processIndexingBackground(rec.id, session.exportedVideoId, apiKey)
+          .catch(err => console.error('[Index] Background indexing failed:', err.message));
         resolved++;
       } else if (session.status === 'failed') {
         updateRecording(rec.id, { insights_status: 'failed' });

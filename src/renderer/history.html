@@ -102,21 +102,15 @@
             border-color: rgba(255, 255, 255, 0.35);
         }
 
+        .btn-secondary.chat-redirecting {
+            border-color: rgba(255, 255, 255, 0.35);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
         .btn-secondary svg {
             flex-shrink: 0;
         }
 
-        .btn-secondary.syncing {
-            border-color: rgba(255, 255, 255, 0.15);
-            color: rgba(255, 255, 255, 0.5);
-            pointer-events: none;
-        }
-
-        .btn-secondary.synced {
-            border-color: #007657;
-            color: #00B686;
-            pointer-events: none;
-        }
 
         /* ── Content area ── */
         .history-content {
@@ -815,10 +809,6 @@
                 <span class="material-icons-round" style="font-size: 16px;">chat_bubble_outline</span>
                 <span>Chat with video</span>
             </button>
-            <button id="syncBtn" class="btn-secondary">
-                <span id="syncBtnIcon" class="material-icons-round" style="font-size: 16px;">sync</span>
-                <span id="syncBtnLabel">Sync</span>
-            </button>
         </div>
     </div>
 
@@ -877,13 +867,13 @@
         <div class="player-container">
             <div class="player-header" id="playerHeader" style="display:none;">
                 <div class="player-header-left" id="playerHeaderLeft">
-                    <span class="player-title" id="playerTitle">Select a recording</span>
+                    <span class="player-title" id="playerTitle"></span>
                     <button class="edit-name-btn" id="editNameBtn">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#969696" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M11.33 2a1.89 1.89 0 0 1 2.67 2.67L5.33 13.33 2 14l.67-3.33L11.33 2z"/>
                         </svg>
                     </button>
-                    <input type="text" class="player-title-input" id="playerTitleInput" maxlength="100" />
+                    <input type="text" class="player-title-input" id="playerTitleInput" maxlength="100" style="display:none" />
                 </div>
                 <div class="player-header-right">
                     <div class="download-split disabled" id="downloadSplit">

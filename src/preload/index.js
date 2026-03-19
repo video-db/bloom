@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('recorderAPI', {
     getShareUrl: (videoId) => ipcRenderer.invoke('get-share-url', videoId),
     downloadVideo: (videoId) => ipcRenderer.invoke('download-video', videoId),
     downloadTranscript: (recordingId) => ipcRenderer.invoke('download-transcript', recordingId),
+    openChatUrl: (videoId, collectionId) => ipcRenderer.invoke('open-chat-url', videoId, collectionId),
     updateRecordingName: (id, name) => ipcRenderer.invoke('update-recording-name', id, name),
     listDevices: () => ipcRenderer.invoke('list-devices'),
 

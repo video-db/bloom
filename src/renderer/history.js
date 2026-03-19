@@ -14,6 +14,7 @@ const STATUS_MAP = {
     recording:  { label: 'Recording',   cls: 'status-recording' },
     pending:    { label: 'Processing',   cls: 'status-processing' },
     processing: { label: 'Processing',   cls: 'status-processing' },
+    indexing:   { label: 'Transcribing',   cls: 'status-done' },
     ready:      { label: 'Done',         cls: 'status-done' },
     failed:     { label: 'Error',        cls: 'status-error' },
 };
@@ -49,9 +50,12 @@ async function init() {
 
     loadHistoryList();
 
-    document.getElementById('syncBtn')?.addEventListener('click', handleSync);
     document.getElementById('homeBtn')?.addEventListener('click', () => window.close());
+
+    // Auto-sync pending recordings when library opens
+    syncPendingRecordings();
     document.getElementById('shareBtn')?.addEventListener('click', handleShare);
+    document.getElementById('chatBarBtn')?.addEventListener('click', handleChatWithVideo);
     document.getElementById('editNameBtn')?.addEventListener('click', () => startNameEdit());
 
     const input = document.getElementById('playerTitleInput');
@@ -153,14 +157,16 @@ async function loadHistoryList() {
 
         // Auto-select: pending focus session > previously active > first
         let toSelect = null;
+        let shouldAutoplay = false;
         if (pendingFocusSessionId) {
             toSelect = recordings.find(r => r.session_id === pendingFocusSessionId);
+            shouldAutoplay = true;
         }
         if (!toSelect) {
             toSelect = recordings.find(r => r.id === activeRecordingId) || recordings[0];
         }
         if (toSelect) {
-            selectRecording(toSelect);
+            selectRecording(toSelect, shouldAutoplay);
             if (pendingFocusSessionId && toSelect.session_id === pendingFocusSessionId) {
                 pendingFocusSessionId = null;
                 startNameEdit();
@@ -176,7 +182,7 @@ async function loadHistoryList() {
 function scheduleAutoRefresh(recordings) {
     if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
     const hasInProgress = recordings.some(r =>
-        r.insights_status === 'recording' || r.insights_status === 'pending' || r.insights_status === 'processing'
+        r.insights_status === 'recording' || r.insights_status === 'pending' || r.insights_status === 'processing' || r.insights_status === 'indexing'
     );
     if (hasInProgress) {
         refreshInterval = setInterval(loadHistoryList, 5000);
@@ -226,17 +232,17 @@ function createVideoListItem(recording) {
     div.appendChild(details);
     div.appendChild(badge);
 
-    div.addEventListener('click', () => selectRecording(recording));
+    div.addEventListener('click', () => selectRecording(recording, true));
     return div;
 }
 
 // --- Selection ---
 
-function selectRecording(recording) {
+function selectRecording(recording, autoplay = false) {
     activeRecordingId = recording.id;
     activeRecording = recording;
     updateActiveItemStyle();
-    showPlayer(recording);
+    showPlayer(recording, autoplay);
     updatePlayerHeader(recording);
 }
 
@@ -248,7 +254,7 @@ function updateActiveItemStyle() {
 
 // --- Player ---
 
-function showPlayer(recording) {
+function showPlayer(recording, autoplay = false) {
     const video = document.getElementById('historyVideoPlayer');
     const emptyPlayer = document.getElementById('emptyPlayer');
     const playerArea = document.getElementById('videoPlayerArea');
@@ -257,7 +263,7 @@ function showPlayer(recording) {
 
     if (!video) return;
 
-    // Skip reload if the same stream is already playing
+    // Skip reload if the same stream is already loaded
     if (recording.stream_url && recording.stream_url === activeStreamUrl) return;
 
     // Clear previous playback
@@ -272,12 +278,16 @@ function showPlayer(recording) {
         hlsInstance = new Hls();
         hlsInstance.loadSource(recording.stream_url);
         hlsInstance.attachMedia(video);
-        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-            video.play().catch(() => {});
-        });
+        if (autoplay) {
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play().catch(() => {});
+            });
+        }
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = recording.stream_url;
-        video.addEventListener('loadedmetadata', () => { video.play().catch(() => {}); }, { once: true });
+        if (autoplay) {
+            video.addEventListener('loadedmetadata', () => { video.play().catch(() => {}); }, { once: true });
+        }
     }
 }
 
@@ -307,6 +317,15 @@ function updatePlayerHeader(recording) {
     // Download split — enabled when stream URL exists
     if (downloadSplit) {
         downloadSplit.classList.toggle('disabled', !recording.stream_url);
+    }
+
+    // Chat button — enabled when both video_id and collection_id exist
+    const chatBtn = document.getElementById('chatBarBtn');
+    if (chatBtn) {
+        const canChat = !!(recording.video_id && recording.collection_id);
+        chatBtn.disabled = !canChat;
+        chatBtn.style.opacity = canChat ? '' : '0.4';
+        chatBtn.style.pointerEvents = canChat ? '' : 'none';
     }
 }
 
@@ -419,54 +438,59 @@ async function handleShare() {
     }
 }
 
-// --- Sync ---
+// --- Chat with Video ---
 
-function setSyncState(state) {
-    const btn = document.getElementById('syncBtn');
-    const icon = document.getElementById('syncBtnIcon');
-    const label = document.getElementById('syncBtnLabel');
-    if (!btn || !icon || !label) return;
+function setChatState(state) {
+    const btn = document.getElementById('chatBarBtn');
+    if (!btn) return;
+    const icon = btn.querySelector('.material-icons-round');
+    const label = btn.querySelector('span:last-child');
+    if (!icon || !label) return;
 
-    btn.classList.remove('syncing', 'synced');
+    btn.classList.remove('chat-redirecting');
 
     switch (state) {
         case 'default':
-            icon.textContent = 'sync';
-            label.textContent = 'Sync';
+            icon.textContent = 'chat_bubble_outline';
+            label.textContent = 'Chat with video';
+            btn.style.pointerEvents = '';
             break;
-        case 'syncing':
-            btn.classList.add('syncing');
-            icon.textContent = '';
-            const spinner = document.createElement('span');
-            spinner.className = 'btn-spinner';
-            icon.appendChild(spinner);
-            label.textContent = 'Syncing...';
-            break;
-        case 'synced':
-            btn.classList.add('synced');
-            icon.textContent = 'check';
-            label.textContent = 'Synced';
+        case 'redirecting':
+            btn.classList.add('chat-redirecting');
+            icon.textContent = 'open_in_new';
+            label.textContent = 'Redirecting...';
+            btn.style.pointerEvents = 'none';
             break;
     }
 }
 
-async function handleSync() {
-    setSyncState('syncing');
+async function handleChatWithVideo() {
+    if (!activeRecording?.video_id || !activeRecording?.collection_id) return;
+
+    setChatState('redirecting');
 
     try {
-        const result = await window.recorderAPI.syncPendingRecordings();
-        if (result.success) {
-            setSyncState('synced');
-            showToast('Recordings synced');
-            loadHistoryList();
-            setTimeout(() => setSyncState('default'), 2500);
-        } else {
-            showToast(result.error || 'Sync failed');
-            setSyncState('default');
+        const result = await window.recorderAPI.openChatUrl(activeRecording.video_id, activeRecording.collection_id);
+        if (!result.success) {
+            showToast(result.error || 'Could not open chat');
         }
     } catch (err) {
-        showToast('Sync failed');
-        setSyncState('default');
+        showToast('Failed to open chat');
+    }
+
+    setTimeout(() => setChatState('default'), 2000);
+}
+
+// --- Auto-sync pending recordings ---
+
+async function syncPendingRecordings() {
+    try {
+        const result = await window.recorderAPI.syncPendingRecordings();
+        if (result.success && result.resolved > 0) {
+            loadHistoryList();
+        }
+    } catch (_) {
+        // Silent — startup sync already handles retries
     }
 }
 

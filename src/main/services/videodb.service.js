@@ -104,6 +104,7 @@ class VideoDBService {
       exportedVideoId: session.exportedVideoId || null,
       streamUrl: session.streamUrl || null,
       playerUrl: session.playerUrl || null,
+      collectionId: coll.id || null,
     };
   }
 

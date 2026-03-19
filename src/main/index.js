@@ -422,6 +422,7 @@ function updateTrayMenu() {
       {
         label: 'Logout',
         click: async () => {
+          if (historyWindow && !historyWindow.isDestroyed()) historyWindow.close();
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.hide();
             await mainWindow.webContents.executeJavaScript(`
@@ -470,6 +471,7 @@ function updateTrayMenu() {
       {
         label: 'Logout',
         click: async () => {
+          if (historyWindow && !historyWindow.isDestroyed()) historyWindow.close();
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.hide();
             await mainWindow.webContents.executeJavaScript(`
@@ -514,7 +516,8 @@ async function startServices() {
 
   // 5. Sync orphaned recordings from previous sessions
   const apiKey = _getCurrentUserApiKey();
-  syncOrphanedSessions(apiKey, videodbService);
+  const userId = _getCurrentUserId();
+  syncOrphanedSessions(apiKey, videodbService, userId);
 
   console.log('VideoDB SDK Configuration:');
   console.log('- AUTH_STATUS:', getAppConfig().accessToken ? 'Connected' : 'Needs Connection');
@@ -592,11 +595,20 @@ async function autoRegisterFromSetup() {
 // Helpers
 // ============================================================================
 
-function _getCurrentUserApiKey() {
+function _getCurrentUser() {
   const { accessToken } = getAppConfig();
   if (!accessToken) return null;
-  const user = findUserByToken(accessToken);
+  return findUserByToken(accessToken) || null;
+}
+
+function _getCurrentUserApiKey() {
+  const user = _getCurrentUser();
   return user ? user.api_key : null;
+}
+
+function _getCurrentUserId() {
+  const user = _getCurrentUser();
+  return user ? user.id : null;
 }
 
 // ============================================================================

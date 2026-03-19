@@ -15,11 +15,13 @@ const { checkPendingRecordings } = require('../services/session.service');
 function registerHistoryHandlers(getVideodbService) {
   ipcMain.handle('get-recordings', async () => {
     try {
-      const recordings = dbGetRecordings(20);
+      const user = _getCurrentUser();
+      const recordings = dbGetRecordings(20, user ? user.id : null);
       return recordings.map(r => ({
         id: r.id,
         name: r.name,
         video_id: r.video_id,
+        collection_id: r.collection_id,
         session_id: r.session_id,
         stream_url: r.stream_url,
         player_url: r.player_url,
@@ -57,10 +59,10 @@ function registerHistoryHandlers(getVideodbService) {
 
   ipcMain.handle('sync-pending-recordings', async () => {
     try {
-      const apiKey = _getCurrentUserApiKey();
-      if (!apiKey) return { success: false, error: 'Not authenticated' };
+      const user = _getCurrentUser();
+      if (!user) return { success: false, error: 'Not authenticated' };
       const videodbService = getVideodbService();
-      const resolved = await checkPendingRecordings(apiKey, videodbService);
+      const resolved = await checkPendingRecordings(user.api_key, videodbService, user.id);
       return { success: true, resolved };
     } catch (error) {
       console.error('Error syncing pending recordings:', error);
@@ -138,6 +140,20 @@ function registerHistoryHandlers(getVideodbService) {
     }
   });
 
+  ipcMain.handle('open-chat-url', async (_event, videoId, collectionId) => {
+    try {
+      if (!videoId || !collectionId) {
+        return { success: false, error: 'Video ID and Collection ID are required' };
+      }
+      const url = `https://chat.videodb.io?video_id=${encodeURIComponent(videoId)}&collection_id=${encodeURIComponent(collectionId)}`;
+      await shell.openExternal(url);
+      return { success: true };
+    } catch (error) {
+      console.error('Error opening chat URL:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('update-recording-name', async (_event, id, name) => {
     try {
       let recordingId = id;
@@ -156,10 +172,14 @@ function registerHistoryHandlers(getVideodbService) {
   });
 }
 
-function _getCurrentUserApiKey() {
+function _getCurrentUser() {
   const { accessToken } = getAppConfig();
   if (!accessToken) return null;
-  const user = findUserByToken(accessToken);
+  return findUserByToken(accessToken) || null;
+}
+
+function _getCurrentUserApiKey() {
+  const user = _getCurrentUser();
   return user ? user.api_key : null;
 }
 

@@ -38,13 +38,15 @@ function registerCaptureHandlers(getVideodbService, getMainWindow) {
       // 1. Create capture session
       console.log('Creating capture session via SDK...');
       let captureSessionId;
+      let collectionId;
       try {
         const sessionData = await videodbService.createCaptureSession(user.api_key, {
           endUserId: `user-${user.id}`,
           metadata: { clientSessionId, startedAt: Date.now() },
         });
         captureSessionId = sessionData.sessionId;
-        console.log(`Capture session created: ${captureSessionId}`);
+        collectionId = sessionData.collectionId;
+        console.log(`Capture session created: ${captureSessionId} (collection: ${collectionId})`);
       } catch (err) {
         console.error('Error creating capture session:', err);
         return { success: false, error: 'Failed to create capture session: ' + err.message };
@@ -55,6 +57,8 @@ function registerCaptureHandlers(getVideodbService, getMainWindow) {
         session_id: captureSessionId,
         created_at: new Date().toISOString(),
         insights_status: 'recording',
+        user_id: user.id,
+        collection_id: collectionId,
       });
 
       // 3. Get session token

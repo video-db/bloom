@@ -28,7 +28,7 @@
   ·
   <a href="https://docs.videodb.io"><strong>Docs</strong></a>
   ·
-  <a href="https://github.com/video-db/async-recorder/issues">Report Bug</a>
+  <a href="https://github.com/video-db/bloom/issues">Report Bug</a>
 </p>
 
 ---
@@ -300,7 +300,7 @@ MIT
 ## Community & Support
 
 - **Docs**: [docs.videodb.io](https://docs.videodb.io)
-- **Issues**: [GitHub Issues](https://github.com/video-db/async-recorder/issues)
+- **Issues**: [GitHub Issues](https://github.com/video-db/bloom/issues)
 - **Discord**: [Join community](https://discord.gg/py9P639jGz)
 - **Console**: [Get API key](https://console.videodb.io)
 
@@ -317,11 +317,11 @@ MIT
 [electron-url]: https://www.electronjs.org/
 [node-shield]: https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white
 [node-url]: https://nodejs.org/
-[license-shield]: https://img.shields.io/github/license/video-db/async-recorder.svg?style=for-the-badge
-[license-url]: https://github.com/video-db/async-recorder/blob/main/LICENSE
-[stars-shield]: https://img.shields.io/github/stars/video-db/async-recorder.svg?style=for-the-badge
-[stars-url]: https://github.com/video-db/async-recorder/stargazers
-[issues-shield]: https://img.shields.io/github/issues/video-db/async-recorder.svg?style=for-the-badge
-[issues-url]: https://github.com/video-db/async-recorder/issues
+[license-shield]: https://img.shields.io/github/license/video-db/bloom.svg?style=for-the-badge
+[license-url]: https://github.com/video-db/bloom/blob/main/LICENSE
+[stars-shield]: https://img.shields.io/github/stars/video-db/bloom.svg?style=for-the-badge
+[stars-url]: https://github.com/video-db/bloom/stargazers
+[issues-shield]: https://img.shields.io/github/issues/video-db/bloom.svg?style=for-the-badge
+[issues-url]: https://github.com/video-db/bloom/issues
 [website-shield]: https://img.shields.io/website?url=https%3A%2F%2Fvideodb.io%2F&style=for-the-badge&label=videodb.io
 [website-url]: https://videodb.io/

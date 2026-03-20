@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <a href="## Installation">Install</a>
+  <a href="#installation">Install</a>
   ·
   <a href="#features">Features</a>
   ·

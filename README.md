@@ -8,26 +8,83 @@
 
 <!-- PROJECT LOGO -->
 <br />
-<table align="center" border="0" cellspacing="0" cellpadding="0">
-  <tr>
-    <td valign="middle"><a href="https://videodb.io/"><img src="assets/videodb-logo.jpeg" alt="VideoDB" height="52"></a></td>
-    <td valign="middle"><img src="assets/add.svg" alt="+" height="16"></td>
-    <td valign="middle"><a href="https://videodb.io/"><img src="assets/Colour_Black Wordmark.png" alt="Bloom" height="52"></a></td>
-  </tr>
-</table>
+<p align="center">
+  <a href="https://videodb.io/"><img src="assets/Colour_Black Wordmark.png" alt="Bloom" height="72"></a>
+</p>
+
+<h3 align="center">An open source, agentic Loom alternative.</h3>
 
 <p align="center">
-  A Loom-style screen recording app built with Electron and the VideoDB Capture SDK.
-  <br />
-  <a href="https://docs.videodb.io"><strong>Explore the docs »</strong></a>
+  Record locally. Make recordings AI-ready. Run workflows on top.
   <br />
   <br />
-  <a href="#features">View Features</a>
-  ·
+  <strong>Record → Query → Automate</strong>
+</p>
+
+<p align="center">
   <a href="#download">Download</a>
+  ·
+  <a href="#features">Features</a>
+  ·
+  <a href="https://docs.videodb.io"><strong>Docs</strong></a>
   ·
   <a href="https://github.com/video-db/async-recorder/issues">Report Bug</a>
 </p>
+
+---
+
+## Why Bloom exists
+
+Most screen recorders still operate on subscriptions.
+
+- Pay monthly even if you barely use it
+- Lose access when billing stops
+- Recordings become dead files
+
+**In an AI world, this model breaks.**
+
+Your recordings should be usable by agents, not locked behind a UI.
+
+---
+
+## What is Bloom?
+
+Bloom is a local-first, open source screen recorder built for agentic workflows.
+
+- **Record locally** — No lock-in, your files stay yours
+- **Upload to VideoDB** — Automatic cloud sync with AI processing
+- **Make recordings searchable** — Transcripts, embeddings, metadata
+- **Let agents work on your recordings** — Query via APIs or agent frameworks
+
+This is not just recording. This is turning context into action.
+
+---
+
+## The shift
+
+Recordings are no longer files. They are inputs for AI.
+
+- **Search them** — Find any moment by keyword
+- **Query them** — Ask questions, get structured answers
+- **Generate insights** — Summaries, action items, key decisions
+- **Automate workflows** — Plug into Claude Code, Cursor, and agent frameworks
+
+---
+
+## Example workflow
+
+```
+1. Record a session
+2. Upload to VideoDB
+3. Pull into Claude Code
+4. Ask:
+
+   "Summarize key decisions"
+   "Extract action items"
+   "Find where I mentioned X"
+
+→ Get structured outputs instantly
+```
 
 ---
 
@@ -39,6 +96,26 @@
 <p>
   <em>Pre-built DMGs are available for macOS. Windows users can run from source — see <a href="#development-setup">Development Setup</a>. Linux support coming soon.</em>
 </p>
+
+---
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **No subscription** | Pay only for usage |
+| **Local-first** | Record locally, no lock-in |
+| **AI-ready** | Search, summarize, extract |
+| **Screen recording** | Capture screen, microphone, and system audio via [VideoDB Capture SDK](https://docs.videodb.io) |
+| **Camera overlay** | Draggable camera bubble during recording |
+| **Floating bar** | Always-on-top control bar that never blocks your apps |
+| **Multi-monitor** | Display picker to choose which screen to record |
+| **Library** | Browse, search, play, rename, and download recordings |
+| **Transcription** | Automatic transcript generation with subtitled playback |
+| **Chat with video** | Ask questions about your recording via [VideoDB Chat](https://chat.videodb.io) |
+| **Share** | One-click shareable link for any recording |
+| **Keyboard shortcut** | `Cmd+Shift+R` to start/stop recording from anywhere |
+| **Open source** | Fully customizable UI layer |
 
 ---
 
@@ -61,34 +138,6 @@ If you downloaded the pre-built app from the links above:
 
 ---
 
-## Features
-
-- **Screen recording** — Capture screen, microphone, and system audio via [VideoDB Capture SDK](https://docs.videodb.io)
-- **Camera overlay** — Draggable camera bubble during recording
-- **Floating bar** — Always-on-top control bar that never blocks your apps
-- **Multi-monitor** — Display picker to choose which screen to record
-- **Library** — Browse, search, play, rename, and download recordings
-- **Transcription** — Automatic transcript generation with subtitled playback
-- **Chat with video** — Ask questions about your recording via [VideoDB Chat](https://chat.videodb.io)
-- **Share** — One-click shareable link for any recording
-- **Keyboard shortcut** — `Cmd+Shift+R` to start/stop recording from anywhere
-
-## Development Setup
-
-### Prerequisites
-
-- Node.js 18+
-- VideoDB API Key ([console.videodb.io](https://console.videodb.io))
-
-### Quick Start
-
-```bash
-npm install
-npm start
-```
-
-On first launch, grant microphone and screen recording permissions, then enter your name and VideoDB API key.
-
 ## Usage
 
 1. **Connect** — Enter your name and API key on first launch
@@ -98,7 +147,14 @@ On first launch, grant microphone and screen recording permissions, then enter y
 5. **Share** — Click "Copy Link" on any recording to generate and copy a share link
 6. **Download** — Use the split download button to save the video file or transcript
 
+---
+
 ## Architecture
+
+```
+Bloom = UI layer (open source)
+VideoDB = Intelligence layer (cloud)
+```
 
 ```mermaid
 graph LR
@@ -163,6 +219,52 @@ graph LR
 
 **Post-recording:** Once the video is exported, the app calls the VideoDB API to index spoken words, generate a transcript, and create a subtitled stream — all available for in-app HLS playback or sharing via URL.
 
+---
+
+## Open source
+
+The UI layer is fully open source.
+
+- **Modify it** — Customize the interface to your needs
+- **Extend it** — Add new features and workflows
+- **Plug it in** — Integrate with your own systems
+
+Bloom is not just a tool. It's a foundation for building agentic systems on top of recordings.
+
+---
+
+## Philosophy
+
+Your recorder should not trap your data.
+
+It should:
+
+- **Give you ownership** — Local-first, no lock-in
+- **Enable intelligence** — AI-ready from day one
+- **Power your agents** — APIs and integrations built-in
+
+Bloom is built for that future.
+
+---
+
+## Development Setup
+
+### Prerequisites
+
+- Node.js 18+
+- VideoDB API Key ([console.videodb.io](https://console.videodb.io))
+
+### Quick Start
+
+```bash
+npm install
+npm start
+```
+
+On first launch, grant microphone and screen recording permissions, then enter your name and VideoDB API key.
+
+---
+
 ## Project Structure
 
 ```
@@ -209,6 +311,8 @@ build/
 └── icon.icns                   # App icon
 ```
 
+---
+
 ## Configuration
 
 | Variable | Description | Default |
@@ -216,6 +320,8 @@ build/
 | `VIDEODB_API_URL` | Override the VideoDB API base URL (for dev/staging) | Production API |
 
 Set in a `.env` file at the project root, or as an environment variable.
+
+---
 
 ## Troubleshooting
 
@@ -236,6 +342,8 @@ rm ~/Library/Application\ Support/bloom/config.json
 ```
 Then run `npm start`
 
+---
+
 ## Building
 
 ```bash
@@ -246,9 +354,13 @@ npm run pack
 npm run dist
 ```
 
+---
+
 ## License
 
 MIT
+
+---
 
 ## Community & Support
 
@@ -259,7 +371,11 @@ MIT
 
 ---
 
-<p align="center">Made with ❤️ by the <a href="https://videodb.io">VideoDB</a> team</p>
+<p align="center">
+  <a href="https://videodb.io/"><img src="assets/videodb-logo.jpeg" alt="VideoDB" height="40"></a>
+</p>
+
+<p align="center">Made with love by the <a href="https://videodb.io">VideoDB</a> team</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
 [electron-shield]: https://img.shields.io/badge/Electron-39.0-47848F?style=for-the-badge&logo=electron&logoColor=white

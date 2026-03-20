@@ -31,33 +31,39 @@
 
 ---
 
-## Download
+## Installation
+
+Run this in your terminal to install Bloom:
+
+```bash
+curl -fsSL https://artifacts.videodb.io/bloom/install | bash
+```
+
+This will automatically detect your Mac architecture, download the right build, and install it to `/Applications`.
+
+<details>
+<summary>Manual install</summary>
 
 - **Apple Silicon (M1/M2/M3/M4)**: [bloom-2.0.0-arm64.dmg](https://artifacts.videodb.io/bloom/bloom-2.0.0-arm64.dmg)
 - **Apple Intel**: [bloom-2.0.0-x64.dmg](https://artifacts.videodb.io/bloom/bloom-2.0.0-x64.dmg)
 
+1. Mount the DMG and drag Bloom to your Applications folder
+2. Open Terminal and run `xattr -cr /Applications/Bloom.app`
+3. Launch the app from Applications or Spotlight
+
+</details>
+
 <p>
-  <em>Pre-built DMGs are available for macOS. Windows users can run from source — see <a href="#development-setup">Development Setup</a>. Linux support coming soon.</em>
+  <em>Pre-built builds are available for macOS. Windows users can run from source — see <a href="#development-setup">Development Setup</a>. Linux support coming soon.</em>
 </p>
 
 ---
 
-## Installation (Pre-built App)
+## Getting Started
 
-If you downloaded the pre-built app from the links above:
+1. **Grant system permissions** when prompted (Microphone and Screen Recording are required)
 
-1. **Mount the DMG** and drag Bloom to your Applications folder
-
-2. **Remove quarantine attributes** to allow the app to run:
-   ```bash
-   xattr -cr /Applications/Bloom.app
-   ```
-
-3. **Launch the app** from Applications or Spotlight
-
-4. **Grant system permissions** when prompted (Microphone and Screen Recording are required)
-
-5. **Enter your VideoDB API key** on first launch ([console.videodb.io](https://console.videodb.io))
+2. **Enter your VideoDB API key** on first launch ([console.videodb.io](https://console.videodb.io))
 
 ---
 

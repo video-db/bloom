@@ -24,46 +24,52 @@
   <br />
   <a href="#features">View Features</a>
   ·
-  <a href="#download">Download</a>
+  <a href="#installation">Installation</a>
   ·
   <a href="https://github.com/video-db/async-recorder/issues">Report Bug</a>
 </p>
 
 ---
 
-## Download
+## Installation
+
+Run this in your terminal to install Bloom:
+
+```bash
+curl -fsSL https://artifacts.videodb.io/bloom/install | bash
+```
+
+This will automatically detect your Mac architecture, download the right build, and install it to `/Applications`.
+
+<details>
+<summary>Manual install</summary>
 
 - **Apple Silicon (M1/M2/M3/M4)**: [bloom-2.0.0-arm64.dmg](https://artifacts.videodb.io/bloom/bloom-2.0.0-arm64.dmg)
 - **Apple Intel**: [bloom-2.0.0-x64.dmg](https://artifacts.videodb.io/bloom/bloom-2.0.0-x64.dmg)
 
+1. Mount the DMG and drag Bloom to your Applications folder
+2. Open Terminal and run `xattr -cr /Applications/Bloom.app`
+3. Launch the app from Applications or Spotlight
+
+</details>
+
 <p>
-  <em>Pre-built DMGs are available for macOS. Windows users can run from source — see <a href="#development-setup">Development Setup</a>. Linux support coming soon.</em>
+  <em>Pre-built builds are available for macOS. Linux support coming soon.</em>
 </p>
 
 ---
 
-## Installation (Pre-built App)
+## Getting Started
 
-If you downloaded the pre-built app from the links above:
+1. **Grant system permissions** when prompted (Microphone and Screen Recording are required)
 
-1. **Mount the DMG** and drag Bloom to your Applications folder
-
-2. **Remove quarantine attributes** to allow the app to run:
-   ```bash
-   xattr -cr /Applications/Bloom.app
-   ```
-
-3. **Launch the app** from Applications or Spotlight
-
-4. **Grant system permissions** when prompted (Microphone and Screen Recording are required)
-
-5. **Enter your VideoDB API key** on first launch ([console.videodb.io](https://console.videodb.io))
+2. **Enter your VideoDB API key** on first launch ([console.videodb.io](https://console.videodb.io))
 
 ---
 
 ## Features
 
-- **Screen recording** — Capture screen, microphone, and system audio via [VideoDB Capture SDK](https://docs.videodb.io)
+- **Screen recording** — Capture screen, microphone, and system audio via [VideoDB Capture SDK](https://docs.videodb.io/pages/ingest/capture-sdks)
 - **Camera overlay** — Draggable camera bubble during recording
 - **Floating bar** — Always-on-top control bar that never blocks your apps
 - **Multi-monitor** — Display picker to choose which screen to record
@@ -106,13 +112,13 @@ graph LR
         R["Renderer UI"]
         M["Main Process"]
         DB[("SQLite")]
-        SDK["VideoDB Node SDK"]
         R -->|IPC| M
         M --> DB
         M --> SDK
     end
 
     subgraph VS["  VideoDB SDK  "]
+        SDK["Node SDK"]
         CC["CaptureClient"]
         WS["WebSocket"]
         API["Connection API"]
@@ -128,7 +134,7 @@ graph LR
         BIN --> SC & MIC & SA
     end
 
-    subgraph VC["  VideoDB Cloud  "]
+    subgraph VC["  VideoDB  "]
         UPLOAD["Upload & Export"]
         STREAM["HLS Streaming"]
         IDX["Indexing"]
@@ -147,8 +153,8 @@ graph LR
     classDef green  fill:#0d2e1a,stroke:#4CAF50,stroke-width:1.5px,color:#8ed4a0
     classDef db     fill:#1a1208,stroke:#EC5B16,stroke-width:1.5px,color:#f5a36a
 
-    class R,M,SDK orange
-    class CC,WS,API,BIN amber
+    class R,M orange
+    class SDK,CC,WS,API,BIN amber
     class SC,MIC,SA red
     class UPLOAD,IDX,TRX,STREAM green
     class DB db
@@ -209,19 +215,10 @@ build/
 └── icon.icns                   # App icon
 ```
 
-## Configuration
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VIDEODB_API_URL` | Override the VideoDB API base URL (for dev/staging) | Production API |
-
-Set in a `.env` file at the project root, or as an environment variable.
-
 ## Troubleshooting
 
 ### Permissions denied
 - **macOS**: System Settings → Privacy & Security → enable Screen Recording / Microphone / Camera
-- **Windows**: Settings → Privacy → enable Microphone / Camera access
 
 ### Camera not showing
 - Toggle camera off/on in source controls
@@ -234,17 +231,7 @@ Set in a `.env` file at the project root, or as an environment variable.
 rm ~/Library/Application\ Support/bloom/bloom.db
 rm ~/Library/Application\ Support/bloom/config.json
 ```
-Then run `npm start`
-
-## Building
-
-```bash
-# Build directory (for testing)
-npm run pack
-
-# Build DMG installers (macOS arm64 + x64)
-npm run dist
-```
+Then relaunch the app.
 
 ## License
 

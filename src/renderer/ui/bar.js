@@ -7,8 +7,8 @@ import { addLog } from '../utils/logger.js';
 const elements = {
     btnStart: document.getElementById('btn-start-session'),
     btnStop: document.getElementById('btn-stop-session'),
-    btnDelete: document.getElementById('btn-delete-session'),
     btnClose: document.getElementById('btn-close'),
+    btnLibrary: document.getElementById('btn-library'),
 
     toggleMic: document.getElementById('toggle-mic'),
     toggleScreen: document.getElementById('toggle-screen'),
@@ -42,6 +42,7 @@ let selectedDisplayId = null;
 // --- Initialization ---
 export async function initBar(onStartSessionCallback) {
     initCloseButton();
+    initLibraryButton();
 
     if (elements.btnStart) {
         elements.btnStart.addEventListener('click', () => {
@@ -69,6 +70,14 @@ function initCloseButton() {
     if (elements.btnClose) {
         elements.btnClose.addEventListener('click', () => {
             window.recorderAPI.hideBar();
+        });
+    }
+}
+
+function initLibraryButton() {
+    if (elements.btnLibrary) {
+        elements.btnLibrary.addEventListener('click', () => {
+            window.recorderAPI.openHistoryWindow();
         });
     }
 }
@@ -123,7 +132,6 @@ export function setSessionActive(sessionId) {
 
     if (elements.btnStart) elements.btnStart.classList.add('hidden');
     if (elements.btnStop) elements.btnStop.classList.remove('hidden');
-    if (elements.btnDelete) elements.btnDelete.classList.remove('hidden');
 
     // Mark display pill as active (screen is being captured)
     if (elements.toggleScreen) elements.toggleScreen.classList.add('active');
@@ -172,10 +180,6 @@ export function resetSessionUI() {
         elements.btnStop.disabled = false;
         elements.btnStop.style.opacity = '';
     }
-    if (elements.btnDelete) {
-        elements.btnDelete.classList.add('hidden');
-    }
-
     stopTimer();
     if (elements.statusBadge) {
         elements.statusBadge.classList.add('hidden');

@@ -118,6 +118,9 @@ class VideoDBService {
     const conn = this._getConnection(apiKey);
     const coll = await conn.getCollection();
     const video = await coll.getVideo(videoId);
+    // generateStream returns the latest stream (with subtitles if indexed)
+    // and updates video.playerUrl to match
+    await video.generateStream();
     return {
       streamUrl: video.streamUrl || null,
       playerUrl: video.playerUrl || null,

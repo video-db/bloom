@@ -171,7 +171,7 @@
         }
 
         .source-pill.active .source-label {
-            color: #FFFFFF;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .source-pill.disabled {
@@ -214,7 +214,7 @@
             font-weight: 450;
             line-height: 1;
             letter-spacing: -0.02em;
-            color: #FFFFFF;
+            color: rgba(255, 255, 255, 0.9);
             white-space: nowrap;
             display: inline-block;
             width: 80px;
@@ -261,7 +261,7 @@
             font-weight: 600;
             line-height: 1;
             letter-spacing: -0.02em;
-            color: #FFFFFF;
+            color: rgba(255, 255, 255, 0.9);
             white-space: nowrap;
             transition: background 0.15s;
             flex-shrink: 0;
@@ -401,7 +401,9 @@
 
         .floating-bar.recording .bar-close,
         .floating-bar.recording #btn-start-session,
-        .floating-bar.recording #renameRow {
+        .floating-bar.recording #renameRow,
+        .floating-bar.recording #btn-library,
+        .floating-bar.recording #libraryDivider {
             display: none;
         }
 
@@ -601,7 +603,7 @@
 
         <!-- Display Selector -->
         <div id="displaySelector" class="display-selector">
-            <button id="toggle-screen" class="display-pill">
+            <button id="toggle-screen" class="display-pill" data-tooltip="Screen">
                 <img class="source-icon" src="img/screen_on.png" width="16" height="16" alt="">
                 <span id="displayLabel" class="display-label">Select display</span>
                 <svg class="chevron-icon" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -624,17 +626,18 @@
         <button id="btn-stop-session" class="bar-action-btn hidden" data-tooltip="Stop Recording">
             <img src="img/stop.png" alt="Stop">
         </button>
-        <button id="btn-delete-session" class="bar-action-btn disabled hidden" data-tooltip="Discard">
-            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15.5 4.5H13V3.5C13 3.102 12.842 2.72 12.561 2.439C12.28 2.158 11.898 2 11.5 2H8.5C8.102 2 7.72 2.158 7.439 2.439C7.158 2.72 7 3.102 7 3.5V4.5H4.5C4.367 4.5 4.24 4.553 4.146 4.646C4.053 4.74 4 4.867 4 5C4 5.133 4.053 5.26 4.146 5.354C4.24 5.447 4.367 5.5 4.5 5.5H5V15C5 15.265 5.105 15.52 5.293 15.707C5.48 15.895 5.735 16 6 16H14C14.265 16 14.52 15.895 14.707 15.707C14.895 15.52 15 15.265 15 15V5.5H15.5C15.633 5.5 15.76 5.447 15.854 5.354C15.947 5.26 16 5.133 16 5C16 4.867 15.947 4.74 15.854 4.646C15.76 4.553 15.633 4.5 15.5 4.5ZM8 3.5C8 3.367 8.053 3.24 8.146 3.146C8.24 3.053 8.367 3 8.5 3H11.5C11.633 3 11.76 3.053 11.854 3.146C11.947 3.24 12 3.367 12 3.5V4.5H8V3.5ZM14 15H6V5.5H14V15ZM8.5 8V12.5C8.5 12.633 8.447 12.76 8.354 12.854C8.26 12.947 8.133 13 8 13C7.867 13 7.74 12.947 7.646 12.854C7.553 12.76 7.5 12.633 7.5 12.5V8C7.5 7.867 7.553 7.74 7.646 7.646C7.74 7.553 7.867 7.5 8 7.5C8.133 7.5 8.26 7.553 8.354 7.646C8.447 7.74 8.5 7.867 8.5 8ZM12.5 8V12.5C12.5 12.633 12.447 12.76 12.354 12.854C12.26 12.947 12.133 13 12 13C11.867 13 11.74 12.947 11.646 12.854C11.553 12.76 11.5 12.633 11.5 12.5V8C11.5 7.867 11.553 7.74 11.646 7.646C11.74 7.553 11.867 7.5 12 7.5C12.133 7.5 12.26 7.553 12.354 7.646C12.447 7.74 12.5 7.867 12.5 8Z" fill="white"/>
-            </svg>
-        </button>
-
         <!-- Rename Row (hidden, shown after recording stops) -->
         <div id="renameRow" class="bar-rename hidden">
             <input type="text" id="renameInput" class="rename-input" placeholder="Name this recording..." maxlength="100">
             <button id="renameSaveBtn" class="rename-save" data-tooltip="Save">&#10003;</button>
         </div>
+
+        <div id="libraryDivider" class="bar-divider"></div>
+
+        <!-- Library Button -->
+        <button id="btn-library" class="source-pill" data-tooltip="Library">
+            <img src="img/library.png" alt="Library" style="width: 20px; height: 20px; filter: brightness(0) invert(0.75);">
+        </button>
 
     </div>
 

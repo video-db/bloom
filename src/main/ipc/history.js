@@ -41,15 +41,6 @@ function registerHistoryHandlers(getVideodbService) {
       if (!apiKey) return { success: false, error: 'Not authenticated' };
       const videodbService = getVideodbService();
       const urls = await videodbService.getShareUrl(apiKey, videoId);
-
-      // Prefer local subtitle URLs (set after indexing) over base video URLs
-      const recordings = dbGetRecordings(50);
-      const rec = recordings.find(r => r.video_id === videoId);
-      if (rec) {
-        if (rec.stream_url) urls.streamUrl = rec.stream_url;
-        if (rec.player_url) urls.playerUrl = rec.player_url;
-      }
-
       return { success: true, ...urls };
     } catch (error) {
       console.error('Error getting share URL:', error);

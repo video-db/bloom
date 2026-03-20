@@ -72,13 +72,6 @@ async function processIndexingBackground(recordingId, videoId, apiKey) {
       }
       if (result.subtitleUrl) {
         updates.stream_url = result.subtitleUrl;
-        const { getRecordingById } = require('../db/database');
-        const recording = getRecordingById(recordingId);
-        if (recording && recording.player_url && recording.player_url.includes('url=')) {
-          updates.player_url = recording.player_url.replace(/url=[^&]+/, `url=${result.subtitleUrl}`);
-        } else {
-          updates.player_url = result.subtitleUrl;
-        }
       }
       updateRecording(recordingId, updates);
       console.log(`[Index] Indexed video ${videoId} successfully`);

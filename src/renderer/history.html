@@ -28,7 +28,7 @@
             position: relative;
             display: flex;
             align-items: center;
-            padding: 38px 20px 0 10px;
+            padding: 38px 20px 0 22px;
             height: 68px;
             background: #08090C;
             -webkit-app-region: drag;
@@ -41,30 +41,10 @@
             gap: 8px;
         }
 
-        .header-left .icon-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.7);
-            cursor: pointer;
-            -webkit-app-region: no-drag;
-            border-radius: 6px;
-            transition: background 0.15s, color 0.15s;
-        }
-
-        .header-left .icon-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-        }
-
         .header-title {
-            font-size: 15px;
-            font-weight: 500;
-            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .header-right {
@@ -87,7 +67,7 @@
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
-            color: #fff;
+            color: rgba(255, 255, 255, 0.9);
             font-family: inherit;
             font-size: 13px;
             font-weight: 500;
@@ -184,7 +164,7 @@
             background: #191B23;
             border: 0.5px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
-            color: #fff;
+            color: rgba(255, 255, 255, 0.9);
             font-family: inherit;
             font-size: 13px;
             font-weight: 500;
@@ -448,7 +428,7 @@
         .player-title {
             font-size: 16px;
             font-weight: 500;
-            color: #fff;
+            color: rgba(255, 255, 255, 0.9);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -479,7 +459,7 @@
         .player-title-input {
             font-size: 16px;
             font-weight: 500;
-            color: #fff;
+            color: rgba(255, 255, 255, 0.9);
             background: #191B23;
             border: 1px solid #FF4000;
             border-radius: 8px;
@@ -507,7 +487,7 @@
             background: #FF4000;
             border: none;
             border-radius: 10px;
-            color: #fff;
+            color: rgba(255, 255, 255, 0.9);
             font-family: inherit;
             font-size: 13px;
             font-weight: 600;
@@ -616,7 +596,7 @@
             height: 100%;
             background: none;
             border: none;
-            color: #fff;
+            color: rgba(255, 255, 255, 0.9);
             font-family: inherit;
             font-size: 13px;
             font-weight: 500;
@@ -799,9 +779,7 @@
     <!-- Header -->
     <div class="history-header">
         <div class="header-left">
-            <button id="homeBtn" class="icon-btn" title="Close">
-                <span class="material-icons-round" style="font-size: 20px;">home</span>
-            </button>
+            <img src="img/library.png" alt="" width="18" height="18" style="filter: brightness(0) invert(0.75); flex-shrink: 0;">
             <span class="header-title">Library</span>
         </div>
         <div class="header-right">
@@ -924,7 +902,7 @@
 
     <!-- Toast -->
     <div class="toast" id="toast">
-        <span class="material-icons-round" style="font-size: 20px; color: #fff;">check</span>
+        <span class="material-icons-round" id="toastIcon" style="font-size: 20px; color: #fff;">check</span>
         <span id="toastMessage">Link copied to clipboard</span>
     </div>
 

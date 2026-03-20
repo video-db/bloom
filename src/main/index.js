@@ -702,6 +702,10 @@ app.whenReady().then(async () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.hide();
     }
+    // Hide camera bubble when bar is closed and not recording
+    if (!isRecording && cameraWindow && !cameraWindow.isDestroyed()) {
+      cameraWindow.hide();
+    }
     updateTrayMenu();
   });
 

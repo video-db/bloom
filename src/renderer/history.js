@@ -50,8 +50,6 @@ async function init() {
 
     loadHistoryList();
 
-    document.getElementById('homeBtn')?.addEventListener('click', () => window.close());
-
     // Auto-sync pending recordings when library opens
     syncPendingRecordings();
     document.getElementById('shareBtn')?.addEventListener('click', handleShare);
@@ -160,7 +158,7 @@ async function loadHistoryList() {
         let shouldAutoplay = false;
         if (pendingFocusSessionId) {
             toSelect = recordings.find(r => r.session_id === pendingFocusSessionId);
-            shouldAutoplay = true;
+            shouldAutoplay = false;
         }
         if (!toSelect) {
             toSelect = recordings.find(r => r.id === activeRecordingId) || recordings[0];
@@ -232,7 +230,7 @@ function createVideoListItem(recording) {
     div.appendChild(details);
     div.appendChild(badge);
 
-    div.addEventListener('click', () => selectRecording(recording, true));
+    div.addEventListener('click', () => selectRecording(recording));
     return div;
 }
 
@@ -429,11 +427,11 @@ async function handleShare() {
             showToast('Link copied to clipboard');
             setTimeout(() => setShareState('default'), 2500);
         } else {
-            showToast(result.error || 'Could not generate link');
+            showToast(result.error || 'Could not generate link', 'error');
             setShareState('default');
         }
     } catch (err) {
-        showToast('Failed to generate link');
+        showToast('Failed to generate link', 'error');
         setShareState('default');
     }
 }
@@ -472,10 +470,10 @@ async function handleChatWithVideo() {
     try {
         const result = await window.recorderAPI.openChatUrl(activeRecording.video_id, activeRecording.collection_id);
         if (!result.success) {
-            showToast(result.error || 'Could not open chat');
+            showToast(result.error || 'Could not open chat', 'error');
         }
     } catch (err) {
-        showToast('Failed to open chat');
+        showToast('Failed to open chat', 'error');
     }
 
     setTimeout(() => setChatState('default'), 2000);
@@ -496,11 +494,13 @@ async function syncPendingRecordings() {
 
 // --- Toast ---
 
-function showToast(message) {
+function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const msg = document.getElementById('toastMessage');
+    const icon = document.getElementById('toastIcon');
     if (!toast || !msg) return;
     msg.textContent = message;
+    if (icon) icon.textContent = type === 'error' ? 'priority_high' : 'check';
     toast.classList.add('visible');
     setTimeout(() => toast.classList.remove('visible'), 2500);
 }
@@ -555,11 +555,11 @@ async function handleDownloadVideo() {
         } else if (result.error === 'Cancelled') {
             setDownloadState('default');
         } else {
-            showToast(result.error || 'Download failed');
+            showToast(result.error || 'Download failed', 'error');
             setDownloadState('default');
         }
     } catch (err) {
-        showToast('Download failed');
+        showToast('Download failed', 'error');
         setDownloadState('default');
     }
 }
@@ -578,11 +578,11 @@ async function handleDownloadTranscript() {
         } else if (result.error === 'Cancelled') {
             setDownloadState('default');
         } else {
-            showToast(result.error || 'Download failed');
+            showToast(result.error || 'Download failed', 'error');
             setDownloadState('default');
         }
     } catch (err) {
-        showToast('Download failed');
+        showToast('Download failed', 'error');
         setDownloadState('default');
     }
 }

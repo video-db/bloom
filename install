@@ -7,7 +7,7 @@ set -e
 APP_NAME="Bloom"
 APP_DIR="/Applications/${APP_NAME}.app"
 BASE_URL="https://artifacts.videodb.io/bloom"
-VERSION="2.1.0"
+VERSION="2.1.1"
 
 # Colors
 RED='\033[0;31m'

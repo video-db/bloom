@@ -756,6 +756,10 @@ app.whenReady().then(async () => {
     // Block shortcut while a recording is gearing up to prevent duplicate sessions
     if (recordingState === 'gearing-up') return;
     if (mainWindow && !mainWindow.isDestroyed()) {
+      // Show the bar when starting a recording via shortcut
+      if (recordingState === 'idle' || !recordingState) {
+        mainWindow.show();
+      }
       mainWindow.webContents.send('recorder-event', { event: 'shortcut:toggle-recording', data: {} });
     }
   });

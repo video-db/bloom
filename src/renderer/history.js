@@ -166,6 +166,38 @@ async function init() {
         });
     }
 
+    // Keyboard navigation on video list
+    const listContainer = document.getElementById('videoListContainer');
+    if (listContainer) {
+        listContainer.addEventListener('keydown', (e) => {
+            const items = Array.from(listContainer.querySelectorAll('.video-item:not(.deleting-slide)'));
+            if (items.length === 0) return;
+
+            const activeEl = listContainer.querySelector('.video-item.active');
+            const activeIdx = activeEl ? items.indexOf(activeEl) : -1;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const nextIdx = activeIdx < items.length - 1 ? activeIdx + 1 : 0;
+                const rec = loadedRecordings.find(r => r.id === Number(items[nextIdx].dataset.id));
+                if (rec) selectRecording(rec);
+                items[nextIdx].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prevIdx = activeIdx > 0 ? activeIdx - 1 : items.length - 1;
+                const rec = loadedRecordings.find(r => r.id === Number(items[prevIdx].dataset.id));
+                if (rec) selectRecording(rec);
+                items[prevIdx].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (activeEl && activeRecordingId) {
+                    e.preventDefault();
+                    const rec = loadedRecordings.find(r => r.id === activeRecordingId);
+                    if (rec) initiateDelete(rec);
+                }
+            }
+        });
+    }
+
     // Search (server-side, debounced)
     document.getElementById('searchInput')?.addEventListener('input', (e) => {
         const query = e.target.value.trim();
@@ -492,15 +524,21 @@ function initiateDelete(recording) {
     const idx = loadedRecordings.findIndex(r => r.id === recording.id);
     if (idx !== -1) loadedRecordings.splice(idx, 1);
 
-    // Clear detail panel if this was the active recording
+    // If this was the active recording, select the next/previous one
     if (activeRecordingId === recording.id) {
         activeRecordingId = null;
         activeRecording = null;
         activeStreamUrl = null;
-        const emptyPlayer = document.getElementById('emptyPlayer');
-        const playerArea = document.getElementById('videoPlayerArea');
-        if (emptyPlayer) emptyPlayer.style.display = '';
-        if (playerArea) playerArea.style.display = 'none';
+        // Auto-select neighbor: prefer the item that took its place (same index), else previous
+        const nextRec = loadedRecordings[idx] || loadedRecordings[idx - 1];
+        if (nextRec) {
+            selectRecording(nextRec);
+        } else {
+            const emptyPlayer = document.getElementById('emptyPlayer');
+            const playerArea = document.getElementById('videoPlayerArea');
+            if (emptyPlayer) emptyPlayer.style.display = '';
+            if (playerArea) playerArea.style.display = 'none';
+        }
     }
 
     // Store for undo
@@ -987,8 +1025,6 @@ async function initSettings() {
         }
         // Load current data
         const config = await window.configAPI.getConfig();
-        const nameInput = document.getElementById('settingsName');
-        if (nameInput) nameInput.value = config.userName || '';
         const currentTheme = config.theme || 'dark';
         document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.theme === currentTheme);
@@ -1002,18 +1038,6 @@ async function initSettings() {
             popover?.classList.remove('visible');
         }
     });
-
-    // Name — save on blur
-    const nameInput = document.getElementById('settingsName');
-    if (nameInput) {
-        nameInput.addEventListener('blur', () => {
-            const name = nameInput.value.trim();
-            if (name) window.configAPI.saveConfig({ userName: name });
-        });
-        nameInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); nameInput.blur(); }
-        });
-    }
 
     // Theme toggle
     document.querySelectorAll('.theme-toggle-btn').forEach(btn => {

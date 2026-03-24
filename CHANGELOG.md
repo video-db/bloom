@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.1] - 2026-03-25
+
+### Library
+- Delete recording with slide-out animation and 5s undo toast (deletes from both local DB and VideoDB)
+- Keyboard navigation: Arrow keys to browse list, Delete/Backspace to remove recordings
+- Auto-select next recording after deleting the active one
+- Dark mode active row visibility improved
+- Settings popover: replaced name input with read-only Shortcut and Collection info
+
+### Floating Bar
+- Show bar automatically when starting recording via Cmd+Shift+R
+- Screen toggle swaps to `screen_off.png` icon when paused (matching mic/audio behavior)
+- Updated source toggle icons
+
 ## [2.1.0] - 2026-03-23
 
 ### Theme System

@@ -501,6 +501,7 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            outline: none;
         }
 
         .date-header {
@@ -1262,22 +1263,10 @@
             flex-shrink: 0;
         }
 
-        .settings-name-input {
-            font-size: 13px;
+        .settings-value {
+            font-size: 12px;
             color: var(--text-primary);
-            background: var(--input-bg);
-            border: 1px solid var(--border-medium);
-            border-radius: 6px;
-            padding: 5px 8px;
-            outline: none;
-            font-family: inherit;
-            width: 140px;
             text-align: right;
-            transition: border-color 0.15s;
-        }
-
-        .settings-name-input:focus {
-            border-color: #FF4000;
         }
 
         /* Theme toggle */
@@ -1352,10 +1341,6 @@
                 <div class="settings-popover" id="settingsPopover">
                     <div class="settings-popover-body">
                         <div class="settings-row">
-                            <span class="settings-label">Name</span>
-                            <input type="text" class="settings-name-input" id="settingsName" maxlength="50" />
-                        </div>
-                        <div class="settings-row">
                             <span class="settings-label">Theme</span>
                             <div class="theme-toggle" id="themeToggle">
                                 <button class="theme-toggle-btn" data-theme="dark">
@@ -1367,6 +1352,14 @@
                                     Light
                                 </button>
                             </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Shortcut</span>
+                            <span class="settings-value">&#8984;&#8679;R</span>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Collection</span>
+                            <span class="settings-value">Bloom Recordings</span>
                         </div>
                     </div>
                     <div class="settings-popover-footer">
@@ -1429,7 +1422,7 @@
                     </div>
                 </div>
             </div>
-            <div class="video-list" id="videoListContainer"></div>
+            <div class="video-list" id="videoListContainer" tabindex="0"></div>
         </div>
 
         <!-- Player -->

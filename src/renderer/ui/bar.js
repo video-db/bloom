@@ -476,7 +476,7 @@ function bindDisplaySelectorEvents() {
         if (activeSessionId) {
             const isActive = pill.classList.contains('active');
             const newState = !isActive;
-            pill.classList.toggle('active', newState);
+            updatePillVisual(pill, newState);
             try {
                 if (newState) {
                     addLog('Resuming display...');
@@ -487,7 +487,7 @@ function bindDisplaySelectorEvents() {
                 }
             } catch (error) {
                 addLog(`Failed to toggle display: ${error.message}`, 'error');
-                pill.classList.toggle('active', isActive);
+                updatePillVisual(pill, isActive);
             }
             return;
         }

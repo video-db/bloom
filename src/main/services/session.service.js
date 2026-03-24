@@ -1,6 +1,6 @@
 'use strict';
 
-const { findRecordingBySessionId, updateRecording, getOrphanedRecordings } = require('../db/database');
+const { findRecordingBySessionId, updateRecording, getUnresolvedRecordings } = require('../db/database');
 const { indexVideo } = require('./insights.service');
 
 // --- Singleton state ---
@@ -106,11 +106,13 @@ async function syncCaptureSession(sessionId, apiKey, videodbService) {
           // Fetch stream URL from the video object (session may not have it)
           let streamUrl = session.streamUrl;
           let playerUrl = session.playerUrl;
+          let duration = null;
           if (!streamUrl) {
             try {
               const urls = await videodbService.getShareUrl(apiKey, session.exportedVideoId);
               streamUrl = urls.streamUrl;
               playerUrl = playerUrl || urls.playerUrl;
+              duration = urls.duration;
             } catch (err) {
               console.warn('[Sync] Could not fetch video stream URL:', err.message);
             }
@@ -121,6 +123,7 @@ async function syncCaptureSession(sessionId, apiKey, videodbService) {
             player_url: playerUrl,
             insights_status: 'ready',
           };
+          if (duration) updates.duration = duration;
           if (session.collectionId && !recording.collection_id) {
             updates.collection_id = session.collectionId;
           }
@@ -151,15 +154,22 @@ async function syncCaptureSession(sessionId, apiKey, videodbService) {
 /**
  * On startup, check for recordings that started but never got an export event.
  */
-async function syncOrphanedSessions(apiKey, videodbService, userId = null) {
+async function syncUnresolvedRecordings(apiKey, videodbService, userId = null) {
   if (!apiKey) return;
 
-  const orphaned = getOrphanedRecordings(userId);
-  if (orphaned.length === 0) return;
+  const unresolved = getUnresolvedRecordings(userId);
+  if (unresolved.length === 0) return;
 
-  console.log(`[Sync] Found ${orphaned.length} orphaned recording(s), syncing...`);
-  for (const rec of orphaned) {
-    await syncCaptureSession(rec.session_id, apiKey, videodbService);
+  console.log(`[Sync] Found ${unresolved.length} unresolved recording(s), syncing...`);
+  for (const rec of unresolved) {
+    if (rec.video_id && rec.insights_status === 'indexing') {
+      // Has video but indexing never completed — retry indexing
+      processIndexingBackground(rec.id, rec.video_id, apiKey)
+        .catch(err => console.error('[Sync] Re-index failed:', err.message));
+    } else {
+      // No video yet — poll for export
+      await syncCaptureSession(rec.session_id, apiKey, videodbService);
+    }
   }
 }
 
@@ -171,25 +181,35 @@ async function syncOrphanedSessions(apiKey, videodbService, userId = null) {
 async function checkPendingRecordings(apiKey, videodbService, userId = null) {
   if (!apiKey) return 0;
 
-  const orphaned = getOrphanedRecordings(userId);
-  if (orphaned.length === 0) return 0;
+  const unresolved = getUnresolvedRecordings(userId);
+  if (unresolved.length === 0) return 0;
 
   let resolved = 0;
-  console.log(`[Refresh] Checking ${orphaned.length} pending recording(s)...`);
+  console.log(`[Refresh] Checking ${unresolved.length} pending recording(s)...`);
 
-  for (const rec of orphaned) {
+  for (const rec of unresolved) {
     try {
+      // Stuck at indexing — retry indexing directly
+      if (rec.video_id && rec.insights_status === 'indexing') {
+        processIndexingBackground(rec.id, rec.video_id, apiKey)
+          .catch(err => console.error('[Refresh] Re-index failed:', err.message));
+        resolved++;
+        continue;
+      }
+
+      // No video yet — check server for export
       const session = await videodbService.getCaptureSession(apiKey, rec.session_id);
 
       if (session.exportedVideoId) {
-        // Fetch stream URL from the video object (session may not have it)
         let streamUrl = session.streamUrl;
         let playerUrl = session.playerUrl;
+        let duration = null;
         if (!streamUrl) {
           try {
             const urls = await videodbService.getShareUrl(apiKey, session.exportedVideoId);
             streamUrl = urls.streamUrl;
             playerUrl = playerUrl || urls.playerUrl;
+            duration = urls.duration;
           } catch (err) {
             console.warn('[Refresh] Could not fetch video stream URL:', err.message);
           }
@@ -200,11 +220,11 @@ async function checkPendingRecordings(apiKey, videodbService, userId = null) {
           player_url: playerUrl,
           insights_status: 'ready',
         };
+        if (duration) updates.duration = duration;
         if (session.collectionId && !rec.collection_id) {
           updates.collection_id = session.collectionId;
         }
         updateRecording(rec.id, updates);
-        // Fire-and-forget: index in background — video is already playable
         processIndexingBackground(rec.id, session.exportedVideoId, apiKey)
           .catch(err => console.error('[Index] Background indexing failed:', err.message));
         resolved++;
@@ -217,7 +237,7 @@ async function checkPendingRecordings(apiKey, videodbService, userId = null) {
     }
   }
 
-  console.log(`[Refresh] Resolved ${resolved}/${orphaned.length} recording(s)`);
+  console.log(`[Refresh] Resolved ${resolved}/${unresolved.length} recording(s)`);
   return resolved;
 }
 
@@ -254,7 +274,7 @@ module.exports = {
   processIndexingBackground,
   // Sync / polling
   syncCaptureSession,
-  syncOrphanedSessions,
+  syncUnresolvedRecordings,
   checkPendingRecordings,
   // CaptureClient accessors
   getCaptureClient,

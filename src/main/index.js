@@ -16,7 +16,7 @@ const { initDatabase, closeDatabase, findUserByApiKey, createUser, findUserByTok
 
 // --- Services ---
 const { VideoDBService } = require('./services/videodb.service');
-const { syncOrphanedSessions, shutdownSession } = require('./services/session.service');
+const { syncUnresolvedRecordings, shutdownSession } = require('./services/session.service');
 
 // --- IPC ---
 const { registerAllHandlers } = require('./ipc');
@@ -422,6 +422,7 @@ function updateTrayMenu() {
       { label: 'Library', click: () => createHistoryWindow() },
       {
         label: 'Logout',
+        enabled: recordingState === 'idle',
         click: async () => {
           if (historyWindow && !historyWindow.isDestroyed()) historyWindow.close();
           if (mainWindow && !mainWindow.isDestroyed()) {
@@ -472,6 +473,7 @@ function updateTrayMenu() {
       { label: 'Library', click: () => createHistoryWindow() },
       {
         label: 'Logout',
+        enabled: recordingState === 'idle',
         click: async () => {
           if (historyWindow && !historyWindow.isDestroyed()) historyWindow.close();
           if (mainWindow && !mainWindow.isDestroyed()) {
@@ -516,10 +518,10 @@ async function startServices() {
   // 4. Auto-register from auth_config.json (if exists)
   await autoRegisterFromSetup();
 
-  // 5. Sync orphaned recordings from previous sessions
+  // 5. Sync unresolved recordings from previous sessions
   const apiKey = _getCurrentUserApiKey();
   const userId = _getCurrentUserId();
-  syncOrphanedSessions(apiKey, videodbService, userId);
+  syncUnresolvedRecordings(apiKey, videodbService, userId);
 
   console.log('VideoDB SDK Configuration:');
   console.log('- AUTH_STATUS:', getAppConfig().accessToken ? 'Connected' : 'Needs Connection');
@@ -751,6 +753,8 @@ app.whenReady().then(async () => {
 
   // 5. Register global shortcuts
   globalShortcut.register('CommandOrControl+Shift+R', () => {
+    // Block shortcut while a recording is gearing up to prevent duplicate sessions
+    if (recordingState === 'gearing-up') return;
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('recorder-event', { event: 'shortcut:toggle-recording', data: {} });
     }
@@ -779,15 +783,15 @@ app.on('activate', () => {
     createMainWindow();
     return;
   }
-  // If not authenticated, re-show the onboarding modal
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
   const isAuthenticated = !!getAppConfig().accessToken;
-  if (!isAuthenticated && mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('recorder-event', { event: 'shortcut:toggle-recording', data: {} });
-    // The renderer will check auth and show onboarding if needed
+  if (!isAuthenticated) {
+    // Show onboarding — don't send toggle-recording to an unauthenticated user
     mainWindow.webContents.executeJavaScript(`
       window.recorderAPI.showOnboardingModal();
     `).catch(() => {});
-  } else if (mainWindow && !mainWindow.isDestroyed()) {
+  } else {
     mainWindow.show();
   }
 });

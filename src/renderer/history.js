@@ -10,6 +10,13 @@ let refreshInterval = null;
 let currentSort = 'date-newest';
 let pendingFocusSessionId = null;
 
+const PAGE_SIZE = 20;
+let currentOffset = 0;
+let hasMore = false;
+let loadedRecordings = []; // all loaded recordings across pages
+let currentSearch = null;
+let searchDebounceTimer = null;
+
 const STATUS_MAP = {
     recording:  { label: 'Recording',   cls: 'status-recording' },
     pending:    { label: 'Processing',   cls: 'status-processing' },
@@ -32,11 +39,45 @@ function getDisplayName(recording) {
     return 'Untitled Recording';
 }
 
-function formatDuration(recording) {
+function formatTime(recording) {
     if (recording.created_at) {
         return new Date(recording.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
     }
     return '';
+}
+
+function getDateKey(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function getDateLabel(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const recDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diff = Math.round((today - recDay) / 86400000);
+
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    if (diff < 7) return d.toLocaleDateString([], { weekday: 'long' });
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: now.getFullYear() !== d.getFullYear() ? 'numeric' : undefined });
+}
+
+function createDateHeader(label) {
+    const div = document.createElement('div');
+    div.className = 'date-header';
+    div.textContent = label;
+    return div;
+}
+
+function formatDuration(seconds) {
+    if (!seconds) return null;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
 // --- Init ---
@@ -114,7 +155,7 @@ async function init() {
                 sortDropdown.querySelectorAll('.sort-option').forEach(o => o.classList.remove('active'));
                 opt.classList.add('active');
                 // Update label
-                const labels = { 'date-newest': 'Newest', 'date-oldest': 'Oldest' };
+                const labels = { 'date-newest': 'Newest', 'date-oldest': 'Oldest', 'duration-longest': 'Longest', 'duration-shortest': 'Shortest' };
                 const sortLabel = document.getElementById('sortLabel');
                 if (sortLabel) sortLabel.textContent = labels[sort] || 'Newest';
                 // Re-sort list
@@ -124,13 +165,14 @@ async function init() {
         });
     }
 
-    // Search (filters list client-side by name)
+    // Search (server-side, debounced)
     document.getElementById('searchInput')?.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        document.querySelectorAll('.video-item').forEach(item => {
-            const title = item.querySelector('.video-item-title')?.textContent.toLowerCase() || '';
-            item.style.display = title.includes(query) ? '' : 'none';
-        });
+        const query = e.target.value.trim();
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            currentSearch = query || null;
+            loadHistoryList();
+        }, 300);
     });
 }
 
@@ -141,60 +183,163 @@ async function loadHistoryList() {
     if (!listContainer) return;
 
     listContainer.innerHTML = '<div class="empty-state">Loading...</div>';
+    currentOffset = 0;
+    loadedRecordings = [];
 
     try {
-        const recordings = await window.recorderAPI.getRecordings();
+        const recordings = await window.recorderAPI.getRecordings(0, currentSearch);
+        hasMore = recordings.length === PAGE_SIZE;
+        loadedRecordings = recordings;
 
         if (!recordings || recordings.length === 0) {
-            listContainer.innerHTML = '<div class="empty-state">No recordings yet.</div>';
-            scheduleAutoRefresh([]);
+            listContainer.innerHTML = currentSearch
+                ? '<div class="empty-state">No recordings match your search.</div>'
+                : '<div class="empty-state">No recordings yet.</div>';
+            scheduleAutoRefresh();
             return;
         }
 
         sortRecordings(recordings);
         listContainer.innerHTML = '';
 
-        recordings.forEach(rec => listContainer.appendChild(createVideoListItem(rec)));
+        appendRecordingsWithHeaders(listContainer, recordings);
+
+        if (hasMore) appendLoadMoreButton(listContainer);
 
         // Auto-select: pending focus session > previously active > first
         let toSelect = null;
-        let shouldAutoplay = false;
         if (pendingFocusSessionId) {
             toSelect = recordings.find(r => r.session_id === pendingFocusSessionId);
-            shouldAutoplay = false;
         }
         if (!toSelect) {
             toSelect = recordings.find(r => r.id === activeRecordingId) || recordings[0];
         }
         if (toSelect) {
-            selectRecording(toSelect, shouldAutoplay);
+            selectRecording(toSelect, false);
             if (pendingFocusSessionId && toSelect.session_id === pendingFocusSessionId) {
                 pendingFocusSessionId = null;
                 startNameEdit();
             }
         }
 
-        scheduleAutoRefresh(recordings);
+        scheduleAutoRefresh();
     } catch (error) {
         listContainer.innerHTML = `<div class="empty-state" style="color:#EF3535">Failed to load: ${error.message}</div>`;
     }
 }
 
-function scheduleAutoRefresh(recordings) {
+async function loadMoreRecordings() {
+    const listContainer = document.getElementById('videoListContainer');
+    if (!listContainer) return;
+
+    // Remove load-more button while loading
+    listContainer.querySelector('.load-more-btn')?.remove();
+
+    const newOffset = currentOffset + PAGE_SIZE;
+    const recordings = await window.recorderAPI.getRecordings(newOffset, currentSearch);
+    currentOffset = newOffset;
+    hasMore = recordings.length === PAGE_SIZE;
+
+    loadedRecordings = loadedRecordings.concat(recordings);
+    sortRecordings(recordings);
+    appendRecordingsWithHeaders(listContainer, recordings);
+
+    if (hasMore) appendLoadMoreButton(listContainer);
+    scheduleAutoRefresh();
+}
+
+function appendLoadMoreButton(container) {
+    container.querySelector('.load-more-btn')?.remove();
+    const btn = document.createElement('button');
+    btn.className = 'load-more-btn';
+    btn.textContent = 'Load More';
+    btn.addEventListener('click', loadMoreRecordings);
+    container.appendChild(btn);
+}
+
+function appendRecordingsWithHeaders(container, recordings) {
+    const showHeaders = currentSort.startsWith('date');
+
+    let lastDateKey = null;
+    if (showHeaders) {
+        const existingHeaders = container.querySelectorAll('.date-header');
+        if (existingHeaders.length > 0) {
+            lastDateKey = existingHeaders[existingHeaders.length - 1].dataset.dateKey;
+        }
+    }
+
+    for (const rec of recordings) {
+        if (showHeaders) {
+            const key = getDateKey(rec.created_at);
+            if (key !== lastDateKey) {
+                container.appendChild(createDateHeader(getDateLabel(rec.created_at)));
+                container.lastElementChild.dataset.dateKey = key;
+                lastDateKey = key;
+            }
+        }
+        container.appendChild(createVideoListItem(rec));
+    }
+}
+
+function scheduleAutoRefresh() {
     if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
-    const hasInProgress = recordings.some(r =>
-        r.insights_status === 'recording' || r.insights_status === 'pending' || r.insights_status === 'processing' || r.insights_status === 'indexing'
-    );
-    if (hasInProgress) {
-        refreshInterval = setInterval(loadHistoryList, 5000);
+    const inProgressIds = loadedRecordings
+        .filter(r => r.insights_status === 'recording' || r.insights_status === 'pending' || r.insights_status === 'processing' || r.insights_status === 'indexing')
+        .map(r => r.id);
+    if (inProgressIds.length > 0) {
+        refreshInterval = setInterval(() => refreshInProgressItems(inProgressIds), 5000);
+    }
+}
+
+async function refreshInProgressItems(ids) {
+    try {
+        const updated = await window.recorderAPI.getRecordingsByIds(ids);
+        if (!updated || updated.length === 0) return;
+
+        let needsReschedule = false;
+        for (const rec of updated) {
+            // Update cached data
+            const idx = loadedRecordings.findIndex(r => r.id === rec.id);
+            if (idx !== -1) loadedRecordings[idx] = rec;
+
+            // Update DOM element in place
+            const el = document.querySelector(`.video-item[data-id="${rec.id}"]`);
+            if (el) updateVideoListItem(el, rec);
+
+            // Update active player if this is the selected recording
+            if (rec.id === activeRecordingId) {
+                activeRecording = rec;
+                showPlayer(rec);
+                updatePlayerHeader(rec);
+            }
+
+            const still = rec.insights_status === 'recording' || rec.insights_status === 'pending' || rec.insights_status === 'processing' || rec.insights_status === 'indexing';
+            if (still) needsReschedule = true;
+        }
+
+        // Stop polling if nothing is in progress anymore
+        if (!needsReschedule && refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+        }
+    } catch (err) {
+        console.error('Error refreshing in-progress items:', err);
     }
 }
 
 function sortRecordings(recordings) {
-    if (currentSort === 'date-oldest') {
-        recordings.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    } else {
-        recordings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    switch (currentSort) {
+        case 'date-oldest':
+            recordings.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            break;
+        case 'duration-longest':
+            recordings.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+            break;
+        case 'duration-shortest':
+            recordings.sort((a, b) => (a.duration || 0) - (b.duration || 0));
+            break;
+        default:
+            recordings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
 }
 
@@ -209,32 +354,92 @@ function createVideoListItem(recording) {
     if (recording.id === activeRecordingId) div.classList.add('active');
 
     const name = getDisplayName(recording);
-    const timeStr = formatDuration(recording);
+    const timeStr = formatTime(recording);
+    const durationStr = formatDuration(recording.duration);
     const status = getStatusInfo(recording.insights_status);
 
-    // Use textContent for name to prevent XSS
     const titleSpan = document.createElement('span');
     titleSpan.className = 'video-item-title';
     titleSpan.textContent = name;
 
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'video-item-time';
-    timeSpan.textContent = timeStr;
+    const meta = document.createElement('div');
+    meta.className = 'video-item-meta';
+
+    if (timeStr) {
+        const timeChip = document.createElement('span');
+        timeChip.className = 'meta-chip';
+        timeChip.innerHTML = `<span class="material-symbols-rounded meta-icon">schedule</span>${timeStr}`;
+        meta.appendChild(timeChip);
+    }
+    if (durationStr) {
+        const durChip = document.createElement('span');
+        durChip.className = 'meta-chip';
+        durChip.innerHTML = `<span class="material-symbols-rounded meta-icon">timer</span>${durationStr}`;
+        meta.appendChild(durChip);
+    }
 
     const details = document.createElement('div');
     details.className = 'video-item-details';
     details.appendChild(titleSpan);
-    details.appendChild(timeSpan);
-
-    const badge = document.createElement('span');
-    badge.className = `status-badge ${status.cls}`;
-    badge.innerHTML = `<span class="status-icon"><span class="status-dot"></span></span>${status.label}`;
+    details.appendChild(meta);
 
     div.appendChild(details);
-    div.appendChild(badge);
 
-    div.addEventListener('click', () => selectRecording(recording));
+    // Only show badge for in-progress or error states
+    if (recording.insights_status !== 'ready') {
+        const badge = document.createElement('span');
+        badge.className = `status-badge ${status.cls}`;
+        badge.innerHTML = `<span class="status-icon"><span class="status-dot"></span></span>${status.label}`;
+        div.appendChild(badge);
+    }
+
+    div.addEventListener('click', () => {
+        const current = loadedRecordings.find(r => r.id === recording.id) || recording;
+        selectRecording(current);
+    });
     return div;
+}
+
+function updateVideoListItem(el, recording) {
+    const title = el.querySelector('.video-item-title');
+    if (title) title.textContent = getDisplayName(recording);
+
+    // Update meta (time + duration)
+    const meta = el.querySelector('.video-item-meta');
+    if (meta) {
+        meta.innerHTML = '';
+        const timeStr = formatTime(recording);
+        const durationStr = formatDuration(recording.duration);
+        if (timeStr) {
+            const timeChip = document.createElement('span');
+            timeChip.className = 'meta-chip';
+            timeChip.innerHTML = `<span class="material-symbols-rounded meta-icon">schedule</span>${timeStr}`;
+            meta.appendChild(timeChip);
+        }
+        if (durationStr) {
+            const durChip = document.createElement('span');
+            durChip.className = 'meta-chip';
+            durChip.innerHTML = `<span class="material-symbols-rounded meta-icon">timer</span>${durationStr}`;
+            meta.appendChild(durChip);
+        }
+    }
+
+    // Update or remove badge
+    const existingBadge = el.querySelector('.status-badge');
+    if (recording.insights_status === 'ready') {
+        if (existingBadge) existingBadge.remove();
+    } else {
+        const status = getStatusInfo(recording.insights_status);
+        if (existingBadge) {
+            existingBadge.className = `status-badge ${status.cls}`;
+            existingBadge.innerHTML = `<span class="status-icon"><span class="status-dot"></span></span>${status.label}`;
+        } else {
+            const badge = document.createElement('span');
+            badge.className = `status-badge ${status.cls}`;
+            badge.innerHTML = `<span class="status-icon"><span class="status-dot"></span></span>${status.label}`;
+            el.appendChild(badge);
+        }
+    }
 }
 
 // --- Selection ---

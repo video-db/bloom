@@ -3,7 +3,7 @@
 const { ipcMain, dialog, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { getRecordings: dbGetRecordings, updateRecording, findRecordingBySessionId, getRecordingById } = require('../db/database');
+const { getRecordings: dbGetRecordings, getRecordingsByIds: dbGetRecordingsByIds, updateRecording, findRecordingBySessionId, getRecordingById } = require('../db/database');
 const { getAppConfig } = require('../lib/config');
 const { findUserByToken } = require('../db/database');
 const { checkPendingRecordings } = require('../services/session.service');
@@ -13,24 +13,23 @@ const { checkPendingRecordings } = require('../services/session.service');
  * @param {Function} getVideodbService - returns the VideoDBService singleton
  */
 function registerHistoryHandlers(getVideodbService) {
-  ipcMain.handle('get-recordings', async () => {
+  ipcMain.handle('get-recordings', async (_event, offset = 0, search = null) => {
     try {
       const user = _getCurrentUser();
-      const recordings = dbGetRecordings(20, user ? user.id : null);
-      return recordings.map(r => ({
-        id: r.id,
-        name: r.name,
-        video_id: r.video_id,
-        collection_id: r.collection_id,
-        session_id: r.session_id,
-        stream_url: r.stream_url,
-        player_url: r.player_url,
-        created_at: r.created_at,
-        insights_status: r.insights_status,
-        insights: r.insights,
-      }));
+      const recordings = dbGetRecordings(20, user ? user.id : null, offset, search || null);
+      return recordings.map(_mapRecording);
     } catch (error) {
       console.error('Failed to get recordings:', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('get-recordings-by-ids', async (_event, ids) => {
+    try {
+      const recordings = dbGetRecordingsByIds(ids);
+      return recordings.map(_mapRecording);
+    } catch (error) {
+      console.error('Failed to get recordings by ids:', error);
       return [];
     }
   });
@@ -161,6 +160,22 @@ function registerHistoryHandlers(getVideodbService) {
       return { success: false, error: error.message };
     }
   });
+}
+
+function _mapRecording(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    video_id: r.video_id,
+    collection_id: r.collection_id,
+    session_id: r.session_id,
+    stream_url: r.stream_url,
+    player_url: r.player_url,
+    created_at: r.created_at,
+    insights_status: r.insights_status,
+    insights: r.insights,
+    duration: r.duration || null,
+  };
 }
 
 function _getCurrentUser() {

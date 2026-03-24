@@ -40,8 +40,8 @@
             --icon-filter-muted: brightness(0) invert(0.5);
             --spinner-border: rgba(255, 255, 255, 0.1);
             --spinner-top: rgba(255, 255, 255, 0.5);
-            --active-accent-border: rgba(255, 64, 0, 0.2);
-            --active-accent-bg: rgba(255, 64, 0, 0.06);
+            --active-accent-border: rgba(255, 255, 255, 0.1);
+            --active-accent-bg: rgba(255, 255, 255, 0.04);
         }
 
         [data-theme="light"] {
@@ -76,8 +76,8 @@
             --icon-filter-muted: brightness(0) invert(0.4);
             --spinner-border: rgba(0, 0, 0, 0.1);
             --spinner-top: rgba(0, 0, 0, 0.4);
-            --active-accent-border: rgba(255, 64, 0, 0.25);
-            --active-accent-bg: rgba(255, 64, 0, 0.06);
+            --active-accent-border: rgba(0, 0, 0, 0.1);
+            --active-accent-bg: rgba(0, 0, 0, 0.07);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -503,6 +503,40 @@
             gap: 4px;
         }
 
+        .date-header {
+            padding: 8px 4px 4px;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
+        .date-header:first-child {
+            padding-top: 4px;
+        }
+
+        .load-more-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 12px;
+            background: var(--bg-hover);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .load-more-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        .load-more-btn:active {
+            transform: scale(0.98);
+        }
+
         .video-item {
             display: flex;
             align-items: center;
@@ -520,7 +554,6 @@
 
         .video-item.active {
             background: var(--active-accent-bg);
-            border-color: var(--active-accent-border);
         }
 
         .video-item-details {
@@ -540,11 +573,25 @@
             line-height: 22px;
         }
 
-        .video-item-time {
-            font-size: 12px;
+        .video-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            line-height: 17px;
+        }
+
+        .meta-chip {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11.5px;
             font-weight: 400;
             color: var(--text-item-time);
-            line-height: 17px;
+        }
+
+        .meta-icon {
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
         /* ── Status badges ── */
@@ -1317,11 +1364,11 @@
                         <div class="sort-section">
                             <div class="sort-section-header">Duration</div>
                             <div class="sort-options">
-                                <button class="sort-option disabled" data-sort="duration-longest">
+                                <button class="sort-option" data-sort="duration-longest">
                                     <span class="sort-radio"></span>
                                     <span class="sort-option-label">Longest First</span>
                                 </button>
-                                <button class="sort-option disabled" data-sort="duration-shortest">
+                                <button class="sort-option" data-sort="duration-shortest">
                                     <span class="sort-radio"></span>
                                     <span class="sort-option-label">Shortest First</span>
                                 </button>

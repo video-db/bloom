@@ -35,3 +35,6 @@ auth_config.json
 # Runtime artifacts
 videodb-recorder.lock
 runtime.json
+
+# Publish script
+publish.sh

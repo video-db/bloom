@@ -60,7 +60,7 @@ Run this in your terminal to install Bloom:
 curl -fsSL https://artifacts.videodb.io/bloom/install | bash
 ```
 
-This will automatically detect your Mac architecture, download the right build, and install it to `/Applications`.
+This will automatically detect your platform and architecture, download the right build, and install it.
 
 <details>
 <summary>Manual install</summary>
@@ -68,15 +68,21 @@ This will automatically detect your Mac architecture, download the right build, 
 - **Apple Silicon (M1/M2/M3/M4)**: [bloom-2.2.0-arm64.dmg](https://artifacts.videodb.io/bloom/bloom-2.2.0-arm64.dmg)
 - **Apple Intel**: [bloom-2.2.0-x64.dmg](https://artifacts.videodb.io/bloom/bloom-2.2.0-x64.dmg)
 - **Windows**: [bloom-2.2.0-x64.exe](https://artifacts.videodb.io/bloom/bloom-2.2.0-x64.exe)
+- **Linux (x86_64)**: [bloom-2.2.0-x86_64.AppImage](https://artifacts.videodb.io/bloom/bloom-2.2.0-x86_64.AppImage)
 
+**macOS:**
 1. Mount the DMG and drag Bloom to your Applications folder
 2. Open Terminal and run `xattr -cr /Applications/Bloom.app`
 3. Launch the app from Applications or Spotlight
 
+**Linux:**
+1. Download the AppImage and run `chmod +x bloom-*.AppImage`
+2. Run `./bloom-*.AppImage`
+
 </details>
 
 <p>
-  <em>Supported on macOS and Windows (pre-built installer available for macOS). Linux support coming soon.</em>
+  <em>Supported on macOS, Windows, and Linux. Screen recording on Linux requires a future VideoDB SDK update; library, playback, sharing, and chat work now.</em>
 </p>
 
 ---

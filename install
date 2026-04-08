@@ -5,9 +5,9 @@ set -e
 # Usage: curl -fsSL https://artifacts.videodb.io/bloom/install | bash
 
 APP_NAME="Bloom"
-APP_DIR="/Applications/${APP_NAME}.app"
 BASE_URL="https://artifacts.videodb.io/bloom"
 VERSION="2.2.0"
+OS="$(uname -s)"
 
 # Colors
 RED='\033[0;31m'
@@ -24,8 +24,8 @@ error()   { printf "${RED}${BOLD}error:${NC} %s\n" "$1" >&2; exit 1; }
 
 # --- Pre-flight checks ---
 
-if [ "$(uname)" != "Darwin" ]; then
-  error "This installer only supports macOS."
+if [ "$OS" != "Darwin" ] && [ "$OS" != "Linux" ]; then
+  error "This installer supports macOS and Linux. For Windows, download the .exe from GitHub."
 fi
 
 if ! command -v curl &>/dev/null; then
@@ -35,94 +35,135 @@ fi
 # --- Detect architecture ---
 
 ARCH="$(uname -m)"
-case "$ARCH" in
-  arm64) DMG_FILE="bloom-${VERSION}-arm64.dmg" ;;
-  x86_64) DMG_FILE="bloom-${VERSION}-x64.dmg" ;;
-  *) error "Unsupported architecture: $ARCH" ;;
-esac
-
-DMG_URL="${BASE_URL}/${DMG_FILE}"
 
 echo ""
 printf "${BOLD}  Bloom Installer${NC}\n"
 echo "  ────────────────"
 echo ""
-info "Detected architecture: $ARCH"
-info "Downloading ${DMG_FILE}..."
+info "Detected platform: $OS $ARCH"
 
-# --- Download ---
+# =============================================================================
+# macOS install
+# =============================================================================
+if [ "$OS" = "Darwin" ]; then
 
-TMP_DIR="$(mktemp -d)"
-TMP_DMG="${TMP_DIR}/${DMG_FILE}"
+  APP_DIR="/Applications/${APP_NAME}.app"
 
-cleanup() {
-  if [ -d "$TMP_DIR" ]; then
-    # Detach any mounted volume quietly
-    if [ -n "$MOUNT_POINT" ] && [ -d "$MOUNT_POINT" ]; then
-      hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true
+  case "$ARCH" in
+    arm64)  DMG_FILE="bloom-${VERSION}-arm64.dmg" ;;
+    x86_64) DMG_FILE="bloom-${VERSION}-x64.dmg" ;;
+    *) error "Unsupported architecture: $ARCH" ;;
+  esac
+
+  DMG_URL="${BASE_URL}/${DMG_FILE}"
+  info "Downloading ${DMG_FILE}..."
+
+  TMP_DIR="$(mktemp -d)"
+  TMP_DMG="${TMP_DIR}/${DMG_FILE}"
+
+  cleanup() {
+    if [ -d "$TMP_DIR" ]; then
+      if [ -n "$MOUNT_POINT" ] && [ -d "$MOUNT_POINT" ]; then
+        hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true
+      fi
+      rm -rf "$TMP_DIR"
     fi
-    rm -rf "$TMP_DIR"
+  }
+  trap cleanup EXIT
+
+  curl -fSL --progress-bar "$DMG_URL" -o "$TMP_DMG" || error "Failed to download $DMG_URL"
+  success "Download complete."
+
+  info "Mounting disk image..."
+  MOUNT_OUTPUT="$(hdiutil attach "$TMP_DMG" -nobrowse -quiet 2>&1)"
+  MOUNT_POINT="$(echo "$MOUNT_OUTPUT" | grep -o '/Volumes/.*' | head -1)"
+
+  if [ -z "$MOUNT_POINT" ]; then
+    MOUNT_POINT="$(find /Volumes -maxdepth 1 -name "${APP_NAME}*" -type d 2>/dev/null | head -1)"
   fi
-}
-trap cleanup EXIT
 
-curl -fSL --progress-bar "$DMG_URL" -o "$TMP_DMG" || error "Failed to download $DMG_URL"
+  if [ -z "$MOUNT_POINT" ] || [ ! -d "$MOUNT_POINT" ]; then
+    error "Failed to mount disk image."
+  fi
 
-success "Download complete."
+  SOURCE_APP="${MOUNT_POINT}/${APP_NAME}.app"
+  if [ ! -d "$SOURCE_APP" ]; then
+    SOURCE_APP="$(find "$MOUNT_POINT" -maxdepth 1 -name "*.app" -type d | head -1)"
+  fi
 
-# --- Mount DMG ---
+  if [ -z "$SOURCE_APP" ] || [ ! -d "$SOURCE_APP" ]; then
+    error "Could not find ${APP_NAME}.app in the disk image."
+  fi
 
-info "Mounting disk image..."
-MOUNT_OUTPUT="$(hdiutil attach "$TMP_DMG" -nobrowse -quiet 2>&1)"
-MOUNT_POINT="$(echo "$MOUNT_OUTPUT" | grep -o '/Volumes/.*' | head -1)"
+  if [ -d "$APP_DIR" ]; then
+    warn "Existing installation found. Replacing..."
+    rm -rf "$APP_DIR"
+  fi
 
-if [ -z "$MOUNT_POINT" ]; then
-  # Fallback: find mount point by listing volumes
-  MOUNT_POINT="$(find /Volumes -maxdepth 1 -name "${APP_NAME}*" -type d 2>/dev/null | head -1)"
+  info "Installing to /Applications..."
+  cp -R "$SOURCE_APP" "$APP_DIR" || error "Failed to copy app to /Applications. You may need to run with sudo."
+
+  info "Removing quarantine attribute..."
+  xattr -cr "$APP_DIR" 2>/dev/null || true
+
+  info "Cleaning up..."
+  hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true
+  MOUNT_POINT=""
+
+  echo ""
+  success "Bloom has been installed to /Applications!"
+  echo ""
+  echo "  Next steps:"
+  echo "    1. Open Bloom from Applications or Spotlight"
+  echo "    2. Grant Microphone and Screen Recording permissions when prompted"
+  echo "    3. Enter your VideoDB API key (get one at https://console.videodb.io)"
+  echo ""
+
+# =============================================================================
+# Linux install
+# =============================================================================
+elif [ "$OS" = "Linux" ]; then
+
+  case "$ARCH" in
+    x86_64|amd64) APPIMAGE_FILE="bloom-${VERSION}-x86_64.AppImage" ;;
+    aarch64|arm64) APPIMAGE_FILE="bloom-${VERSION}-aarch64.AppImage" ;;
+    *) error "Unsupported architecture: $ARCH" ;;
+  esac
+
+  APPIMAGE_URL="${BASE_URL}/${APPIMAGE_FILE}"
+  INSTALL_DIR="${HOME}/.local/bin"
+  INSTALL_PATH="${INSTALL_DIR}/bloom"
+
+  info "Downloading ${APPIMAGE_FILE}..."
+
+  TMP_DIR="$(mktemp -d)"
+  TMP_FILE="${TMP_DIR}/${APPIMAGE_FILE}"
+  cleanup() { rm -rf "$TMP_DIR"; }
+  trap cleanup EXIT
+
+  curl -fSL --progress-bar "$APPIMAGE_URL" -o "$TMP_FILE" || error "Failed to download $APPIMAGE_URL"
+  success "Download complete."
+
+  mkdir -p "$INSTALL_DIR"
+  mv "$TMP_FILE" "$INSTALL_PATH"
+  chmod +x "$INSTALL_PATH"
+
+  echo ""
+  success "Bloom has been installed to ${INSTALL_PATH}!"
+  echo ""
+
+  if ! echo "$PATH" | tr ':' '\n' | grep -qx "$INSTALL_DIR"; then
+    warn "${INSTALL_DIR} is not in your PATH."
+    echo "  Add it with: export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo ""
+  fi
+
+  echo "  Next steps:"
+  echo "    1. Run: bloom"
+  echo "    2. Enter your VideoDB API key (get one at https://console.videodb.io)"
+  echo ""
+  warn "Screen recording requires the VideoDB capture SDK to add Linux support."
+  echo "  Library, playback, sharing, and chat work now."
+  echo ""
+
 fi
-
-if [ -z "$MOUNT_POINT" ] || [ ! -d "$MOUNT_POINT" ]; then
-  error "Failed to mount disk image."
-fi
-
-# --- Install ---
-
-SOURCE_APP="${MOUNT_POINT}/${APP_NAME}.app"
-if [ ! -d "$SOURCE_APP" ]; then
-  # Try to find the .app in the volume
-  SOURCE_APP="$(find "$MOUNT_POINT" -maxdepth 1 -name "*.app" -type d | head -1)"
-fi
-
-if [ -z "$SOURCE_APP" ] || [ ! -d "$SOURCE_APP" ]; then
-  error "Could not find ${APP_NAME}.app in the disk image."
-fi
-
-if [ -d "$APP_DIR" ]; then
-  warn "Existing installation found. Replacing..."
-  rm -rf "$APP_DIR"
-fi
-
-info "Installing to /Applications..."
-cp -R "$SOURCE_APP" "$APP_DIR" || error "Failed to copy app to /Applications. You may need to run with sudo."
-
-# --- Remove quarantine ---
-
-info "Removing quarantine attribute..."
-xattr -cr "$APP_DIR" 2>/dev/null || true
-
-# --- Cleanup ---
-
-info "Cleaning up..."
-hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true
-MOUNT_POINT=""
-
-# --- Done ---
-
-echo ""
-success "Bloom has been installed to /Applications!"
-echo ""
-echo "  Next steps:"
-echo "    1. Open Bloom from Applications or Spotlight"
-echo "    2. Grant Microphone and Screen Recording permissions when prompted"
-echo "    3. Enter your VideoDB API key (get one at https://console.videodb.io)"
-echo ""

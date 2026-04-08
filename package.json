@@ -70,6 +70,12 @@
       "oneClick": true,
       "perMachine": false
     },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "build/icon.icns",
+      "category": "AudioVideo",
+      "artifactName": "bloom-${version}-${arch}.${ext}"
+    },
     "afterPack": "./build/afterPack.js"
   },
   "dependencies": {

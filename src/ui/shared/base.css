@@ -20,7 +20,7 @@ body {
   height: 100%;
 }
 body {
-  font: 13.5px/1.5 var(--font);
+  font: var(--t-body)/1.5 var(--font);
   letter-spacing: -0.006em;
   color: var(--ink);
   background: var(--page);
@@ -59,7 +59,7 @@ strong {
   height: var(--control-height);
   padding: 0 12px;
   font-weight: 500;
-  font-size: 13px;
+  font-size: var(--t-body);
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
@@ -88,7 +88,7 @@ strong {
 .btn.sm {
   height: 28px;
   padding: 0 9px;
-  font-size: 12px;
+  font-size: var(--t-label);
   border-radius: 7px;
 }
 .btn[disabled] {
@@ -102,7 +102,7 @@ strong {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 2px 9px;
-  font-size: 12px;
+  font-size: var(--t-label);
   color: var(--mid);
   background: var(--paper);
   white-space: nowrap;
@@ -120,7 +120,7 @@ strong {
   font-weight: 500;
 }
 .ts {
-  font: 500 11px/1 var(--mono);
+  font: 500 var(--t-caption)/1 var(--mono);
   color: var(--ev);
   background: var(--evbg);
   border-radius: 5px;
@@ -163,7 +163,7 @@ strong {
   background: transparent;
   border-radius: 6px;
   padding: 4px 11px;
-  font-size: 12.5px;
+  font-size: var(--t-label);
   font-weight: 500;
   color: var(--mid);
 }
@@ -177,15 +177,15 @@ strong {
   border-radius: 10px;
   padding: 9px 11px;
   color: var(--mid);
-  font-size: 12.5px;
+  font-size: var(--t-label);
 }
 .label {
-  font-size: 12px;
+  font-size: var(--t-label);
   font-weight: 500;
   color: var(--soft);
 }
 kbd {
-  font: 500 10.5px/1 var(--mono);
+  font: 500 var(--t-caption)/1 var(--mono);
   border: 1px solid var(--line);
   border-radius: 5px;
   padding: 2px 5px;

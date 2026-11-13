@@ -6,13 +6,13 @@
   margin: auto;
 }
 .set h1 {
-  font-size: 20px;
+  font-size: var(--t-page);
   font-weight: 600;
   letter-spacing: -0.025em;
   margin: 0 0 4px;
 }
 .set h2 {
-  font-size: 12px;
+  font-size: var(--t-label);
   font-weight: 500;
   color: var(--soft);
   margin: 22px 0 8px;
@@ -35,7 +35,7 @@
 .srow small {
   display: block;
   color: var(--soft);
-  font-size: 12px;
+  font-size: var(--t-label);
 }
 .tgl {
   width: 36px;
@@ -79,7 +79,7 @@
 }
 /* ---- settings ---- */
 .set-note {
-  font-size: 12.5px;
+  font-size: var(--t-label);
 }
 .set-actions {
   display: inline-flex;

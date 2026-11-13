@@ -44,7 +44,8 @@ src/
     actions.js        every click, form and key, turned into an engine command or a view change
     shared/           tokens, base styles, DOM helpers, icons, the Bloom mark
     panel/            the tray panel: sources and their choosers, each recording state
-    workspace/        the main window: recording browser, transcript, player, dialogs
+    workspace/        the main window: title bar, sidebar of places (places.js), and one
+                      view and stylesheet per page: home, recordings, recording
     settings/         the Settings view
     onboarding/       first run: Connect, Permissions, Ready
   assets/             tray icons, fonts, the mark

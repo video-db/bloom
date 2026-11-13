@@ -127,7 +127,7 @@ const steps = [
       <div class="row2"><button class="btn sm" data-ui="open-main" data-view="detail" data-id="${state.result.id}" data-focus="review">Review recording</button><button class="btn sm" data-ui="open-main" data-view="editor" data-id="${state.result.id}" data-focus="open-editor" ${state.result.stage < 2 ? 'disabled' : ''}>Open in editor</button></div></div>`
         : ''
     }
-    <div class="trayhint"><span style="font-size:22px">${mark('')}</span><span>Click the flower in the menu bar, or press <b>⇧⌘R</b> anywhere, to record.</span></div>
+    <div class="trayhint"><span style="font-size:22px">${mark('')}</span><span>Click the Bloom icon in the menu bar, or press <b>⇧⌘R</b> anywhere, to record.</span></div>
     <label class="nodrag" style="display:flex;gap:8px;align-items:center;justify-content:center;font-size:12.5px"><input type="checkbox" id="login" data-focus="login" ${state?.prefs.openAtLogin ? 'checked' : ''}> Open Bloom when I log in (saved choice; preview only)</label>
     ${saveError()}
     <div class="foot nodrag"><button class="btn pri" data-ui="onboarding-done" data-focus="done">Done</button></div>`,

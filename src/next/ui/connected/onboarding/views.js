@@ -263,7 +263,7 @@ export function ready(s) {
           ><span class="setup-menubar-mark">${logo}</span><span>14:02</span>
         </div>
         <p class="setup-pointer" aria-hidden="true">
-          ${icons.up} Click the flower to record
+          ${icons.up} Click the Bloom icon to record
         </p>
         <div class="setup-rows">
           <div class="setup-line">

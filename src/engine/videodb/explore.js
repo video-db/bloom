@@ -53,26 +53,20 @@ function createExplore({ account, read }) {
         throw new ServiceError('invalid-input', 'Type what to look for.');
       const scope = account();
       if (!scope.collection) return [];
-      let result;
-      try {
-        // The newer search needs indexes Bloom does not create; this one reads the spoken index.
-        result = await read(scope, () =>
-          scope.collection.legacySearch(query.trim()),
-        );
-      } catch (error) {
-        // VideoDB reports "nothing found" as an error; it is an empty answer.
-        if (/no results?|not found|no index/i.test(String(error?.message)))
-          return [];
-        throw error;
-      }
-      const shots = Array.isArray(result?.shots) ? result.shots : [];
+      const result = await read(scope, () =>
+        scope.collection.legacySearch(query.trim()),
+      );
+      if (!Array.isArray(result?.shots))
+        throw unreadable('an unreadable search result');
+      const shots = result.shots;
       return shots
         .filter(
           (s) =>
             typeof s?.videoId === 'string' &&
             Number.isFinite(s.start) &&
             Number.isFinite(s.end) &&
-            s.start >= 0,
+            s.start >= 0 &&
+            s.end >= s.start,
         )
         .map((s) => ({
           videoId: s.videoId,

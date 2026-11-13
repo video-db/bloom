@@ -59,6 +59,7 @@ function createExploreCommands(ctx, service) {
   }
   const browsing = (id) => ctx.get().browsing?.id === id;
   const changing = new Set();
+  let searchVersion = 0;
   async function change(action, id, text) {
     const scope = ctx.scope();
     const target = ctx.get().collections.find((c) => c.id === id);
@@ -140,12 +141,15 @@ function createExploreCommands(ctx, service) {
       ctx.set({ browsing: null });
     },
     async search({ text }) {
+      const version = ++searchVersion;
+      const scope = ctx.scope();
+      const current = () => version === searchVersion && scope === ctx.scope();
       const query = text.trim();
       if (!query) return ctx.set({ search: noSearch() });
       ctx.set({ search: { query, status: 'searching', results: [] } });
       try {
         const found = await service.search(query);
-        if (ctx.get().search.query !== query) return;
+        if (!current()) return;
         const records = ctx.get().recordings;
         ctx.set({
           search: {
@@ -161,8 +165,8 @@ function createExploreCommands(ctx, service) {
           },
         });
       } catch (error) {
-        if (ctx.get().search.query === query)
-          ctx.set({ search: { query, status: 'error', results: [] } });
+        if (!current()) return;
+        ctx.set({ search: { query, status: 'error', results: [] } });
         throw error;
       }
     },

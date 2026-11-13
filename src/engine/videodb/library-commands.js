@@ -37,31 +37,36 @@ function createLibraryCommands(ctx, service) {
     const scope = ctx.scope();
     const record = ctx.find(id);
     if (!record?.videoId) return;
-    const playback = await service.getPlayback(
-      record.videoId,
-      record.collectionId,
-    );
+    // Playback failure must not hide a readable transcript, or vice versa.
+    const [playback, transcript] = await Promise.allSettled([
+      service.getPlayback(record.videoId, record.collectionId),
+      service.transcript(record.videoId, record.collectionId),
+    ]);
     if (scope !== ctx.scope()) return;
-    ctx.update(id, {
-      streamUrl: playback.streamUrl,
-      playerUrl: playback.playerUrl,
-      status: playback.streamUrl ? 'ready' : 'processing',
-    });
-    try {
-      const transcript = await service.transcript(
-        record.videoId,
-        record.collectionId,
-      );
-      if (scope === ctx.scope())
-        ctx.update(id, {
-          transcript: transcript.text,
-          transcriptStatus: transcript.status,
-          paragraphs: paragraphs(transcript.words),
-        });
-    } catch (error) {
-      if (scope === ctx.scope()) ctx.update(id, { transcriptStatus: 'error' });
-    }
+    if (playback.status === 'fulfilled')
+      ctx.update(id, {
+        streamUrl: playback.value.streamUrl,
+        playerUrl: playback.value.playerUrl,
+        thumbnailUrl: playback.value.thumbnailUrl,
+        status: playback.value.streamUrl ? 'ready' : 'processing',
+      });
+    if (transcript.status === 'fulfilled' && transcript.value.text.trim())
+      ctx.update(id, {
+        transcript: transcript.value.text,
+        transcriptStatus: transcript.value.status,
+        paragraphs: paragraphs(transcript.value.words),
+      });
+    else
+      ctx.update(id, {
+        transcriptStatus: record.transcript
+          ? 'ready'
+          : transcript.status === 'fulfilled'
+            ? transcript.value.status
+            : 'error',
+      });
+    if (playback.status === 'rejected') throw playback.reason;
   }
+
   const commands = {
     refresh,
     openRecording: ({ id }) => open(id),
@@ -99,9 +104,26 @@ function createLibraryCommands(ctx, service) {
     async requestTranscript({ id }) {
       const record = ctx.find(id);
       if (!record?.videoId || record.readOnly) return;
+      if (record.transcriptStatus === 'processing') return;
+      const scope = ctx.scope();
       ctx.update(id, { transcriptStatus: 'processing' });
-      await service.requestTranscript(record.videoId);
-      await open(id);
+      try {
+        await service.requestTranscript(record.videoId);
+      } catch (error) {
+        if (scope === ctx.scope())
+          ctx.update(id, {
+            transcriptStatus: record.transcript
+              ? 'ready'
+              : error.uncertain
+                ? 'error'
+                : 'not-requested',
+          });
+        throw error;
+      }
+      if (scope === ctx.scope()) {
+        ctx.update(id, { transcriptRequested: true });
+        await open(id);
+      }
     },
   };
   return { commands, refresh, open };

@@ -107,12 +107,12 @@ function knowledge(r, signedIn) {
       </div>
     </section>`;
   const add =
-    !r.transcript && !['processing', 'error'].includes(r.transcriptStatus);
+    !r.transcript && !r.transcriptRequested && !['processing', 'error'].includes(r.transcriptStatus);
   const said = r.transcript
     ? '<span class="chip ok">Ready</span>'
     : r.transcriptStatus === 'processing'
       ? '<span class="chip">Preparing…</span>'
-      : r.transcriptStatus === 'error'
+      : r.transcriptStatus === 'error' || r.transcriptRequested
         ? `<button class="btn sm" data-command="openRecording" data-id="${esc(r.id)}" ${unavailable ? 'disabled' : ''}>Try again</button>`
         : `<button class="btn sm" data-command="requestTranscript" data-id="${esc(r.id)}" ${unavailable ? 'disabled' : ''}>Add</button>`;
   return /* HTML */ `<section class="card knows">

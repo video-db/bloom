@@ -16,6 +16,7 @@ const fields = [
   'marks',
   'transcript',
   'transcriptStatus',
+  'transcriptRequested',
   'paragraphs',
   'summary',
   'requestedTitle',

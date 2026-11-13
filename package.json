@@ -1,6 +1,6 @@
 {
   "name": "bloom",
-  "version": "2.3.0",
+  "version": "2.3.3",
   "description": "Bloom — Screen recorder powered by VideoDB",
   "main": "src/main/index.js",
   "scripts": {
@@ -50,7 +50,7 @@
           ]
         }
       ],
-      "artifactName": "bloom-${version}-${arch}.${ext}"
+      "artifactName": "bloom-${version}-mac-${arch}.${ext}"
     },
     "dmg": {
       "title": "Bloom ${version}",

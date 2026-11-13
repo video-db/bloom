@@ -40,17 +40,19 @@ For a change that must not alter any screen, set `BLOOM_STYLE_SNAPSHOT=1` and a 
 
 ## Build and install locally
 
-1. Confirm the branch and `package.json` version. This documentation starts from the v2.3.0 release source; main can have a different version.
+1. Confirm the branch and `package.json` version. The current internal build is 2.3.3; main can have a different version.
 2. Install dependencies with `npm ci`.
-3. Build an unpacked app with `npm run pack`, or DMGs with `npm run dist`. The macOS installer configuration builds arm64 and x64. Output is under `dist/`, with DMGs named `bloom-<version>-<arch>.dmg`.
-4. Select the artifact matching the Mac architecture (`uname -m`: arm64 for Apple Silicon, x86_64 for Intel).
+3. Build an unpacked app with `npm run pack`, or DMGs with `npm run dist`. The macOS installer configuration builds arm64 and x64. Output is under `dist/`, with DMGs named `bloom-<version>-mac-<arch>.dmg`.
+4. Select the artifact matching the Mac architecture (`uname -m`: arm64 for Apple Silicon, x86_64 for Intel; x64 and AMD64 mean x86_64).
 5. Quit Bloom through its tray menu. Move the existing `/Applications/Bloom.app` to Trash, then mount the local DMG and drag Bloom to Applications. Do not copy it over a running app.
 6. If macOS blocks the locally built app, run `xattr -cr /Applications/Bloom.app`, then launch it. Local builds use ad-hoc signing and are not notarised releases.
 7. Complete setup and permissions, then perform the checks below.
 
 Data from releases up to 2.3.0 is not migrated; sign in again after installing. No data deletion is needed to replace the application bundle.
 
-For an Apple Silicon internal-test installer only, run `npm run dist -- --mac dmg --arm64 --publish never`. Packaged builds select the production API and require a production account key; a development key will not work. This command creates a local installer and publishes nothing. The complete app bundle and its nested code are ad-hoc signed; it is not Developer ID signed or notarised. The build fails if the signature does not bind `com.videodb.bloom`, its Info.plist and resources. Verify an unpacked build with `node build/verify-mac-signature.js dist/mac-arm64/Bloom.app`. Ad-hoc signing does not guarantee permission continuity across rebuilt versions. Record the source commit and `shasum -a 256 dist/bloom-<version>-arm64.dmg` with each test handoff, because local checkpoints can share a package version.
+The packaging hook verifies the Electron executable, recorder and recorder library against each target architecture. Cross-building downloads the target recorder from the SDK’s pinned artifact URL, verifies its SHA-256 and replaces only the packaged copy before signing. ARM64 and x64 DMGs are separate artifacts; renaming a file does not change its version or architecture.
+
+For an Apple Silicon internal-test installer only, run `npm run dist -- --mac dmg --arm64 --publish never`. Packaged builds select the production API and require a production account key; a development key will not work. This command creates a local installer and publishes nothing. The complete app bundle and its nested code are ad-hoc signed; it is not Developer ID signed or notarised. The build fails if the signature does not bind `com.videodb.bloom`, its Info.plist and resources. Verify an unpacked build with `node build/verify-mac-signature.js dist/mac-arm64/Bloom.app`. Ad-hoc signing does not guarantee permission continuity across rebuilt versions. Record the source commit and `shasum -a 256 dist/bloom-<version>-mac-arm64.dmg` with each test handoff, because local checkpoints can share a package version.
 
 To retest macOS permissions, quit Bloom and run `tccutil reset ScreenCapture com.videodb.bloom` and `tccutil reset Microphone com.videodb.bloom`. This leaves credentials and recordings intact. Older helper-only-signed builds may also have generic executable entries in System Settings; remove those entries there before testing the corrected installer. Do not reset permissions for every app. Screen/system audio uses one Bloom entry; microphone has its own macOS permission.
 

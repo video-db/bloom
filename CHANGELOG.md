@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [2.3.3] - Unreleased
 
 ### Rebuilt app
 - Bloom is rebuilt: a menu-bar recorder with one tray panel for every recording state, a three-step setup, and a main window with a recording browser, transcript and player. The previous app's code is removed.
@@ -10,6 +10,11 @@
 - The main window is an app with a sidebar: Home, Recordings and Search, the account's VideoDB collections (others open read-only), and the credit balance. One recording opens alone, with its transcript as paragraphs with times.
 - A recording opens on its Summary: a few sentences, key points and action items, each with the time it comes from. New recordings are transcribed once uploaded (a setting, on by default).
 - `npm start` runs the app; `npm test` runs the automated tests.
+
+### Internal testing fixes
+- Restore setup when reopening Bloom, refresh displays after permission changes, and retain the Dock icon.
+- Sign the complete macOS app bundle as Bloom and verify its identity before packaging.
+- Package separate Apple Silicon and Intel installers with matching native capture binaries.
 
 ### Removed
 - The floating control bar, camera bubble, separate permission and display-picker windows, and the local SQLite database with its `sql.js`, `dotenv` and older `videodb` SDK dependencies.

@@ -3,6 +3,11 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { signAsync } = require('@electron/osx-sign');
 const { verifyMacSignature } = require('./verify-mac-signature');
+const { Arch } = require('electron-builder');
+const {
+  prepareMacRecorder,
+  hasArchitecture,
+} = require('./prepare-mac-recorder');
 
 /**
  * electron-builder afterPack hook.
@@ -37,6 +42,15 @@ module.exports = async function afterPack(context) {
     'bin',
     'VideoDBCapture.app',
   );
+  const arch = Arch[context.arch];
+  await prepareMacRecorder(videodbAppBundle, arch);
+  if (
+    !hasArchitecture(
+      path.join(appOutDir, `${appName}.app`, 'Contents', 'MacOS', appName),
+      arch,
+    )
+  )
+    throw new Error(`Packaged Electron executable does not support ${arch}`);
   const macosDir = path.join(videodbAppBundle, 'Contents', 'MacOS');
   const infoPlistPath = path.join(videodbAppBundle, 'Contents', 'Info.plist');
 

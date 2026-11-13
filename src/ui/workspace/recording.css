@@ -1,0 +1,180 @@
+/* One recording in focus: a reading column, with the player, what Bloom knows and the marks
+   beside it. */
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-bottom: -6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--t-label);
+  color: var(--soft);
+}
+.crumb:hover {
+  color: var(--ink);
+}
+.crumb .ic {
+  width: 14px;
+  height: 14px;
+}
+.record-menu {
+  position: relative;
+  flex: none;
+}
+.record-menu summary {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  list-style: none;
+  cursor: default;
+}
+.record-menu summary::-webkit-details-marker {
+  display: none;
+}
+.record-menu summary:hover {
+  background: var(--fill);
+}
+.record-menu summary:focus-visible {
+  outline: 2px solid var(--ev);
+}
+.record-menu > div {
+  position: absolute;
+  right: 0;
+  top: 38px;
+  z-index: 10;
+  width: 170px;
+  padding: 5px;
+  border: 1px solid var(--line2);
+  border-radius: 9px;
+  background: var(--paper);
+  box-shadow: 0 8px 24px #0002;
+}
+.record-menu button {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  font-size: var(--t-label);
+  text-align: left;
+}
+.record-menu button:hover {
+  background: var(--fill);
+}
+.record-menu button:disabled {
+  opacity: 0.45;
+}
+.destructive {
+  color: var(--bad);
+}
+.recording-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  align-items: start;
+  gap: 24px;
+}
+.recording-side {
+  position: sticky;
+  top: 22px;
+  display: grid;
+  gap: 12px;
+}
+@media (max-width: 980px) {
+  .recording-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .recording-side {
+    position: static;
+    order: -1;
+  }
+}
+
+/* ---- reading column ---- */
+.reading .label {
+  margin: 0 0 8px;
+}
+#transcript {
+  max-width: 68ch;
+  margin: 0;
+  font-size: var(--t-read);
+  line-height: 1.65;
+  color: var(--ink2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  cursor: text;
+}
+#transcript::selection {
+  background: var(--evbg);
+}
+.reading-empty {
+  margin: 0;
+  color: var(--mid);
+}
+
+/* ---- beside it ---- */
+.player-card {
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--paper);
+}
+.player-card video {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  background: #000;
+}
+.player-card .caption {
+  margin: 0;
+  padding: 0 12px;
+}
+.player-card .caption:not(:empty) {
+  padding: 8px 12px;
+}
+.player-empty {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  background: var(--fill);
+  color: var(--soft);
+  font-size: var(--t-label);
+}
+.knows {
+  display: grid;
+  gap: 7px;
+  padding: 10px 13px;
+}
+.knows .label,
+.knows .caption {
+  margin: 0;
+}
+.knows-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 26px;
+}
+.mark-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 13px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  text-align: left;
+}
+.card-head + .mark-row {
+  border-top: 0;
+}
+.mark-row:hover {
+  background: var(--sub);
+}

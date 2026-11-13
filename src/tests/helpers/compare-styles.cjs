@@ -10,7 +10,10 @@ if (!before || !after) {
 }
 const names = (dir) =>
   fs.readdirSync(dir).filter((name) => name.endsWith('.styles.json')).sort();
-const load = (dir, name) => JSON.parse(fs.readFileSync(path.join(dir, name)));
+const load = (dir, name) => {
+  const data = JSON.parse(fs.readFileSync(path.join(dir, name)));
+  return Array.isArray(data) ? { scale: null, elements: data } : data;
+};
 
 let differences = 0;
 const report = (line) => {
@@ -26,8 +29,16 @@ for (const name of shots) {
     report(`${name}: only in ${before}`);
     continue;
   }
-  const a = load(before, name);
-  const b = load(after, name);
+  const one = load(before, name);
+  const two = load(after, name);
+  if (one.scale !== two.scale) {
+    report(
+      `${name}: taken on displays of different pixel scale (${one.scale} and ${two.scale}); retake both on the same display`,
+    );
+    continue;
+  }
+  const a = one.elements;
+  const b = two.elements;
   if (a.length !== b.length)
     report(`${name}: ${a.length} elements before, ${b.length} after`);
   for (let i = 0; i < Math.min(a.length, b.length); i++) {

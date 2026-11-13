@@ -16,7 +16,7 @@ async function openFirstWindow({ engine, prefs, windows, flag }) {
     windows.openOnboarding();
   }
   if (flag('open-preferences')) windows.openMain('settings');
-  else if (flag('open-main')) windows.openMain('library');
+  else if (flag('open-main')) windows.openMain('home');
 }
 
 module.exports = { openFirstWindow };

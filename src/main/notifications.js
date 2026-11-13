@@ -65,7 +65,7 @@ function createNotifications({ engine, prefs, windows }) {
 
   function openResult(id) {
     if (engine.getState().recordings.some((r) => r.id === id))
-      windows.openMain(`editor/${id}`);
+      windows.openMain(`recording/${id}`);
   }
 
   function react(state) {

@@ -86,7 +86,6 @@ function recent(s, needsSetup) {
           /* HTML */ `<button
             class="rc"
             data-ui="open-main"
-            data-view="detail"
             data-id="${esc(r.id)}"
           >
             <span class="shot"></span
@@ -114,7 +113,7 @@ export function panel(s) {
       ${stateHeader(s) || `<span class="brandname">${logo} Bloom</span>`}<button
         class="panel-open"
         data-ui="open-main"
-        data-view="library"
+        data-view="home"
         aria-label="Open Bloom"
         title="Open Bloom"
         ${s.account.status !== 'signed-in' ? 'disabled' : ''}

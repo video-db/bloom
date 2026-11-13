@@ -11,9 +11,11 @@ const surface =
 document.body.className = surface;
 let state = null,
   shape = '',
-  view = location.hash.slice(1) || 'library',
+  view = location.hash.slice(1) || 'home', // 'home' | 'recordings' | 'recording/<id>' | 'settings'
+  previous = 'home', // where Settings goes back to
+  drawn = '', // the view the page was last drawn for
   activeId = null,
-  list = { query: '', filter: 'all', order: 'newest' }; // how the main window browses
+  browse = { filter: 'all', order: 'newest' }; // how Recordings is being looked at
 // Onboarding runs its own flow; the panel and workspace share the renderer below.
 const firstRun = surface === 'onboarding' ? createOnboarding(root) : null;
 
@@ -24,7 +26,7 @@ function render(force = false) {
     elapsed: 0,
     view,
     activeId,
-    list,
+    browse,
   });
   if (force || next !== shape) {
     const focused = root.contains(document.activeElement)
@@ -37,11 +39,12 @@ function render(force = false) {
         ? [focused.selectionStart, focused.selectionEnd]
         : null;
     const note = root.querySelector('input[name="note"]')?.value;
+    // A redraw of the same page keeps its scroll position.
+    const scrolled =
+      drawn === view ? root.querySelector('.view')?.scrollTop : 0;
     releasePlayer();
     root.innerHTML =
-      surface === 'panel'
-        ? panel(state)
-        : workspace(state, view, activeId, list);
+      surface === 'panel' ? panel(state) : workspace(state, route(), browse);
     if (note !== undefined && root.querySelector('input[name="note"]'))
       root.querySelector('input[name="note"]').value = note;
     if (focusKey) {
@@ -54,7 +57,10 @@ function render(force = false) {
         target.setSelectionRange(...range);
     }
     shape = next;
-    mountPlayer(state.recordings.find((r) => r.id === activeId));
+    drawn = view;
+    if (scrolled) root.querySelector('.view')?.scrollTo(0, scrolled);
+    if (route().place === 'recording')
+      mountPlayer(state.recordings.find((r) => r.id === activeId));
     if (surface === 'panel') {
       const header = root.querySelector('.ph'),
         body = root.querySelector('.pb'),
@@ -74,7 +80,14 @@ function render(force = false) {
     node.textContent = clock(state.elapsed);
 }
 
+const route = () => {
+  const [place, id] = view.split('/');
+  return { place, id: id || activeId };
+};
+
 function go(name) {
+  if (name === 'back') name = previous;
+  if (name !== 'settings') previous = name;
   view = name;
   const [, id] = name.split('/');
   if (id) {
@@ -85,7 +98,7 @@ function go(name) {
 }
 bindActions(root, {
   state: () => state,
-  list,
+  browse,
   go,
   render,
 });

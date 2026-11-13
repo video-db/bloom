@@ -46,7 +46,9 @@ function collect() {
       /* see above */
     }
   }
-  return elements;
+  // Font metrics round differently on displays of different pixel scale; record it so a
+  // comparison across displays can say so instead of reporting half-pixel changes.
+  return { scale: window.devicePixelRatio, elements };
 }
 
 // Makes page.screenshot({ path }) also write `<path>.styles.json`. Safe to call twice.

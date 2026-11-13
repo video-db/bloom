@@ -1,6 +1,13 @@
 /* Bloom design tokens. Source: architectures Products/Bloom/design/assets/tokens/tokens.css */
 :root {
   --control-height: 32px;
+  /* Type scale: six sizes. */
+  --t-caption: 11px; /* counts, dates, durations, timestamps */
+  --t-label: 12px; /* section labels, hints, secondary text */
+  --t-body: 13px; /* buttons, rows, fields, navigation */
+  --t-read: 15px; /* transcript and summary text */
+  --t-page: 20px; /* page titles */
+  --t-hero: 26px; /* setup only */
   --font:
     'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;

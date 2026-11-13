@@ -146,9 +146,9 @@ export function settings(s) {
     <div class="settings-heading">
       <button
         class="icon-button"
-        data-view="library"
-        aria-label="Back to recordings"
-        title="Back to recordings"
+        data-view="back"
+        aria-label="Back"
+        title="Back"
       >
         ←
       </button>

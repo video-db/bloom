@@ -10,6 +10,10 @@ const SHAPES = {
     '<path d="m9 3-.6 2.3-2 .9-2.1-.7-2 3.5 1.6 1.7v2.3L2.3 15l2 3.5 2.1-.7 2 .9L9 21h4l.6-2.3 2-.9 2.1.7 2-3.5-1.6-1.7V11l1.6-1.7-2-3.5-2.1.7-2-.9L13 3z"/><circle cx="11" cy="12" r="3"/>',
   window:
     '<rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M3 9.5h18M6.5 7h.1M9.5 7h.1"/>',
+  home: '<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>',
+  recordings:
+    '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/>',
+  back: '<path d="M11 6l-6 6 6 6M5 12h14"/>',
   down: '<path d="M6 9.5l6 6 6-6"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',

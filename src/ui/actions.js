@@ -5,9 +5,9 @@ import { chooser } from './panel/sources.js';
 import { seek } from './workspace/player.js';
 import { confirmRecordingAction } from './workspace/dialogs.js';
 
-// state: () => latest app state. list: how the main window browses. go: change view.
+// state: () => latest app state. browse: how Recordings is looked at. go: change view.
 // render(force): redraw this window.
-export function bindActions(root, { state, list, go, render }) {
+export function bindActions(root, { state, browse, go, render }) {
   root.addEventListener('click', async (event) => {
     const target = event.target.closest('button');
     if (!target || target.disabled) return;
@@ -50,7 +50,11 @@ export function bindActions(root, { state, list, go, render }) {
       chooser.close();
       render(true);
     }
-    if (target.dataset.record) go(`detail/${target.dataset.record}`);
+    if (target.dataset.record) go(`recording/${target.dataset.record}`);
+    if (target.dataset.browse) {
+      browse[target.dataset.browse] = target.dataset.value;
+      render(true);
+    }
     if (target.dataset.view && !target.dataset.ui) go(target.dataset.view);
     if (target.dataset.seek !== undefined) seek(Number(target.dataset.seek));
     if (target.dataset.dialog) {
@@ -85,19 +89,8 @@ export function bindActions(root, { state, list, go, render }) {
   });
   root.addEventListener('change', (event) => {
     const el = event.target;
-    if (el.dataset.list) {
-      list[el.dataset.list] = el.value;
-      render(true);
-    }
-    if (el.dataset.source)
-      window.bloom.command('setSource', {
-        key: el.dataset.source,
-        value: el.type === 'checkbox' ? el.checked : el.value,
-      });
-  });
-  root.addEventListener('input', (event) => {
-    if (event.target.hasAttribute('data-query')) {
-      list.query = event.target.value;
+    if (el.dataset.browse) {
+      browse[el.dataset.browse] = el.value;
       render(true);
     }
   });

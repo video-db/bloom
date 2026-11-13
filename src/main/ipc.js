@@ -114,7 +114,7 @@ function registerIpc({
     ) {
       windows.hidePanel();
       windows.openMain(
-        args.id ? `${args.view || 'detail'}/${args.id}` : args.view,
+        args.id ? `recording/${args.id}` : args.view,
       );
     }
     if (name === 'copy-link') {

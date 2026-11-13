@@ -58,5 +58,5 @@ test('the sample engine starts first run without permissions, and flags open the
   });
   skipping.finishCheck();
   await skipping.run;
-  assert.deepEqual(skipping.opened, ['panel', 'main:library']);
+  assert.deepEqual(skipping.opened, ['panel', 'main:home']);
 });

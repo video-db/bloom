@@ -357,7 +357,7 @@ test('native panel Close hides the panel and latest main route waits for rendere
     assert.equal(panel.isVisible(), false);
     h.api.showPanel();
     assert.equal(panel.isVisible(), true);
-    h.api.openMain('library');
+    h.api.openMain('home');
     h.api.openMain('settings');
     const main = h.windows.find((w) => w.surface === 'workspace');
     assert.equal(h.messages.filter((m) => m.name === 'bloom:view').length, 0);
@@ -367,12 +367,12 @@ test('native panel Close hides the panel and latest main route waits for rendere
       ['settings'],
     );
     main.webContents.emit('did-start-loading');
-    h.api.openMain('editor/r2');
+    h.api.openMain('recording/r2');
     assert.equal(h.messages.filter((m) => m.name === 'bloom:view').length, 1);
     h.ui(main, 'main-ready');
     assert.equal(
       h.messages.filter((m) => m.name === 'bloom:view').at(-1).value,
-      'editor/r2',
+      'recording/r2',
     );
   } finally {
     h.dispose();
@@ -471,7 +471,7 @@ test('versions are immutable engine snapshots and survive closing and reopening 
   const h = await mainHarness();
   try {
     const engine = h.api.getEngine();
-    h.api.openMain('editor/r1');
+    h.api.openMain('recording/r1');
     const first = h.windows.find((w) => w.surface === 'workspace');
     const value = {
       text: 'Keep this cut',
@@ -490,7 +490,7 @@ test('versions are immutable engine snapshots and survive closing and reopening 
     assert.equal(before[0].value.text, 'Keep this cut');
     assert.equal(typeof before[0].createdAt, 'number');
     first.close();
-    h.api.openMain('detail/r1');
+    h.api.openMain('recording/r1');
     const second = h.windows.filter((w) => w.surface === 'workspace').at(-1);
     assert.notEqual(first, second);
     assert.deepEqual(
@@ -595,10 +595,10 @@ test('version recipes store validated configuration without changing the recordi
 test('main navigation can reopen while an earlier native window is still closing', async () => {
   const h = await mainHarness();
   try {
-    h.api.openMain('detail/r1');
+    h.api.openMain('recording/r1');
     const closing = h.windows.find((w) => w.surface === 'workspace');
     closing.emit('close');
-    h.api.openMain('editor/r2');
+    h.api.openMain('recording/r2');
     const replacement = h.windows
       .filter((w) => w.surface === 'workspace')
       .at(-1);
@@ -608,7 +608,7 @@ test('main navigation can reopen while an earlier native window is still closing
     h.ui(replacement, 'main-ready');
     assert.equal(
       h.messages.filter((m) => m.name === 'bloom:view').at(-1).value,
-      'editor/r2',
+      'recording/r2',
     );
     h.api.openMain('settings');
     assert.equal(

@@ -185,7 +185,7 @@ function createWindows({
     window.webContents.on('did-start-loading', () => {
       if (mainWindow === window) mainReady = false;
     });
-    load(window, 'workspace', { hash: view || 'library' });
+    load(window, 'workspace', { hash: view || 'home' });
     window.once('ready-to-show', () => {
       if (alive(window) && ready()) summon(window);
     });

@@ -137,12 +137,7 @@ const finished = (s) =>
     <div class="row2">
       <button class="btn" data-ui="copy-link" data-id="${esc(s.result.id)}">
         Copy link</button
-      ><button
-        class="btn"
-        data-ui="open-main"
-        data-view="detail"
-        data-id="${esc(s.result.id)}"
-      >
+      ><button class="btn" data-ui="open-main" data-id="${esc(s.result.id)}">
         Open recording
       </button>
     </div>`;

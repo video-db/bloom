@@ -64,7 +64,7 @@ function installMenu({ engine, windows, prefs }) {
             id: 'recordings',
             label: 'Recordings',
             accelerator: 'CmdOrCtrl+1',
-            click: () => windows.openMain('library'),
+            click: () => windows.openMain('recordings'),
           },
           { type: 'separator' },
           { role: 'close' },

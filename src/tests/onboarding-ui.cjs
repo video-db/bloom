@@ -47,6 +47,17 @@ fs.mkdirSync(evidence, { recursive: true });
     }
     assert(page, 'onboarding window');
     await page.emulateMedia({ colorScheme: theme });
+    // Closing first-run setup must not strand a running menu-bar app.
+    for (const event of ['activate', 'second-instance']) {
+      await page.getByLabel('VideoDB API key').waitFor();
+      await page.close();
+      const reopened = app.waitForEvent('window');
+      await main(({ app: electron }, event) => electron.emit(event), event);
+      page = await reopened;
+      await page.waitForURL(/surface=onboarding/);
+      await page.getByLabel('VideoDB API key').waitFor();
+      assert.equal(await main(({ BrowserWindow }) => BrowserWindow.getAllWindows().filter(w => w.isVisible() && w.webContents.getURL().includes('surface=onboarding')).length), 1);
+    }
     const key = page.getByLabel('VideoDB API key');
     const heading = (name) => page.getByRole('heading', { name });
     const button = (name) => page.getByRole('button', { name, exact: true });

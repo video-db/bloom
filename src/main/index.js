@@ -167,6 +167,8 @@ app.on('before-quit', (event) => {
   if (quitGuard && !quitGuard.allows()) return event.preventDefault();
   quitting = true;
 });
+// macOS reopens a running app through activation rather than a second process.
+app.on('activate', () => windows?.showPanel());
 app.on('second-instance', () => windows?.showPanel());
 app.on('window-all-closed', () => {}); // a tray app keeps running with no windows
 app.on('will-quit', () => {

@@ -174,6 +174,13 @@ function createLocalRecorder({
           })),
       };
     },
+    // While recording a window: move to another one, or blank it with a plain card.
+    switchWindow: (id) =>
+      request(() => ensure().switchWindow({ channelId: id }), {
+        mutation: true,
+      }),
+    setWindowEnabled: (enabled) =>
+      request(() => ensure().setWindowEnabled({ enabled }), { mutation: true }),
     // Recordings of this account that are not finished: found again after a restart.
     async recover() {
       const current = scope();

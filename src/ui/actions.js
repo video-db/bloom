@@ -15,6 +15,9 @@ export function bindActions(root, { state, browse, go, setTab, render }) {
     if (!target || target.disabled) return;
     if (target.dataset.command) {
       const args = {};
+      // data-flag carries a plain true/false for commands that take only that.
+      if (target.dataset.flag !== undefined)
+        args.value = target.dataset.flag === 'true';
       if (target.dataset.id) args.id = target.dataset.id;
       if (target.dataset.key) {
         args.key = target.dataset.key;
@@ -44,6 +47,11 @@ export function bindActions(root, { state, browse, go, setTab, render }) {
       chooser.toggle(target.dataset.chooser);
       // The list of open windows is read fresh each time the chooser opens.
       if (chooser.isOpen()) window.bloom.command('refreshWindows');
+      render(true);
+    }
+    if (target.dataset.switchWindow) {
+      window.bloom.command('switchWindow', { id: target.dataset.switchWindow });
+      chooser.close();
       render(true);
     }
     if (target.dataset.sourceTab) {

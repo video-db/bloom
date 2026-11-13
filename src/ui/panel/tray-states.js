@@ -4,7 +4,7 @@
 import { esc, clock, button } from '../shared/dom.js';
 import { icon } from '../shared/icons.js';
 import { mark } from '../shared/mark.js';
-import { sources } from './sources.js';
+import { sources, windowControls } from './sources.js';
 
 const current = (s) => s.recordings.find((r) => r.sessionId === s.sessionId);
 
@@ -47,7 +47,7 @@ const marks = (s) =>
     : '<span class="soft tray-small">None yet. Press ⇧⌘M or type a note.</span>';
 
 const recording = (s) =>
-  /* HTML */ `${sources(s, { locked: true })}
+  /* HTML */ `${sources(s, { locked: true })}${windowControls(s)}
     <span class="label">Your marks</span>
     <div class="tray-marks">${marks(s)}</div>
     <form data-form="mark">
@@ -71,7 +71,7 @@ const recording = (s) =>
     </div>`;
 
 const paused = (s) =>
-  /* HTML */ `${sources(s, { locked: true })}
+  /* HTML */ `${sources(s, { locked: true })}${windowControls(s)}
     <p>
       <b>Nothing is being captured.</b><br /><span class="soft"
         >What you recorded so far is kept. Resume when you’re ready.</span

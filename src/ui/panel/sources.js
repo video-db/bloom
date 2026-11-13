@@ -173,9 +173,65 @@ function displayChoices(s) {
   </section>`;
 }
 
+// While recording a window: the two things that can be done to it. "Switch window" opens
+// the list of the other windows; "Hide window" shows a plain card in the recording instead.
+export function windowControls(s) {
+  if (!chosenWindow(s)) return '';
+  const others = s.windows.list.filter((w) => w.id !== s.sources.window);
+  const list =
+    open === 'switch'
+      ? /* HTML */ `<section class="display-choices" aria-label="Switch window">
+          <div class="window-list">
+            ${
+              others.length
+                ? others
+                    .map(
+                      (w) =>
+                        /* HTML */ `<button
+                          class="window-row"
+                          data-switch-window="${esc(w.id)}"
+                          title="${esc(w.title)}"
+                        >
+                          <span class="window-tick"></span
+                          ><span class="window-title"
+                            >${esc(w.app)} · ${esc(w.title)}</span
+                          >
+                        </button>`,
+                    )
+                    .join('')
+                : '<p class="window-none">No other window is open.</p>'
+            }
+          </div>
+        </section>`
+      : '';
+  return /* HTML */ `<div class="row2">
+      <button
+        class="btn quiet"
+        data-chooser="switch"
+        aria-expanded="${open === 'switch'}"
+      >
+        Switch window ${icon('down')}</button
+      ><button
+        class="btn quiet"
+        data-command="setWindowHidden"
+        data-flag="${!s.windowHidden}"
+        aria-pressed="${s.windowHidden}"
+      >
+        ${s.windowHidden ? 'Show window' : 'Hide window'}
+      </button>
+    </div>
+    ${
+      s.windowHidden
+        ? '<p class="soft tray-small" role="status">The recording shows a plain card until you show the window again.</p>'
+        : ''
+    }
+    ${list}`;
+}
+
 // locked: a session is running, so the row shows what is being captured and cannot change.
 export function sources(s, { locked = false } = {}) {
-  if (locked) open = null;
+  // While a session runs only the window switcher may be open.
+  if (locked && open !== 'switch') open = null;
   // A chooser whose choice has gone (a display unplugged) closes itself.
   if (
     open === 'display' &&

@@ -710,3 +710,41 @@ test('a chosen window that has closed is never replaced by the display', async (
     false,
   );
 });
+
+test('a recorded window can be switched and hidden without stopping', async (t) => {
+  const f = await setup(t);
+  await f.command('refreshWindows');
+  await f.command('chooseWindow', { id: 'window:a' });
+  await f.command('start');
+  await f.command('switchWindow', { id: 'window:c' });
+  assert.equal(f.engine.getState().sources.window, 'window:c');
+  await f.command('setWindowHidden', { value: true });
+  assert.equal(f.engine.getState().windowHidden, true);
+  await f.command('setWindowHidden', { value: false });
+  assert.deepEqual(
+    f.calls.filter(([name]) =>
+      ['switchWindow', 'setWindowEnabled'].includes(name),
+    ),
+    [
+      ['switchWindow', 'window:c'],
+      ['setWindowEnabled', false],
+      ['setWindowEnabled', true],
+    ],
+  );
+  // A window that has gone cannot be switched to, and the recording carries on.
+  f.recorder.openWindows = f.recorder.openWindows.filter(
+    (w) => w.id !== 'window:b',
+  );
+  await f.command('switchWindow', { id: 'window:b' });
+  assert.equal(f.engine.getState().sources.window, 'window:c');
+  assert.equal(f.engine.getState().phase, 'recording');
+  assert.match(f.engine.getState().problem.message, /not open any more/);
+  // Recording a display has no window to switch or hide.
+  await f.command('stop');
+  f.recorder.finish();
+  await flush();
+  await f.command('chooseWindow', { id: '' });
+  await f.command('start');
+  await f.command('setWindowHidden', { value: true });
+  assert.equal(f.engine.getState().windowHidden, false);
+});

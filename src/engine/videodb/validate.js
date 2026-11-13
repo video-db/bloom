@@ -11,6 +11,8 @@ const commandArgs = {
   prepareRecorder: none,
   refreshSources: none,
   refreshWindows: none,
+  switchWindow: (a) => id(a.id),
+  setWindowHidden: (a) => typeof a.value === 'boolean',
   chooseWindow: (a) => a.id === '' || id(a.id),
   start: none,
   stop: none,

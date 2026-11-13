@@ -30,6 +30,7 @@ With Playwright available, run the Electron walkthroughs one at a time (the app 
 | Command | Covers |
 |---|---|
 | `node src/tests/app-ui.cjs light` | The tray panel through every recording state, the main window and Settings, with a fake recorder |
+| `node src/tests/window-ui.cjs light` | Recording a single window: named, switched, hidden and shown, paused, stopped |
 | `node src/tests/quit-ui.cjs` | Quitting while a recording is being processed exits with no question |
 | `node src/tests/onboarding-ui.cjs light` | First run with a fake service and recorder: key check, automatic advance, recorder failure, reopen, optional microphone, hand-off to the menu bar |
 

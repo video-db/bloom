@@ -175,6 +175,12 @@ function createFixture({
     async windows() {
       return { supported: true, windows: this.openWindows };
     },
+    async switchWindow(id) {
+      calls.push(['switchWindow', id]);
+    },
+    async setWindowEnabled(enabled) {
+      calls.push(['setWindowEnabled', enabled]);
+    },
     recover: async () => recorder.jobs,
     onEvent(listener) {
       events.on('event', listener);

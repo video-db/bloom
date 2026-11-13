@@ -151,7 +151,9 @@ function createVideoDBEngine({
     ...capture.commands,
     // A chosen window is checked again at the last moment; if it has gone, nothing starts.
     async start() {
-      if (await windowSource.ready()) await capture.commands.start();
+      if (!(await windowSource.ready())) return;
+      ctx.set({ windowHidden: false });
+      await capture.commands.start();
     },
     setPurpose({ text }) {
       if (between()) ctx.set({ purpose: text });

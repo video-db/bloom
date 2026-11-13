@@ -363,26 +363,17 @@ dialog .field {
   font-weight: 500;
 }
 .balance {
-  display: block;
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--paper);
-  font-size: var(--t-label);
-  text-align: left;
-}
-.balance:hover {
-  border-color: var(--line2);
-}
-.balance b {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  font-weight: 500;
-}
-.balance small {
-  font-size: var(--t-caption);
+  padding: 4px 5px;
+  font-size: var(--t-label);
   color: var(--soft);
+}
+.balance strong {
+  color: var(--ink2);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 .sidebar-foot-row {
   display: flex;

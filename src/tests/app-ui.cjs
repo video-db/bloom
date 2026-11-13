@@ -255,7 +255,8 @@ fs.mkdirSync(evidence, { recursive: true });
       await main.locator('.collections').evaluate((el) => el.scrollHeight > el.clientHeight),
       true,
     );
-    assert.match(await main.locator('.balance').innerText(), /Balance\s*316\.28/);
+    assert.match(await main.locator('.balance').innerText(), /Credits\s*316\.28/);
+    await main.locator('.sidebar-footer').screenshot({ path: path.join(evidence, `${theme}-credits.png`) });
     assert.equal(await main.locator('.sidebar [aria-current=page]').innerText().then((t) => /Recordings/.test(t)), true, 'an open recording belongs to Recordings');
     assert.equal(await main.locator('.record-row, .browser, [data-query]').count(), 0);
     await main.getByRole('button', { name: 'Home', exact: true }).click();

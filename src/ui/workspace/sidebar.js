@@ -46,14 +46,9 @@ function collections(s, browsing) {
 const balance = (s) =>
   s.credits === null
     ? ''
-    : /* HTML */ `<button
-        class="balance"
-        data-ui="get-api-key"
-        title="Manage your balance in VideoDB (opens your browser)"
-      >
-        <b><span>Balance</span><span>${s.credits.toFixed(2)}</span></b
-        ><small>VideoDB credits · Manage in VideoDB ↗</small>
-      </button>`;
+    : /* HTML */ `<div class="balance" aria-label="VideoDB credit balance">
+        <span>Credits</span><strong>${s.credits.toFixed(2)}</strong>
+      </div>`;
 
 // current: the place that is showing ('settings' lights the gear instead).
 // browsing: true while Recordings is showing a collection other than Bloom's own.

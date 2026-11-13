@@ -19,12 +19,11 @@ The native recorder owns local recording files and its own upload receipts until
 
 ## Environment and flags
 
-A packaged app always uses the real engine and `https://api.videodb.io`. From source, `npm start` uses the real engine against `https://api.dev.videodb.io`.
+A packaged app uses `https://api.videodb.io`. From source, `npm start` uses `https://api.dev.videodb.io`.
 
 | Flag | Effect |
 |---|---|
 | `--production` | Use the production API from source |
-| `--sample` | Run the sample engine: no capture, no network, sample recordings. Ignored when packaged |
 | `--light`, `--dark` | Force a theme for review |
 | `--skip-onboarding`, `--open-main`, `--open-preferences`, `--keep-open` | Start at a given surface, or stop the tray panel closing on blur, for review |
 | `--fresh` | Automated run: in-memory preferences, separate data folder, no activation |

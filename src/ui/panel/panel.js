@@ -22,7 +22,7 @@ const phases = {
 };
 
 export function permissions(s) {
-  return /* HTML */ `<div class="connected-permissions">
+  return /* HTML */ `<div class="panel-permissions">
     ${[
       ['screen', 'Screen and system audio'],
       ['mic', 'Microphone'],
@@ -101,7 +101,7 @@ function recent(s, needsSetup) {
 export function panel(s) {
   const needsSetup =
     s.account.status !== 'signed-in' && ['idle', 'finished'].includes(s.phase);
-  const setup = /* HTML */ `<div class="connected-capture">
+  const setup = /* HTML */ `<div class="panel-setup">
     <p class="soft" role="status">
       ${s.account.status === 'checking' ? 'Checking your connection…' : 'Finish setup to start recording.'}
     </p>

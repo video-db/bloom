@@ -1,0 +1,120 @@
+/* Settings: grouped cards of rows with switches, segmented choices and chips. */
+/* settings */
+.set {
+  padding: 22px 26px 40px;
+  max-width: 760px;
+  margin: auto;
+}
+.set h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin: 0 0 4px;
+}
+.set h2 {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--soft);
+  margin: 22px 0 8px;
+}
+.card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.srow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 14px;
+  border-top: 1px solid var(--line);
+}
+.srow:first-child {
+  border-top: 0;
+}
+.srow b {
+  display: block;
+  font-weight: 500;
+}
+.srow small {
+  display: block;
+  color: var(--soft);
+  font-size: 12px;
+}
+.seg {
+  display: inline-flex;
+  flex: none;
+  background: var(--fill);
+  padding: 3px;
+  border-radius: 9px;
+  gap: 2px;
+}
+.seg button {
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  padding: 4px 11px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--mid);
+}
+.seg button.on {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(20, 20, 30, 0.14);
+}
+.tgl {
+  width: 36px;
+  border-radius: 999px;
+  background: var(--line2);
+  position: relative;
+  flex: none;
+  border: 0;
+  padding: 0;
+  transition: background 0.15s;
+  height: 24px;
+}
+.tgl::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+  top: 3.5px;
+}
+.tgl.on {
+  background: var(--ok);
+}
+.tgl.on::after {
+  transform: translateX(15px);
+}
+.settings-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.settings-heading h1 {
+  margin: 0;
+}
+.set .srow > div:first-child {
+  min-width: 0;
+}
+/* ---- settings ---- */
+.set-note {
+  font-size: 12.5px;
+}
+.set-actions {
+  display: inline-flex;
+  flex: none;
+  gap: 8px;
+}
+.set .srow > .soft,
+.set .srow > .chip,
+.set .srow > .btn {
+  flex: none;
+}

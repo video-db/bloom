@@ -1,3 +1,14 @@
+.live {
+  border-left: 2px solid var(--ev);
+  padding-left: 8px;
+  font-size: 12.5px;
+  color: var(--soft);
+  min-height: 38px;
+}
+.live b {
+  color: var(--ink);
+  font-weight: 500;
+}
 /* First run: Connect, Permissions, Ready. One fixed window; every step shares this frame. */
 .setup {
   --setup-action: color-mix(in srgb, var(--brand) 78%, #000);
@@ -81,7 +92,6 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 /* ---- controls ---- */
 .setup .btn.pri {
   background: var(--setup-action);
@@ -143,7 +153,6 @@
     transform: rotate(360deg);
   }
 }
-
 /* ---- connect ---- */
 .setup-form {
   display: flex;
@@ -229,7 +238,6 @@
   color: var(--mid);
   border-color: var(--line);
 }
-
 /* ---- permissions ---- */
 .setup-rows {
   border-bottom: 1px solid var(--line);
@@ -343,7 +351,6 @@
 .setup-rows + .setup-message {
   margin-top: 14px;
 }
-
 /* ---- ready ---- */
 .setup-menubar {
   display: flex;
@@ -418,7 +425,6 @@
 .setup-switch:checked::after {
   transform: translateX(15px);
 }
-
 /* ---- frame ---- */
 .setup-foot {
   display: flex;

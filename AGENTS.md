@@ -7,7 +7,7 @@ Bloom is the Electron desktop recorder in `video-db/bloom`. Use `git` locally an
 - `src/main/`: Electron lifecycle, tray, windows, notifications, preferences and the validated renderer bridge.
 - `src/engine/`: the only code that talks to capture and VideoDB (`videodb/` real, `sample/` for design and tests).
 - `src/preload.js`: main/renderer bridge; keep renderers context-isolated.
-- `src/ui/`: renderers; `connected/` is the running app. See `src/README.md` for the layout and conventions.
+- `src/ui/`: renderers, one folder per surface (`panel/`, `workspace/`, `settings/`, `onboarding/`) plus `shared/`. See `src/README.md` for the layout and conventions.
 - `build/`: native capture packaging and macOS signing hook.
 - Install with `npm ci`; run with `npm start`; package with `npm run pack` or `npm run dist`.
 - Run `npm test` for the state and engine tests, and the Electron walkthroughs in `src/tests/*.cjs` as described in `docs/runbook.md`. No lint script is declared.

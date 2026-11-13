@@ -1,6 +1,6 @@
 # Bloom source
 
-This folder is the Bloom desktop recorder. `npm start` runs it with the real capture engine; `npm run sample` runs the same windows on the sample engine for design work. See `docs/runbook.md` for flags and checks.
+This folder is the Bloom desktop recorder. `npm start` runs it. See `docs/runbook.md` for flags and checks.
 
 ## How it works
 
@@ -37,15 +37,18 @@ src/
   engine/
     index.js          the engine surface and factory
     videodb/          real state engine, SDK adapter, credentials, receipts and recording cache
-    sample/           sample engine: records nothing; used by tests and for design work
+    sample/           sample engine: records nothing; backs the main-process tests
   ui/
-    connected.html    page for every window of the running app (?surface=panel|workspace|onboarding)
-    connected/        the running app's views: onboarding, tray panel, main window, settings, player
-    tokens.css, ui.css, panel.css, workspace.css
-                      the approved design's tokens and styles, shared by both sets of views
-    *.html, *.js      sample-engine views of the approved design, including surfaces not built yet
+    app.html          the one page; ?surface=panel|workspace|onboarding says which window it is
+    app.js            state in, markup out: which view shows, redraw, focus kept across redraws
+    actions.js        every click, form and key, turned into an engine command or a view change
+    shared/           tokens, base styles, DOM helpers, icons, the Bloom mark
+    panel/            the tray panel: sources and their choosers, each recording state
+    workspace/        the main window: recording browser, transcript, player, dialogs
+    settings/         the Settings view
+    onboarding/       first run: Connect, Permissions, Ready
   assets/             tray icons, fonts, the mark
-  tests/              state tests and the Electron walkthrough
+  tests/              unit tests, Electron walkthroughs, the fake service and recorder
 ```
 
 ## Conventions
@@ -55,10 +58,11 @@ src/
 - The main process and engine are CommonJS. Renderer code is ES modules with explicit imports, no globals.
 - A renderer never trusts itself: every message is validated in the main process.
 - Views are small functions that return markup for one state. Keep markup readable across lines.
-- Styles use the tokens in `ui/tokens.css`. No colour or size literals that a token already covers.
+- Each surface has one stylesheet beside its views; shared controls live in `ui/shared/base.css`. Styles use the tokens in `ui/shared/tokens.css`. No colour or size literals that a token already covers.
 - Comments say why, briefly. The what belongs in names.
 - A release build has no sample data, no "preview" wording and no control that does nothing. Features that are not built are hidden through the engine's capabilities, not left as dead buttons.
 - The interface follows the approved designs. Record a change to what a person sees in the [interface change log](https://github.com/Spext/architectures/blob/main/Products/Bloom/docs/trackers/ui-change-log.md) before making it, and never redesign a surface while wiring it to real data.
-- Behaviour changes come with a test. Run the state tests and the walkthrough in both themes, then look at the screens.
+- Behaviour changes come with a test. Run the unit tests and the walkthroughs in both themes, then look at the screens.
+- A refactor that must not change how anything looks is checked, not eyeballed: run the walkthroughs with `BLOOM_STYLE_SNAPSHOT=1` before and after and compare with `src/tests/helpers/compare-styles.cjs`.
 
-The real integration uses the public Node SDK from GitHub branch release-0.3.3; the lockfile records its resolved revision. Read [the boundary reference](../docs/reference/videodb-integration.md) before changing the SDK adapter or recovery state. The sample engine and test fixtures never run in a packaged app.
+The real integration uses the public Node SDK from GitHub branch release-0.3.3; the lockfile records its resolved revision. Read [the boundary reference](../docs/reference/videodb-integration.md) before changing the SDK adapter or recovery state. Test fixtures never run in a packaged app.

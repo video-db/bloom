@@ -9,7 +9,7 @@ export const esc = (value = '') =>
 export const clock = (seconds = 0) =>
   `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 export const logo =
-  '<img class="connected-logo" src="../assets/bloom-mark.svg" alt="">';
+  '<img class="bloom-logo" src="../assets/bloom-mark.svg" alt="">';
 export const button = (command, label, args = '', disabled = false) =>
   /* HTML */ `<button
     class="btn"

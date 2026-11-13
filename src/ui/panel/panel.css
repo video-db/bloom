@@ -1,0 +1,597 @@
+/* The tray panel: header, body and footer, the source row and its choosers, and each
+   recording state. */
+.ph {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.ph .brandname {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.ph.warn {
+  background: var(--warnbg);
+  color: var(--warn);
+  font-weight: 500;
+  border-bottom-color: var(--warnline);
+}
+.pb {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pf {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding: 9px 14px;
+  font-size: 12px;
+  color: var(--soft);
+}
+.pf button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+}
+.pf button:hover {
+  color: var(--ink);
+}
+.ph .brandname .bl {
+  width: 17px;
+  height: 17px;
+}
+.mid {
+  color: var(--mid);
+}
+.link {
+  color: var(--ev);
+  font-weight: 500;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.link:hover {
+  text-decoration: underline;
+}
+/* ---------- tray panel ---------- */
+body.panel {
+  background: var(--paper);
+}
+.panel .btn {
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.timer {
+  font: 600 19px/1 var(--mono);
+  letter-spacing: -0.02em;
+}
+.rc {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 9px;
+  align-items: center;
+  font-size: 12.5px;
+  border-radius: 8px;
+  padding: 3px;
+}
+.rc:hover {
+  background: var(--fill);
+}
+.rc small {
+  display: block;
+  color: var(--soft);
+}
+.mk {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12.5px;
+}
+.row3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.stages {
+  display: flex;
+  gap: 6px;
+}
+.stages div {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--soft);
+  background: var(--paper);
+}
+.stages div b {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+}
+.stages div.done {
+  border-color: var(--okline);
+  background: var(--okbg);
+  color: var(--ok);
+}
+.perm {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+.perm b {
+  display: block;
+  font-weight: 500;
+}
+.perm small {
+  display: block;
+  color: var(--soft);
+  font-size: 12px;
+}
+.panel #root {
+  max-height: 100vh;
+  height: auto;
+}
+.panel .ph,
+.panel .pf {
+  flex: none;
+}
+.panel .pb {
+  min-height: 0;
+  overflow-y: auto;
+  flex-shrink: 1;
+  gap: 8px;
+  padding: 12px 14px;
+}
+.panel .btn,
+.panel .field {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  line-height: normal;
+}
+.panel .ph {
+  height: 46px;
+}
+.panel .rc {
+  width: 100%;
+  height: 44px;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+  grid-template-columns: 48px minmax(0, 1fr);
+  padding: 3px 0;
+}
+.panel .rc:hover {
+  background: var(--fill);
+}
+.panel .rc .shot {
+  height: 32px;
+}
+.panel .rc small {
+  font-size: 10.5px;
+}
+.panel .label {
+  margin-top: 7px;
+}
+.panel .mk {
+  align-items: flex-start;
+  overflow-wrap: anywhere;
+}
+.panel .mk .ts {
+  flex: none;
+  margin-top: 2px;
+}
+.panel .row3 {
+  position: sticky;
+  bottom: -12px;
+  background: var(--paper);
+  padding: 8px 0;
+  z-index: 2;
+}
+.source-group {
+  position: relative;
+}
+.capture-options {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 4px 0;
+}
+.capture-option {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--soft);
+}
+.capture-option > .ic {
+  width: 21px;
+  height: 21px;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.capture-option.on {
+  color: var(--ev);
+  background: var(--evbg);
+}
+.capture-option:disabled {
+  opacity: 1;
+  cursor: default;
+}
+button.capture-option:not(:disabled):hover {
+  border-color: var(--line2);
+}
+.source-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+  margin: 0 -4px;
+}
+.source-slash {
+  position: absolute;
+  width: 23px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: rotate(-45deg);
+  box-shadow: 0 -2px 0 var(--paper);
+}
+.display-number {
+  position: absolute;
+  right: 0;
+  top: 0;
+  border-radius: 4px;
+  background: var(--paper);
+  font: 600 9px/13px var(--mono);
+  min-width: 12px;
+  text-align: center;
+}
+.display-choices {
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--sub);
+  padding: 12px;
+  margin: 6px 0;
+}
+.display-chooser-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+.display-map {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 6px 6px;
+}
+.display-tile {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--mid);
+  width: 108px;
+  text-align: center;
+}
+.mini-desktop {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 60px;
+  border: 2px solid var(--line2);
+  border-radius: 5px;
+  background: linear-gradient(145deg, var(--paper), var(--fill));
+  margin-bottom: 10px;
+  box-shadow: 0 4px 0 -2px var(--line2);
+}
+.mini-desktop > span {
+  font: 500 19px var(--mono);
+  opacity: 0.65;
+}
+.mini-desktop > i {
+  position: absolute;
+  bottom: 4px;
+  right: 5px;
+  font-size: 11px;
+  font-style: normal;
+}
+.display-tile.selected .mini-desktop {
+  border-color: var(--ev);
+  color: var(--ev);
+  background: var(--evbg);
+  box-shadow: 0 4px 0 -2px var(--ev);
+}
+.display-tile:hover .mini-desktop {
+  border-color: var(--ev);
+}
+.display-tile b {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel section.panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  background: var(--paper);
+}
+.panel-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.panel-setup p {
+  margin: 0;
+}
+.panel-permissions .btn {
+  margin: 4px;
+}
+.panel .pf {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+}
+.panel-setup .capture-start {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+/* Shown once, after setup, until the first recording starts. */
+.panel-hint {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--evbg);
+  color: var(--ev);
+  font-size: 12px;
+  font-weight: 500;
+}
+/* A source with a choice: the icon turns it on or off, the arrow beside it opens the list. */
+.source {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+}
+.source.on {
+  background: var(--evbg);
+}
+.source .capture-option.on {
+  background: none;
+}
+.source-arrow {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 36px;
+  margin-left: -3px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 0 8px 8px 0;
+  background: none;
+  color: var(--mid);
+}
+.source.on .source-arrow {
+  color: var(--ev);
+}
+.source-arrow::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 1px;
+  background: color-mix(in srgb, currentColor 28%, transparent);
+}
+.source-arrow .ic {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.4;
+}
+.source-arrow:hover,
+.source-arrow.open {
+  border-color: var(--ev);
+  background: var(--paper);
+}
+.source-list {
+  margin: 6px 0;
+  padding: 6px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--sub);
+}
+.source-list h4 {
+  margin: 4px 6px 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.source-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  text-align: left;
+  font-size: 12.5px;
+}
+.source-choice:hover {
+  background: var(--fill);
+}
+.source-choice.selected {
+  background: var(--evbg);
+  color: var(--ev);
+  font-weight: 500;
+}
+.source-tick {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+}
+.source-tick .ic {
+  width: 14px;
+  height: 14px;
+}
+/* Header and footer icon buttons, named on hover. */
+.panel-open,
+.panel-gear {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--mid);
+}
+.panel-open:hover,
+.panel-gear:hover {
+  background: var(--fill);
+  color: var(--ink);
+}
+.panel-open:disabled,
+.panel-gear:disabled {
+  opacity: 0.4;
+}
+.panel-open .ic,
+.panel-gear .ic {
+  width: 18px;
+  height: 18px;
+}
+.panel button.rc {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+}
+.rc-copy {
+  min-width: 0;
+}
+.rc-copy b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+/* ---- tray panel while a session exists ---- */
+.tray-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.tray-live .bl {
+  width: 18px;
+  height: 18px;
+}
+.tray-live .mid {
+  font-size: 12.5px;
+  font-weight: 400;
+}
+.panel .pb p {
+  margin: 0;
+}
+.tray-small {
+  font-size: 12px;
+}
+.tray-marks {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.tray-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 12.5px;
+}
+.tray-card small {
+  display: block;
+  color: var(--soft);
+}
+/* The step a saving recording is on. */
+.stages div.now {
+  border-color: var(--line2);
+  color: var(--ink);
+}
+.panel .row3,
+.panel .row2 {
+  position: static;
+  padding: 0;
+}
+/* ---- quiet focus for text fields: no coloured border or ring ---- */
+.panel .field:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--ink) 26%, var(--line2));
+  background: color-mix(in srgb, var(--brand) 3%, var(--paper));
+}
+@media (forced-colors: active) {
+  .panel .field:focus {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+/* One orange per state, in the Start button's deeper tone with white text. */
+.panel .btn.pri {
+  background: color-mix(in srgb, var(--brand) 78%, #000);
+  border-color: transparent;
+  color: #fff;
+}
+.panel .btn.pri:hover {
+  background: color-mix(in srgb, var(--brand) 70%, #000);
+  opacity: 1;
+}

@@ -7,7 +7,7 @@
 - Recording is local, with marks, pause and resume; each recording is finalised, uploaded and processed with durable recovery after a quit or lost connection.
 - The API key is validated before saving and encrypted with the system keychain; sign-out is available from the menu and Settings.
 - Bundled HLS playback, confirmed rename, delete and download, a single-instance guard and a quit prompt while a recording is saving.
-- `npm start` runs the app; `npm run sample` runs the sample design; `npm test` runs the automated tests.
+- `npm start` runs the app; `npm test` runs the automated tests.
 
 ### Removed
 - The floating control bar, camera bubble, separate permission and display-picker windows, and the local SQLite database with its `sql.js`, `dotenv` and older `videodb` SDK dependencies.

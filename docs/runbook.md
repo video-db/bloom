@@ -19,10 +19,6 @@ Start recording only after choosing the intended screen and audio. Nothing captu
 
 The native recorder owns local MP4s and upload receipts. Complete native jobs are rediscovered on connection and authorised against their original session before a fresh token is issued. The recorder deletes its media after confirmed ingestion, so use Download to keep a permanent copy. There is no server-recording fallback. A forced kill during unfinished MP4 writing is not guaranteed recoverable.
 
-## Run the sample design
-
-`npm run sample` runs the same windows on the sample engine. It records nothing, makes no network or VideoDB calls, and shows the approved design including surfaces that are not built yet (editing, versions, search cuts). It is for design review and tests and is never available in a packaged app. Sample recordings, drafts and versions live in memory until the app quits. The native **Help → Preview Scenarios** menu offers missing permission, connection loss, meeting ended, stop failure, delayed upload and processing failure.
-
 ## Automated checks
 
 Run `npm test` for the state, engine, recorder-adapter and service tests. They use controlled Electron objects and a fake SDK: no network requests, no capture. Native notification delivery still needs an installed platform check.
@@ -31,11 +27,12 @@ With Playwright available, run the Electron walkthroughs one at a time (the app 
 
 | Command | Covers |
 |---|---|
-| `node src/tests/connected-ui.cjs light` | The running app's tray panel through every recording state, main window and settings, with a fake recorder |
+| `node src/tests/app-ui.cjs light` | The tray panel through every recording state, the main window and Settings, with a fake recorder |
 | `node src/tests/onboarding-ui.cjs light` | First run with a fake service and recorder: key check, automatic advance, recorder failure, reopen, optional microphone, hand-off to the menu bar |
-| `node src/tests/ui.cjs light` | The sample design: workspace, search cuts, output recipes, edit history, settings focus, retry, record management, minimum window size, display picker, long marks |
 
-None of these contact VideoDB, look at the screen or open the microphone, and the fixture mode is ignored by packaged builds. Set `BLOOM_ELECTRON_PATH` and `BLOOM_PLAYWRIGHT_MODULE` if the tools are not installed in this checkout. Screenshots are saved under `.context/` (override with `BLOOM_UI_EVIDENCE`); look at them after a change to what a person sees.
+Both run the real engine against a fake service and recorder (`--fixture`). Neither contacts VideoDB, looks at the screen or opens the microphone, and the fixture mode is ignored by packaged builds. Set `BLOOM_ELECTRON_PATH` and `BLOOM_PLAYWRIGHT_MODULE` if the tools are not installed in this checkout. Screenshots are saved under `.context/` (override with `BLOOM_UI_EVIDENCE`); look at them after a change to what a person sees.
+
+For a change that must not alter any screen, set `BLOOM_STYLE_SNAPSHOT=1` and a different `BLOOM_UI_EVIDENCE` folder before and after; each screenshot then also saves every element's computed style and box. `node src/tests/helpers/compare-styles.cjs <before> <after>` lists what differs.
 
 ## Build and install locally
 
@@ -51,7 +48,7 @@ Data from releases up to 2.3.0 is not migrated; sign in again after installing. 
 
 ## Verify
 
-Use `node --check <file>` for main-process, engine, preload and build scripts (CommonJS), and `node --input-type=module --check < <file>` for scripts under `src/ui/connected/` (browser ES modules). Then run the automated checks above.
+Use `node --check <file>` for main-process, engine, preload and build scripts (CommonJS), and `node --input-type=module --check < <file>` for scripts under `src/ui/` (browser ES modules). Then run the automated checks above.
 
 On the actual target platform, with a test account and a screen you are content to record:
 

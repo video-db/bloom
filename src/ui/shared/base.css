@@ -1,0 +1,353 @@
+@import url('tokens.css');
+/* Shared by every window: fonts, page defaults, buttons, fields, the Bloom mark, thumbnails
+   and the Start button. Surface styles live beside their views. */
+@font-face {
+  font-family: 'Geist';
+  src: url('../../assets/fonts/Geist-latin-variable.woff2') format('woff2');
+  font-weight: 100 900;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../../assets/fonts/GeistMono-latin-variable.woff2') format('woff2');
+  font-weight: 100 900;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+body {
+  font: 13.5px/1.5 var(--font);
+  letter-spacing: -0.006em;
+  color: var(--ink);
+  background: var(--page);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+  overflow: hidden;
+}
+button,
+input {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+b,
+strong {
+  font-weight: 600;
+}
+.soft {
+  color: var(--soft);
+}
+.drag {
+  -webkit-app-region: drag;
+}
+.mono {
+  font-family: var(--mono);
+}
+.nodrag {
+  -webkit-app-region: no-drag;
+}
+/* controls */
+.btn {
+  border: 1px solid var(--line2);
+  background: var(--paper);
+  border-radius: 8px;
+  height: var(--control-height);
+  padding: 0 12px;
+  font-weight: 500;
+  font-size: 13px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn:hover {
+  background: var(--sub);
+}
+.btn:active {
+  transform: translateY(0.5px);
+}
+.btn.pri {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #241006;
+}
+.btn.pri:hover {
+  opacity: 0.92;
+  background: var(--brand);
+}
+.btn.quiet {
+  border-color: var(--line);
+  color: var(--mid);
+}
+.btn.sm {
+  height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+  border-radius: 7px;
+}
+.btn[disabled] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 12px;
+  color: var(--mid);
+  background: var(--paper);
+  white-space: nowrap;
+}
+.chip.ok {
+  border-color: var(--okline);
+  background: var(--okbg);
+  color: var(--ok);
+  font-weight: 500;
+}
+.chip.warn {
+  border-color: var(--warnline);
+  background: var(--warnbg);
+  color: var(--warn);
+  font-weight: 500;
+}
+.ts {
+  font: 500 11px/1 var(--mono);
+  color: var(--ev);
+  background: var(--evbg);
+  border-radius: 5px;
+  padding: 3px 6px;
+}
+.field {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  height: var(--control-height);
+  padding: 0 10px;
+  outline: none;
+  user-select: text;
+}
+.field:focus {
+  border-color: var(--ev);
+  box-shadow: 0 0 0 3px var(--evbg);
+}
+.field::placeholder {
+  color: var(--soft);
+}
+.note {
+  background: var(--fill);
+  border-radius: 10px;
+  padding: 9px 11px;
+  color: var(--mid);
+  font-size: 12.5px;
+}
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--soft);
+}
+kbd {
+  font: 500 10.5px/1 var(--mono);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 2px 5px;
+  color: var(--soft);
+  background: var(--fill);
+}
+.btn.pri kbd {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--on) 30%, transparent);
+  color: inherit;
+  opacity: 0.7;
+}
+.ic {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  vertical-align: -0.16em;
+}
+input[type='checkbox'] {
+  accent-color: var(--ev);
+}
+/* the Bloom mark doubles as the status indicator */
+.bl {
+  width: 1.2em;
+  height: 1.2em;
+  flex: none;
+  vertical-align: -0.22em;
+  overflow: visible;
+}
+.bl path {
+  fill: currentColor;
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+.bl.rec {
+  color: var(--rec);
+}
+.bl.rec path {
+  animation: petal 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.4s);
+}
+.bl.busy {
+  color: var(--mid);
+}
+.bl.busy path {
+  animation: pfade 1.1s linear infinite;
+  animation-delay: calc(var(--i) * -0.275s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bl path {
+    animation: none !important;
+  }
+}
+.shot {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: hidden;
+  background:
+    linear-gradient(var(--line), var(--line)) 0 0 / 100% 13% no-repeat,
+    linear-gradient(var(--fill), var(--fill)) 0 0 / 20% 100% no-repeat,
+    linear-gradient(var(--line), var(--line)) 28% 30% / 34% 5% no-repeat,
+    linear-gradient(var(--fill), var(--fill)) 28% 48% / 18% 20% no-repeat,
+    linear-gradient(var(--fill), var(--fill)) 56% 48% / 18% 20% no-repeat,
+    linear-gradient(var(--fill), var(--fill)) 92% 48% / 18% 20% no-repeat,
+    var(--sub);
+}
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ev);
+  outline-offset: 2px;
+}
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--mid);
+  padding: 6px;
+  flex: none;
+}
+.icon-button:hover {
+  background: var(--fill);
+  color: var(--ink);
+}
+.icon-button .ic {
+  width: 18px;
+  height: 18px;
+}
+select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line2);
+  border-radius: 7px;
+  height: 32px;
+  padding: 0 7px;
+}
+/* The one action the tray exists for. Deeper than the logo orange so the white label keeps 4.5:1. */
+.btn.capture-start,
+.btn.capture-start:hover {
+  position: relative;
+  gap: 8px;
+  border: 0;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  opacity: 1;
+  background: linear-gradient(180deg, #d84006, #c93700);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 1px 2px rgba(110, 30, 0, 0.35),
+    0 6px 14px -7px rgba(255, 64, 0, 0.7);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    filter 0.12s ease;
+}
+.btn.capture-start:hover {
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 1px 2px rgba(110, 30, 0, 0.35),
+    0 9px 18px -7px rgba(255, 64, 0, 0.8);
+}
+.btn.capture-start:active {
+  transform: translateY(0.5px) scale(0.995);
+  filter: brightness(0.97);
+}
+/* The mark opens and closes under the pointer: a preview of what recording looks like. */
+.capture-start kbd {
+  position: absolute;
+  right: 8px;
+  margin: 0;
+  color: #fff;
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.btn.danger {
+  background: var(--badbg);
+  border-color: var(--bad);
+  color: var(--bad);
+}
+.bloom-logo {
+  height: 24px;
+  width: 24px;
+  vertical-align: middle;
+}
+.brandname {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.capture-start .bloom-logo {
+  filter: brightness(0) invert(1);
+  height: 15px;
+  width: 15px;
+}
+/* ---- tray panel: the approved icon row, wired to real sources ---- */
+@keyframes petal {
+  0%,
+  100% {
+    transform: scale(0.55);
+  }
+  50% {
+    transform: scale(1);
+  }
+}
+@keyframes pfade {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 1;
+  }
+}

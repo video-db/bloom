@@ -87,10 +87,26 @@ const notices = (r) =>
     r.status === 'error'
       ? /* HTML */ `<div class="processing-banner" role="alert">
           <div>
-            <b>This recording needs attention</b>
-            <p>Your recording is kept. Check it again to finish saving.</p>
+            <b
+              >${
+                r.videoId
+                  ? 'This recording needs another check'
+                  : 'This recording has not been processed'
+              }</b
+            >
+            <p>
+              ${
+                r.videoId
+                  ? 'It is in VideoDB; playback still has to be confirmed.'
+                  : 'It is kept on this Mac. Recover it to finish processing.'
+              }
+            </p>
           </div>
-          ${button('retryRecording', 'Check and retry', `data-id="${esc(r.id)}"`)}
+          ${button(
+            'retryRecording',
+            r.videoId ? 'Check again' : 'Recover recording',
+            `data-id="${esc(r.id)}"`,
+          )}
         </div>`
       : ''
   }`;
@@ -107,7 +123,9 @@ function knowledge(r, signedIn) {
       </div>
     </section>`;
   const add =
-    !r.transcript && !r.transcriptRequested && !['processing', 'error'].includes(r.transcriptStatus);
+    !r.transcript &&
+    !r.transcriptRequested &&
+    !['processing', 'error'].includes(r.transcriptStatus);
   const said = r.transcript
     ? '<span class="chip ok">Ready</span>'
     : r.transcriptStatus === 'processing'

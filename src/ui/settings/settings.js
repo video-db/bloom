@@ -52,7 +52,7 @@ const recording = (s) =>
       )}
       ${row(
         'Transcribe new recordings',
-        'Once a recording has uploaded, so it can be read, summarised and searched. Uses VideoDB credits.',
+        'Once a recording has been processed, so it can be read, summarised and searched. Uses VideoDB credits.',
         toggle(s, 'autoTranscribe', 'Transcribe new recordings'),
       )}
       ${row(
@@ -87,7 +87,7 @@ const privacy = (s) =>
     <div class="card">
       ${row(
         'Where recordings go',
-        'Your screen and audio stream to VideoDB while you record. The video is saved on this Mac, uploaded when you stop, and the local copy is removed once VideoDB confirms it. Download a copy to keep one.',
+        'Recordings are kept in your VideoDB account. Each one is saved on this Mac first and processed when you stop; the copy on this Mac is removed once it is safely in VideoDB. Download a copy to keep one.',
         `<span class="soft">${esc(s.environment || 'VideoDB')}</span>`,
       )}
       ${row(

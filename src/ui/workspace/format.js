@@ -11,7 +11,9 @@ export const day = (r) =>
 // A ready recording needs no label. Only say something when there is something to know.
 export const status = (r) =>
   r.status === 'error'
-    ? 'Needs attention'
+    ? r.videoId
+      ? 'Needs attention'
+      : 'Needs recovery'
     : r.status === 'ready'
       ? ''
       : 'Processing';

@@ -6,7 +6,7 @@ const DEFAULTS = {
   appearance: 'system', // system | light | dark
   openAtLogin: true, // a menu-bar app that is gone after a restart is confusing; setup shows the switch
   defaultMic: true,
-  autoTranscribe: true, // transcribe a new recording once it has uploaded
+  autoTranscribe: true, // transcribe a new recording once it has been processed
   defaultSystemAudio: false,
   defaultCamera: false,
   askPurpose: true,

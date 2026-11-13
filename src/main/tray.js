@@ -3,13 +3,6 @@ const path = require('node:path');
 const { Tray, nativeImage } = require('electron');
 const { clock } = require('./clock');
 
-// What the title says while a stopped recording is on its way to VideoDB.
-function savingLabel(upload) {
-  if (upload?.stage === 'uploading')
-    return `Uploading ${Math.round(upload.progress * 100)}%`;
-  return upload?.stage === 'processing' ? 'Processing' : 'Saving';
-}
-
 function createTray({ assets }) {
   const img = (file) =>
     nativeImage.createFromPath(path.join(assets, 'tray', file));
@@ -64,7 +57,7 @@ function createTray({ assets }) {
         starting: ' Starting',
         recording: ` ${clock(state.elapsed)}${state.ask ? '  Stop?' : ''}`,
         paused: ` ${clock(state.elapsed)}`,
-        saving: ` ${savingLabel(state.upload)}`,
+        saving: ' Processing',
       }[state.phase] || '';
     tray.setTitle(title, { fontType: 'monospacedDigit' });
     tray.setToolTip(

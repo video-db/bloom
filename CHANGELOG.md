@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-- Distinguish retained uploads from active capture in the quit confirmation; preserve the same stop, finalization and file-retention safeguards.
+- An earlier recording never blocks the next one: Start is available as soon as a recording's file is on this Mac, including after a failed recording or a failed recovery. A recording still being processed is set aside while you record and continues afterwards.
+- Bloom asks before quitting only while it is recording or still writing the file; otherwise it quits at once and continues processing on the next launch. Launch no longer waits for earlier recordings.
+- Wording: recordings are "Processing" and then ready; a failed one "Needs recovery" with "Recover". "Upload" and "Retry" no longer appear.
 - Setup: "Reopen Bloom" after granting screen recording restarts without the quit warning when nothing is being captured or finalised; a retained failed upload no longer blocks it.
 - Search: a search with no matches shows "No moments found" instead of a connection error.
-- Quit: when nothing is being captured, Bloom waits a few seconds for the recorder and then quits; a recorder shutdown that does not return can no longer leave "Stop and Quit" doing nothing.
 
 ## [2.3.4] - 2026-11-13
 

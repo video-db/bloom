@@ -189,6 +189,10 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
     show() {
       this.visible = true;
     }
+    // Automated runs show windows without focusing them.
+    showInactive() {
+      this.show();
+    }
     hide() {
       this.visible = false;
       this.focused = false;

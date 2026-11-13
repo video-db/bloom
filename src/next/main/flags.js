@@ -18,9 +18,15 @@ const forcedTheme = () =>
   flag('light') ? 'light' : flag('dark') ? 'dark' : null;
 
 // Must run before anything reads the user-data path.
+// A run driven by the tests rather than by a person.
+const automated = () => flag('fresh') || flag('connected-fixture');
+
 function separateUserData() {
   app.setName('Bloom Next');
-  app.setPath('userData', path.join(app.getPath('appData'), 'bloom-next'));
+  // Automated runs get their own folder: they must not read or write a person's data, and
+  // they must be able to start while that person's Bloom is open (one instance per folder).
+  const folder = automated() ? 'bloom-next-test' : 'bloom-next';
+  app.setPath('userData', path.join(app.getPath('appData'), folder));
 }
 
 // null keeps preferences in memory only, so automation starts from defaults.
@@ -32,6 +38,7 @@ module.exports = {
   UI,
   PRELOAD,
   flag,
+  automated,
   forcedTheme,
   separateUserData,
   prefsFile,

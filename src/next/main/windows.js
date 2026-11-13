@@ -10,6 +10,7 @@ function createWindows({
   ui,
   preload,
   keepOpen,
+  background = false, // an automated run: windows open without taking focus
   theme,
   engine,
   prefs,
@@ -28,6 +29,15 @@ function createWindows({
     nodeIntegration: false,
     sandbox: true,
   };
+  // Showing a window activates the app, and macOS then switches to whichever desktop holds
+  // the app's other windows. Automated runs must not do that to the person at the keyboard.
+  const present = (window) =>
+    background ? window.showInactive() : window.show();
+  const reveal = (window) => {
+    present(window);
+    if (!background) window.focus();
+  };
+
   function load(window, surface, options = {}) {
     if (engine.getState().sample)
       window.loadFile(
@@ -112,8 +122,7 @@ function createWindows({
       return;
     }
     placePanel();
-    panel.show();
-    panel.focus();
+    reveal(panel);
   }
 
   function togglePanel() {
@@ -152,8 +161,7 @@ function createWindows({
     }
     if (typeof view === 'string') pendingMainView = view;
     if (alive(mainWindow)) {
-      mainWindow.show();
-      mainWindow.focus();
+      reveal(mainWindow);
       deliverPendingView();
       return;
     }
@@ -175,7 +183,7 @@ function createWindows({
     });
     load(window, 'workspace', { hash: view || 'library' });
     window.once('ready-to-show', () => {
-      if (alive(window) && ready()) window.show();
+      if (alive(window) && ready()) present(window);
     });
     // Native close is asynchronous; a new request must not target the window being closed.
     const release = () => {
@@ -203,8 +211,7 @@ function createWindows({
       return;
     }
     if (alive(onboarding)) {
-      onboarding.show();
-      onboarding.focus();
+      reveal(onboarding);
       return;
     }
     onboardingSession = null;
@@ -219,7 +226,7 @@ function createWindows({
       webPreferences,
     });
     load(onboarding, 'onboarding');
-    onboarding.once('ready-to-show', () => onboarding.show());
+    onboarding.once('ready-to-show', () => present(onboarding));
     // Closing onboarding ends only the capture it started itself.
     onboarding.on('closed', () => {
       onboarding = null;

@@ -23,6 +23,9 @@ const { createQuitGuard } = require('./quit-guard');
 const { createScreenPreview } = require('./screen-preview');
 
 flags.separateUserData();
+// Automated runs stay out of the Dock and never become the active app, so opening their
+// windows cannot pull the person to another desktop.
+if (flags.automated()) app.setActivationPolicy?.('accessory');
 const primaryInstance =
   !app.requestSingleInstanceLock || app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
@@ -75,6 +78,7 @@ function start() {
     ui: flags.UI,
     preload: flags.PRELOAD,
     keepOpen: flags.flag('keep-open'),
+    background: flags.automated(),
     theme,
     engine,
     prefs,

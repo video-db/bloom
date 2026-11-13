@@ -58,6 +58,20 @@ function newRecord({ id, sessionId, title, duration = 0, marks = [] }) {
   };
 }
 
+// A recording Bloom made that VideoDB does not have yet.
+const unfinished = (r) => !r.videoId && r.status !== 'ready';
+
+// True when a new recording may start: nothing is being captured, and the last recording's
+// file, if there is one, is safely on this Mac (it has a recorder id). What happens to that
+// file afterwards is background work and never stands in the way (ADR 0004).
+function canStart(state) {
+  if (['idle', 'finished', 'processing-error'].includes(state.phase))
+    return true;
+  if (state.phase !== 'saving') return false;
+  return !!state.recordings.find((r) => r.sessionId === state.sessionId)
+    ?.recordingId;
+}
+
 // The name a recording gets until someone renames it: when it was made.
 function datedTitle(date) {
   const day = date.toLocaleDateString(undefined, {
@@ -80,13 +94,16 @@ function pending(records) {
       duration: r.duration,
       stage: r.jobStage,
       status:
-        r.status === 'error'
-          ? 'failed'
-          : ['uploading', 'processing'].includes(r.jobStage)
-            ? 'uploading'
-            : 'waiting',
+        r.status === 'error' ? 'failed' : r.paused ? 'waiting' : 'processing',
       progress: r.progress ?? null,
     }));
 }
 
-module.exports = { initialState, newRecord, datedTitle, pending };
+module.exports = {
+  initialState,
+  newRecord,
+  datedTitle,
+  pending,
+  unfinished,
+  canStart,
+};

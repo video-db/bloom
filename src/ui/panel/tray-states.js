@@ -1,25 +1,18 @@
-// The tray panel while a session exists: starting, recording, paused, stopping, saving,
-// finished, and the two states that need attention. The header carries the state; the body
-// holds only what can be done about it.
+// The tray panel while a session exists: starting, recording, paused, stopping and the short
+// moment a file is being finished; then the cards for recordings that are being processed or
+// need recovery. The header carries the state; the body holds only what can be done about it.
 import { esc, clock, button } from '../shared/dom.js';
 import { icon } from '../shared/icons.js';
 import { mark } from '../shared/mark.js';
 import { sources } from './sources.js';
 
-// Plain words for where a saved recording has got to.
-const STAGE_WORDS = {
-  finalizing: 'Finalising',
-  awaiting_token: 'Waiting to upload',
-  uploading: 'Uploading',
-  processing: 'Processing',
-  playback: 'Preparing playback',
-  'paused-upload': 'Upload paused',
-  'start-unknown': 'Needs checking',
-  failed: 'Upload failed',
-};
-export const stageWords = (stage) => STAGE_WORDS[stage] || 'Saving';
-
 const current = (s) => s.recordings.find((r) => r.sessionId === s.sessionId);
+
+// True once a new recording may start: nothing is being captured and the last recording's
+// file is on this Mac. Mirrors the engine's rule; processing never stands in the way.
+export const canStart = (s) =>
+  ['idle', 'finished', 'processing-error'].includes(s.phase) ||
+  (s.phase === 'saving' && !!current(s)?.recordingId);
 
 // ---- header: says the state at a glance ----
 const headers = {
@@ -32,13 +25,12 @@ const headers = {
   stopped: () =>
     `<span class="tray-live">${icon('warning')}Capture needs attention</span>`,
   saving: (s) =>
-    `<span class="brandname">${mark('busy')} Saving ${clock(s.elapsed)}</span>`,
-  'processing-error': () =>
-    `<span class="tray-live">${icon('warning')}Saving needs attention</span>`,
+    `<span class="brandname">${mark('busy')} Processing ${clock(s.elapsed)}</span>`,
 };
-export const stateHeader = (s) => headers[s.phase]?.(s) || '';
-export const attention = (s) =>
-  ['paused', 'stopped', 'processing-error'].includes(s.phase);
+// Once a new recording can start, the header is Bloom's own again.
+export const stateHeader = (s) =>
+  canStart(s) ? '' : headers[s.phase]?.(s) || '';
+export const attention = (s) => ['paused', 'stopped'].includes(s.phase);
 
 // ---- bodies ----
 const marks = (s) =>
@@ -96,35 +88,36 @@ const paused = (s) =>
       </button>
     </div>`;
 
-// One card for the recording being saved: its three steps, and which one it is on.
-function saving(s) {
-  const record = current(s);
-  const stage = s.upload?.stage || record?.jobStage || 'finalizing';
-  const step = ['processing', 'playback'].includes(stage)
-    ? 2
-    : stage === 'finalizing'
-      ? 0
-      : 1;
-  const steps = ['Finalise', 'Upload', 'Process']
-    .map(
-      (name, index) =>
-        `<div class="${index < step ? 'done' : index === step ? 'now' : ''}"><b>${name}</b>${index < step ? 'done' : index === step ? 'now…' : 'next'}</div>`,
-    )
-    .join('');
-  return /* HTML */ `<div class="tray-card">
-      <span class="shot"></span>
-      <span class="rc-copy"
-        ><b>${esc(record?.title || 'Your recording')}</b
-        ><small>${clock(s.elapsed)} · ${stageWords(stage)}</small></span
-      >
-    </div>
-    <div class="stages" role="status" aria-label="Saving: ${stageWords(stage)}">
-      ${steps}
-    </div>
-    <p class="soft tray-small">
-      Not recording. Keep Bloom open until this finishes; the link appears here.
+// A recording that is not ready yet: being processed, waiting its turn, or needing recovery.
+const card = ({ id, title, duration, failed, waiting }) =>
+  /* HTML */ `<div class="tray-card">
+    <span class="shot"></span>
+    <span class="rc-copy"
+      ><b>${esc(title)}</b
+      ><small
+        >${
+          failed
+            ? 'Kept on this Mac'
+            : `${clock(duration)} · ${waiting ? 'Waiting' : 'Processing'}`
+        }</small
+      ></span
+    >
+    ${
+      failed
+        ? `<button class="btn sm" data-command="retryRecording" data-id="${esc(id)}" title="Recover this recording">Recover</button>`
+        : ''
+    }
+  </div>`;
+
+// The few seconds after Stop while the file is being finished.
+const finishing = (s) =>
+  /* HTML */ `${card({
+      title: current(s)?.title || 'Your recording',
+      duration: s.elapsed,
+    })}
+    <p class="soft tray-small" role="status">
+      Finishing your recording. Keep Bloom open for a moment.
     </p>`;
-}
 
 const finished = (s) =>
   /* HTML */ `<div class="tray-card">
@@ -142,26 +135,6 @@ const finished = (s) =>
       </button>
     </div>`;
 
-function needsCheck(s) {
-  const record = current(s);
-  return /* HTML */ `<p>
-      <b>This recording needs checking.</b><br /><span class="soft"
-        >It is kept on this Mac. Checking again looks for the saved copy.</span
-      >
-    </p>
-    <div class="row2">
-      ${
-        record
-          ? button(
-              'retryRecording',
-              'Check again',
-              `data-id="${esc(record.id)}"`,
-            )
-          : ''
-      }${button('newRecording', 'Record again')}
-    </div>`;
-}
-
 const bodies = {
   starting: () =>
     '<p><b>Not recording yet.</b><br /><span class="soft">Bloom is opening your screen and sound.</span></p>',
@@ -177,33 +150,48 @@ const bodies = {
         >
       </p>
       ${button('stop', 'Try Stop again')}`,
-  saving,
-  'processing-error': needsCheck,
+  saving: finishing,
 };
 // The body for a state, or '' when the ready controls should show instead.
-export const stateBody = (s) => bodies[s.phase]?.(s) || '';
+export const stateBody = (s) => (canStart(s) ? '' : bodies[s.phase]?.(s) || '');
 export const resultCard = (s) => (s.result ? finished(s) : '');
 
-// Recordings from earlier sessions that have not finished saving. The one being saved
-// right now has its own card above, so it is left out here.
+// The recording just made, while it is processed or if it needs recovery. It sits where the
+// finished card will appear.
+export function currentCard(s) {
+  const record = current(s);
+  if (!record || !['saving', 'processing-error'].includes(s.phase)) return '';
+  return card({
+    id: record.id,
+    title: record.title,
+    duration: record.duration || s.elapsed,
+    failed: s.phase === 'processing-error' || record.status === 'error',
+  });
+}
+
+// Earlier recordings that are not ready yet, in two groups.
 export function pending(s) {
-  const active = s.phase === 'saving' ? current(s)?.id : null;
-  const others = s.pending.filter((p) => p.id !== active);
-  if (!others.length) return '';
-  return /* HTML */ `<span class="label">Still saving</span> ${others
-      .map(
-        (p) =>
-          /* HTML */ `<div class="tray-card">
-            <span class="shot"></span>
-            <span class="rc-copy"
-              ><b>${esc(p.title)}</b><small>${stageWords(p.stage)}</small></span
-            >
-            ${
-              p.status === 'failed'
-                ? `<button class="btn sm" data-command="resumeUpload" data-id="${esc(p.id)}">Retry</button>`
-                : ''
-            }
-          </div>`,
-      )
-      .join('')}`;
+  const shown = ['saving', 'processing-error'].includes(s.phase)
+    ? current(s)?.id
+    : null;
+  const others = s.pending.filter((p) => p.id !== shown);
+  const group = (label, items) =>
+    items.length
+      ? `<span class="label">${label}</span>${items
+          .map((p) =>
+            card({
+              ...p,
+              failed: p.status === 'failed',
+              waiting: p.status === 'waiting',
+            }),
+          )
+          .join('')}`
+      : '';
+  return `${group(
+    'Processing',
+    others.filter((p) => p.status !== 'failed'),
+  )}${group(
+    'Needs recovery',
+    others.filter((p) => p.status === 'failed'),
+  )}`;
 }

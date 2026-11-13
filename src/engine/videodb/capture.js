@@ -1,5 +1,5 @@
 const { randomUUID } = require('node:crypto');
-const { newRecord, datedTitle } = require('./model');
+const { newRecord, datedTitle, canStart } = require('./model');
 const { ServiceError, safeError } = require('./errors');
 
 function createCapture(
@@ -35,20 +35,11 @@ function createCapture(
   const commands = {
     async start() {
       const state = ctx.get();
-      if (transitioning || !['idle', 'finished'].includes(state.phase)) return;
+      if (transitioning || !canStart(state)) return;
       if (state.account.status !== 'signed-in')
         throw new ServiceError(
           'signed-out',
           'Connect your VideoDB account first.',
-        );
-      if (
-        state.recordings.some(
-          (r) => r.status !== 'ready' && !r.videoId && !r.paused,
-        )
-      )
-        throw new ServiceError(
-          'pending-recording',
-          'Finish or recover the previous recording before starting another.',
         );
       const permissions = recorder.permissions();
       if (!permissions.screen || (state.sources.mic && !permissions.mic))
@@ -75,6 +66,7 @@ function createCapture(
       const operationId = randomUUID();
       ctx.set({
         phase: 'starting',
+        upload: null,
         operationId,
         sessionId: `starting-${operationId}`,
         elapsed: 0,
@@ -115,6 +107,9 @@ function createCapture(
               ]
             : []),
         ];
+        // Starting a session restarts the recorder, which stops work on earlier recordings.
+        // Set them aside; the ones that were going well continue when this one is done.
+        jobs.setAside(record.id);
         attempted = true;
         await recorder.start({ sessionId, channels });
         started = true;

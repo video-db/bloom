@@ -1,5 +1,7 @@
 const { randomUUID } = require('node:crypto');
-const { newRecord } = require('./model');
+const { newRecord, unfinished } = require('./model');
+
+const CAPTURING = ['starting', 'recording', 'paused', 'stopping', 'stopped'];
 const { ServiceError } = require('./errors');
 
 function createJobs(ctx, { service, recorder, onReady = () => {} }) {
@@ -74,6 +76,7 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
         }
       }
       onReady(record.id);
+      continueSetAside();
     } catch {
       if (scope !== ctx.scope()) return;
       ctx.update(record.id, { status: 'error', jobStage: 'playback' });
@@ -83,16 +86,17 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
           problem: {
             kind: 'playback',
             message:
-              'Uploaded to VideoDB. Playback or the recording name still needs to be checked.',
+              'Processed. Playback or the recording name still needs to be checked.',
           },
         });
     } finally {
       completing.delete(payload.sessionId);
     }
   }
-  function failed(sessionId, kind = 'upload') {
+  function failed(sessionId, kind = 'processing') {
     const record = forSession(sessionId);
-    if (!record) return;
+    // A set-aside recording's old wait ends when the recorder restarts; that is not a failure.
+    if (!record || record.paused) return;
     if (
       ctx.get().sessionId === sessionId &&
       ['starting', 'recording', 'paused', 'stopping'].includes(ctx.get().phase)
@@ -111,14 +115,15 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
         problem: {
           kind,
           message: record.videoId
-            ? 'The upload finished, but playback needs another check.'
-            : 'Saving did not finish. Retained complete recordings can be retried; incomplete media may need recovery.',
+            ? 'Processing finished, but playback needs another check.'
+            : 'Processing did not finish. The recording is kept on this Mac; recover it to try again.',
         },
       });
     ctx.update(record.id, {
       status: 'error',
       jobStage: record.videoId ? 'playback' : 'failed',
     });
+    continueSetAside();
   }
   async function event(name, payload) {
     const record = forSession(payload?.sessionId);
@@ -150,7 +155,11 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
           ctx
             .get()
             .recordings.some(
-              (r) => !r.videoId && r.recordingId && r.status !== 'error',
+              (r) =>
+                !r.videoId &&
+                r.recordingId &&
+                r.status !== 'error' &&
+                !r.paused,
             )
         )
           schedule();
@@ -223,6 +232,7 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
       if (startWaits && job.stage !== 'failed' && job.stage !== 'recording')
         wait({ recordingId: job.recordingId });
     }
+    if (startWaits) continueSetAside();
   }
   async function retry(id) {
     if (
@@ -230,7 +240,7 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
     )
       throw new ServiceError(
         'busy',
-        'Finish the current capture before retrying an older upload.',
+        'Finish the current recording before recovering an older one.',
       );
     const record = ctx.find(id);
     if (!record) return;
@@ -247,17 +257,48 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
     if (!record.recordingId) return recover();
     ctx.update(id, {
       paused: false,
+      continueLater: false,
       status: 'processing',
       jobStage: 'awaiting_token',
     });
+    // Recovering the recording just made: it is being processed again, not failed.
+    if (
+      record.sessionId === ctx.get().sessionId &&
+      ctx.get().phase === 'processing-error'
+    )
+      ctx.set({ phase: 'saving', problem: null });
     await recorder.relay(record.recordingId, record.sessionId);
     wait({ recordingId: record.recordingId });
+  }
+  // Before a new recording starts: every unfinished earlier recording is set aside. One that
+  // was being processed is marked to continue afterwards; a failed one waits to be recovered.
+  function setAside(startingId) {
+    for (const record of ctx
+      .get()
+      .recordings.filter((r) => r.id !== startingId && unfinished(r)))
+      ctx.update(record.id, {
+        paused: true,
+        continueLater: record.continueLater || record.status !== 'error',
+        jobStage: record.status === 'error' ? 'paused-upload' : 'waiting',
+      });
+  }
+  // When nothing is being captured: pick up the recordings set aside while they were going well.
+  function continueSetAside() {
+    if (disposed || CAPTURING.includes(ctx.get().phase)) return;
+    for (const record of ctx
+      .get()
+      .recordings.filter((r) => r.paused && r.continueLater && unfinished(r))) {
+      ctx.update(record.id, { continueLater: false });
+      ctx.run(() => retry(record.id));
+    }
   }
   return {
     event,
     wait,
     recover,
     retry,
+    setAside,
+    continueSetAside,
     dispose() {
       disposed = true;
       clearTimeout(poll);

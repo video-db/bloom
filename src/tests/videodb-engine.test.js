@@ -566,3 +566,88 @@ test('a delayed device list cannot restore devices after sign-out', async (t) =>
   assert.equal(f.engine.getState().account.status, 'signed-out');
   assert.deepEqual(f.engine.getState().channels, before);
 });
+
+// ADR 0004: what happens to a recording after it is on this Mac never blocks the next one.
+test('a failed earlier recording, even after a failed recovery, never blocks Start', async (t) => {
+  const f = await setup(t);
+  await f.command('start');
+  await f.command('stop');
+  const failedSession = f.engine.getState().sessionId;
+  f.recorder.emit('recording-relay-failed', { sessionId: failedSession });
+  await flush();
+  assert.equal(f.engine.getState().phase, 'processing-error');
+  // The owner's case: Recover was tried, it failed again, and Start must still work.
+  const failedId = f.engine.getState().recordings[0].id;
+  await f.command('retryRecording', { id: failedId });
+  f.recorder.emit('recording-relay-failed', { sessionId: failedSession });
+  await flush();
+  assert.equal(f.engine.getState().recordings[0].status, 'error');
+  assert.equal(f.engine.getState().recordings[0].paused, false);
+
+  await f.command('start');
+  const state = f.engine.getState();
+  assert.equal(state.phase, 'recording');
+  assert.equal(state.problem, null);
+  assert.equal(state.recordings.length, 2);
+  const earlier = state.recordings.find((r) => r.id === failedId);
+  assert.equal(earlier.paused, true, 'set aside, kept on this Mac');
+  assert.equal(earlier.continueLater, false, 'a failed one waits to be recovered');
+  assert.equal(earlier.status, 'error');
+});
+
+test('Start is available while the last recording is processed; that one continues afterwards', async (t) => {
+  const f = await setup(t);
+  await f.command('start');
+  await f.command('stop');
+  const first = f.engine.getState().sessionId;
+  const firstId = f.engine.getState().recordings[0].id;
+  assert.equal(f.engine.getState().phase, 'saving');
+
+  await f.command('start'); // straight away, without waiting for processing
+  assert.equal(f.engine.getState().phase, 'recording');
+  let earlier = f.engine.getState().recordings.find((r) => r.id === firstId);
+  assert.deepEqual(
+    [earlier.paused, earlier.continueLater, earlier.status, earlier.jobStage],
+    [true, true, 'processing', 'waiting'],
+  );
+  assert.equal(f.engine.getState().pending.find((p) => p.id === firstId).status, 'waiting');
+  // The recorder restarting ends the old wait; that is not a failure of the earlier recording.
+  f.recorder.emit('recording-relay-failed', { sessionId: first });
+  await flush();
+  assert.equal(
+    f.engine.getState().recordings.find((r) => r.id === firstId).status,
+    'processing',
+  );
+
+  await f.command('stop');
+  f.recorder.finish(); // the second recording is ready
+  await flush();
+  await f.engine.whenIdle();
+  await flush();
+  earlier = f.engine.getState().recordings.find((r) => r.id === firstId);
+  assert.equal(earlier.paused, false, 'picked up again');
+  assert.equal(earlier.continueLater, false);
+  assert.ok(
+    f.calls.some(([name, recordingId]) => name === 'relay' && recordingId === `job-${first}`),
+    'processing of the earlier recording is asked for again',
+  );
+  f.recorder.finish(first);
+  await flush();
+  assert.equal(
+    f.engine.getState().recordings.filter((r) => r.status === 'ready').length,
+    2,
+  );
+});
+
+test('Start is not offered while the file is still being written', async (t) => {
+  const f = await setup(t);
+  await f.command('start');
+  // Stop is confirmed but the recorder has not yet said the file is ready.
+  f.recorder.stop = async () => {};
+  await f.command('stop');
+  assert.equal(f.engine.getState().phase, 'saving');
+  assert.equal(f.engine.getState().recordings[0].recordingId, undefined);
+  await f.command('start');
+  assert.equal(f.engine.getState().phase, 'saving', 'no second capture over an unfinished file');
+  assert.equal(f.engine.getState().recordings.length, 1);
+});

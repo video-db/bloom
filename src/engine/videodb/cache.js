@@ -20,6 +20,7 @@ const fields = [
   'paragraphs',
   'summary',
   'requestedTitle',
+  'continueLater',
   'titleOrigin',
   'titleAttempted',
   'pendingOperation',

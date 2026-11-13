@@ -37,7 +37,8 @@ function createAccess(ctx, { service, recorder, library, recover }) {
     });
     const ready = await prepareRecorder();
     await library.refresh();
-    if (ready) await recover();
+    // Recovery is background work; signing in and launching do not wait for it (ADR 0004).
+    if (ready) ctx.run(recover);
   }
 
   const rejected = (error) =>

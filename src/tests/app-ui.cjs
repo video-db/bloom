@@ -187,12 +187,27 @@ fs.mkdirSync(evidence, { recursive: true });
       .getByRole('button', { name: 'Stop recording', exact: true })
       .click();
     await phase('saving');
-    // Saving: one card with its steps, no raw stage names and no second "pending" card.
-    await recorder.locator('.stages').waitFor();
-    assert.equal(await recorder.getByText('Pending recordings').count(), 0);
-    assert.equal(await recorder.getByText(/awaiting_token|uploading$/).count(), 0);
-    assert.equal(await recorder.getByRole('button', { name: /Retry/ }).count(), 0);
-    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-saving.png`) });
+    // The file is on this Mac: the recording shows as a card being processed, and the next
+    // recording can start straight away. Nothing says upload or retry.
+    await recorder.locator('.tray-card', { hasText: 'Processing' }).waitFor();
+    assert.equal(await recorder.getByRole('button', { name: /Start recording/ }).isEnabled(), true);
+    assert.equal(await recorder.locator('.ph.warn').count(), 0);
+    assert.equal(await recorder.getByText(/upload|retry|awaiting_token|Still saving/i).count(), 0);
+    assert.equal(await recorder.locator('.stages').count(), 0);
+    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-processing.png`) });
+    // If processing fails, the recording waits to be recovered and still does not block Start.
+    await app.evaluate(() => {
+      const { recorder: fake } = global.__bloom.getFixture();
+      fake.emit('recording-relay-failed', { sessionId: fake.active });
+    });
+    await phase('processing-error');
+    await recorder.getByText('Kept on this Mac', { exact: true }).waitFor();
+    assert.equal(await recorder.getByRole('button', { name: 'Recover', exact: true }).count(), 1);
+    assert.equal(await recorder.getByRole('button', { name: /Start recording/ }).isEnabled(), true);
+    assert.equal(await recorder.locator('.ph.warn').count(), 0, 'a recording needing recovery does not take over the panel');
+    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-recovery.png`) });
+    await recorder.getByRole('button', { name: 'Recover', exact: true }).click();
+    await phase('saving');
     assert.equal(
       await app.evaluate(
         () => global.__bloom.getEngine().getState().result,

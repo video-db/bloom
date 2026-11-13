@@ -110,29 +110,6 @@ body.panel {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
-.stages {
-  display: flex;
-  gap: 6px;
-}
-.stages div {
-  flex: 1;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 6px 8px;
-  font-size: var(--t-label);
-  color: var(--soft);
-  background: var(--paper);
-}
-.stages div b {
-  display: block;
-  color: var(--ink);
-  font-weight: 500;
-}
-.stages div.done {
-  border-color: var(--okline);
-  background: var(--okbg);
-  color: var(--ok);
-}
 .perm {
   display: flex;
   justify-content: space-between;
@@ -561,11 +538,6 @@ button.capture-option:not(:disabled):hover {
 .tray-card small {
   display: block;
   color: var(--soft);
-}
-/* The step a saving recording is on. */
-.stages div.now {
-  border-color: var(--line2);
-  color: var(--ink);
 }
 .panel .row3,
 .panel .row2 {

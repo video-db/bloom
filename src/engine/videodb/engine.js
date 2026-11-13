@@ -26,7 +26,7 @@ function createVideoDBEngine({
   let scopeId = null;
   let disposed = false;
   let defaults = { mic: true, systemAudio: false };
-  let autoTranscribe = true; // transcribe a new recording once it has uploaded
+  let autoTranscribe = true; // transcribe a new recording once it has been processed
   const sourceOverrides = new Set();
   const ctx = {
     get: () => state,
@@ -111,7 +111,9 @@ function createVideoDBEngine({
   });
   const explore = createExploreCommands(ctx, service);
   const understand = createUnderstandCommands(ctx, service);
-  const ownLibrary = createLibraryCommands(ctx, service, { beforeRename: understand.whenNamed });
+  const ownLibrary = createLibraryCommands(ctx, service, {
+    beforeRename: understand.whenNamed,
+  });
   // Refreshing the library also refreshes what the sidebar shows about the account.
   const library = {
     ...ownLibrary,
@@ -253,7 +255,7 @@ function createVideoDBEngine({
       if (!record?.videoId)
         throw new ServiceError(
           'not-found',
-          'Select an uploaded recording first.',
+          'This recording has not been processed yet.',
         );
       return service.prepareDownload(record.videoId);
     },
@@ -271,6 +273,10 @@ function createVideoDBEngine({
           'Capture stop could not be confirmed. Keep Bloom open and try Stop again.',
         );
       await recorder.shutdown({ suspend });
+    },
+    // Last resort when quitting: the recorder did not stop in time and must not outlive Bloom.
+    abandon() {
+      recorder.abandon?.();
     },
     dispose() {
       disposed = true;

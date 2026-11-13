@@ -7,19 +7,9 @@ import {
   resultCard,
   pending,
   attention,
+  canStart,
+  currentCard,
 } from './tray-states.js';
-
-const phases = {
-  idle: 'Ready',
-  starting: 'Starting',
-  recording: 'Recording',
-  paused: 'Paused',
-  stopping: 'Stopping',
-  stopped: 'Capture status needs attention',
-  saving: 'Saving',
-  finished: 'Ready to play',
-  'processing-error': 'Saving needs attention',
-};
 
 export function permissions(s) {
   return /* HTML */ `<div class="panel-permissions">
@@ -77,10 +67,10 @@ function ready(s) {
 
 // The two latest recordings, one click from the tray.
 function recent(s, needsSetup) {
-  if (needsSetup || !['idle', 'finished'].includes(s.phase) || !s.recent.length)
-    return '';
-  return /* HTML */ `<span class="label">Recent</span> ${s.recent
-      .slice(0, 2)
+  // Only what can be opened and played; a recording still being processed has its own card.
+  const ready = s.recordings.filter((r) => r.status === 'ready').slice(0, 2);
+  if (needsSetup || !canStart(s) || !ready.length) return '';
+  return /* HTML */ `<span class="label">Recent</span> ${ready
       .map(
         (r) =>
           /* HTML */ `<button
@@ -107,7 +97,7 @@ export function panel(s) {
     <button class="btn capture-start" disabled>Start recording</button>
     <button class="btn" data-ui="open-onboarding">Finish setup</button>
   </div>`;
-  const between = ['idle', 'finished'].includes(s.phase);
+  const between = canStart(s);
   return /* HTML */ `<section class="panel">
     <header class="ph ${attention(s) ? 'warn' : ''}">
       ${stateHeader(s) || `<span class="brandname">${logo} Bloom</span>`}<button
@@ -126,7 +116,7 @@ export function panel(s) {
         s.hint === 'first-recording' && s.phase === 'idle' && !needsSetup
           ? '<p class="panel-hint" role="status">Start your first recording here. ⇧⌘R works from anywhere.</p>'
           : ''
-      }${resultCard(s)}${
+      }${resultCard(s)}${currentCard(s)}${
         needsSetup ? setup : between ? ready(s) : stateBody(s)
       }${recent(s, needsSetup)}${pending(s)}
     </div>

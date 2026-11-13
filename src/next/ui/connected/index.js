@@ -185,8 +185,11 @@ root.addEventListener('submit', (event) => {
     window.bloom.command('signIn', { key: input.value });
     input.value = '';
   }
-  if (event.target.dataset.form === 'mark')
-    window.bloom.command('mark', { text: event.target.elements.note.value });
+  if (event.target.dataset.form === 'mark') {
+    const note = event.target.elements.note;
+    window.bloom.command('mark', { text: note.value });
+    note.value = ''; // the note became a mark
+  }
 });
 root.addEventListener('change', (event) => {
   const el = event.target;

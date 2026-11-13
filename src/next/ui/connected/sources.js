@@ -27,7 +27,7 @@ const arrow = (name, label) =>
     ${icon('down')}
   </button>`;
 
-function display(s) {
+function display(s, locked) {
   const { displays } = s.channels;
   const index = Math.max(
     0,
@@ -47,17 +47,19 @@ function display(s) {
         several ? `<span class="display-number">${index + 1}</span>` : ''
       }
     </span>
-    ${several ? arrow('display', 'Choose a display') : ''}
+    ${several && !locked ? arrow('display', 'Choose a display') : ''}
   </span>`;
 }
 
-function toggle({ key, glyph, label, on, detail = '' }) {
+function toggle({ key, glyph, label, on, detail = '', locked = false }) {
   const state = on ? 'On' : 'Off';
   return /* HTML */ `<button
     class="capture-option ${on ? 'on' : ''}"
-    data-command="setSource"
-    data-key="${key}"
-    data-value="${!on}"
+    ${
+      locked
+        ? 'disabled'
+        : `data-command="setSource" data-key="${key}" data-value="${!on}"`
+    }
     aria-pressed="${on}"
     aria-label="${label}: ${state}"
     title="${esc(detail || label)}: ${state}"
@@ -66,7 +68,7 @@ function toggle({ key, glyph, label, on, detail = '' }) {
   </button>`;
 }
 
-function microphone(s) {
+function microphone(s, locked) {
   const { mics } = s.channels;
   const current = mics.find((m) => m.id === s.sources.microphone);
   return /* HTML */ `<span class="source ${s.sources.mic ? 'on' : ''}">
@@ -76,8 +78,9 @@ function microphone(s) {
       label: 'Microphone',
       on: s.sources.mic,
       detail: current?.name,
+      locked,
     })}
-    ${mics.length > 1 ? arrow('microphone', 'Choose a microphone') : ''}
+    ${mics.length > 1 && !locked ? arrow('microphone', 'Choose a microphone') : ''}
   </span>`;
 }
 
@@ -132,21 +135,25 @@ function microphoneChoices(s) {
       .join('')}
   </section>`;
 }
-
-export function sources(s) {
+// locked: a session is running, so the row shows what is being captured and cannot change.
+export function sources(s, { locked = false } = {}) {
+  if (locked) open = null;
   // A chooser whose choice has gone (a display unplugged) closes itself.
   if (open === 'display' && s.channels.displays.length < 2) open = null;
   if (open === 'microphone' && s.channels.mics.length < 2) open = null;
+  const systemAudio = toggle({
+    key: 'systemAudio',
+    glyph: 'audio',
+    label: 'System audio',
+    on: s.sources.systemAudio,
+    locked,
+  });
   return /* HTML */ `<div class="source-group">
     <div class="capture-options" role="group" aria-label="Capture sources">
-      ${display(s)}<span class="source-divider"></span>${microphone(s)}${toggle(
-        {
-          key: 'systemAudio',
-          glyph: 'audio',
-          label: 'System audio',
-          on: s.sources.systemAudio,
-        },
-      )}
+      ${display(s, locked)}<span class="source-divider"></span>${microphone(
+        s,
+        locked,
+      )}${systemAudio}
     </div>
     ${
       open === 'display'

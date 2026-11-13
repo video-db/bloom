@@ -340,3 +340,64 @@
     opacity: 0.7;
   }
 }
+
+/* ---- tray panel while a session exists ---- */
+.tray-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.tray-live .bl {
+  width: 18px;
+  height: 18px;
+}
+.tray-live .mid {
+  font-size: 12.5px;
+  font-weight: 400;
+}
+.ph .brandname .bl {
+  width: 17px;
+  height: 17px;
+}
+.panel .pb p {
+  margin: 0;
+}
+.tray-small {
+  font-size: 12px;
+}
+.tray-marks {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.tray-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 12.5px;
+}
+.tray-card small {
+  display: block;
+  color: var(--soft);
+}
+/* The step a saving recording is on. */
+.stages div.now {
+  border-color: var(--line2);
+  color: var(--ink);
+}
+.capture-option:disabled {
+  cursor: default;
+}
+.panel .row3,
+.panel .row2 {
+  position: static;
+  padding: 0;
+}

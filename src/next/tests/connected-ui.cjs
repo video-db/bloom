@@ -10,6 +10,11 @@ fs.mkdirSync(evidence, { recursive: true });
 
 (async () => {
   const theme = process.argv[2] || 'light';
+  // A hung window must fail the run, not stall it.
+  setTimeout(() => {
+    console.error('Connected walkthrough timed out.');
+    process.exit(2);
+  }, 150000).unref();
   const app = await _electron.launch({
     executablePath: require('electron'),
     args: [
@@ -161,10 +166,31 @@ fs.mkdirSync(evidence, { recursive: true });
 
     await recorder.locator('[data-command=start]').click();
     await phase('recording');
+    // Recording: the state is in the header, a typed note becomes a mark, sources are locked.
+    await recorder.locator('.ph .timer').waitFor();
+    assert.equal(await recorder.getByRole('button', { name: 'Microphone: On' }).isDisabled(), true);
+    await recorder.getByLabel('Mark a moment').fill('First point');
+    await recorder.getByLabel('Mark a moment').press('Enter');
+    await recorder.locator('.tray-marks').getByText('First point').waitFor();
+    assert.equal(await recorder.getByLabel('Mark a moment').inputValue(), '', 'the note became a mark');
+    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-recording.png`) });
+    await recorder.getByRole('button', { name: 'Pause', exact: true }).click();
+    await phase('paused');
+    await recorder.getByText('Nothing is being captured.').waitFor();
+    assert.equal(await recorder.locator('.ph.warn').count(), 1);
+    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-paused.png`) });
+    await recorder.getByRole('button', { name: 'Resume', exact: true }).click();
+    await phase('recording');
     await recorder
       .getByRole('button', { name: 'Stop recording', exact: true })
       .click();
     await phase('saving');
+    // Saving: one card with its steps, no raw stage names and no second "pending" card.
+    await recorder.locator('.stages').waitFor();
+    assert.equal(await recorder.getByText('Pending recordings').count(), 0);
+    assert.equal(await recorder.getByText(/awaiting_token|uploading$/).count(), 0);
+    assert.equal(await recorder.getByRole('button', { name: /Retry/ }).count(), 0);
+    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-saving.png`) });
     assert.equal(
       await app.evaluate(
         () => global.__bloomNext.getEngine().getState().result,
@@ -174,6 +200,9 @@ fs.mkdirSync(evidence, { recursive: true });
     await app.evaluate(() => global.__bloomNext.getFixture().recorder.finish());
     await phase('finished');
     assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), true);
+    assert.equal(await recorder.getByText('Ready to play').count(), 1);
+    assert.equal(await recorder.getByRole('button', { name: /Start recording/ }).count(), 1, 'the next recording is one click away');
+    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-finished.png`) });
     const panel = await windowFor('panel');
     await panel
       .getByRole('button', { name: 'Open recording', exact: true })
@@ -240,7 +269,15 @@ fs.mkdirSync(evidence, { recursive: true });
     await app
       .evaluate(() => global.__bloomNext.getEngine().dispose())
       .catch(() => {});
-    await app.close();
+    await Promise.race([
+      app.close(),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
+    try {
+      app.process().kill('SIGKILL');
+    } catch {
+      // already gone
+    }
   }
 })().catch((error) => {
   console.error(error);

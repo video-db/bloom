@@ -13,6 +13,11 @@ const SHAPES = {
   down: '<path d="M6 9.5l6 6 6-6"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  pause:
+    '<rect x="6.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor" stroke="none"/>',
+  mark: '<path d="M6.5 4h11v16.5L12 16.6l-5.5 3.9z"/>',
+  warning: '<path d="M12 4.5l8.5 15h-17zM12 10.5v4M12 17.3v.1"/>',
 };
 
 export const icon = (name) =>

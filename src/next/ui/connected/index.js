@@ -13,7 +13,7 @@ let state = null,
   shape = '',
   view = location.hash.slice(1) || 'library',
   activeId = null,
-  query = '';
+  list = { query: '', filter: 'all', order: 'newest' }; // how the main window browses
 // Onboarding runs its own flow; the panel and workspace share the renderer below.
 const firstRun = surface === 'onboarding' ? createOnboarding(root) : null;
 
@@ -24,7 +24,7 @@ function render(force = false) {
     elapsed: 0,
     view,
     activeId,
-    query,
+    list,
   });
   if (force || next !== shape) {
     const focused = root.contains(document.activeElement)
@@ -41,7 +41,7 @@ function render(force = false) {
     root.innerHTML =
       surface === 'panel'
         ? panel(state)
-        : workspace(state, view, activeId, query);
+        : workspace(state, view, activeId, list);
     if (note !== undefined && root.querySelector('input[name="note"]'))
       root.querySelector('input[name="note"]').value = note;
     if (focusKey) {
@@ -190,6 +190,10 @@ root.addEventListener('submit', (event) => {
 });
 root.addEventListener('change', (event) => {
   const el = event.target;
+  if (el.dataset.list) {
+    list[el.dataset.list] = el.value;
+    render(true);
+  }
   if (el.dataset.source)
     window.bloom.command('setSource', {
       key: el.dataset.source,
@@ -208,7 +212,7 @@ root.addEventListener('change', (event) => {
 });
 root.addEventListener('input', (event) => {
   if (event.target.hasAttribute('data-query')) {
-    query = event.target.value;
+    list.query = event.target.value;
     render(true);
   }
 });
@@ -234,10 +238,11 @@ window.bloom.getState().then((s) => {
   receive(s);
   window.bloom.ui('main-ready');
 });
-// Devices come and go. The tray panel asks again each time it opens, at most every 15 s,
-// and only between recordings.
+// Devices and recordings change outside this window. The tray panel re-reads its sources
+// and the main window its library each time they come forward, at most every 15 s and only
+// between recordings. That is why neither has a Refresh button.
 let refreshedAt = 0;
-if (surface === 'panel')
+if (surface !== 'onboarding')
   window.addEventListener('focus', () => {
     const between = state && ['idle', 'finished'].includes(state.phase);
     if (
@@ -247,7 +252,7 @@ if (surface === 'panel')
     )
       return;
     refreshedAt = Date.now();
-    window.bloom.command('checkConnection');
+    window.bloom.command(surface === 'panel' ? 'checkConnection' : 'refresh');
   });
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const syncMotion = () =>

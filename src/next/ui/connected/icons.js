@@ -11,6 +11,7 @@ const SHAPES = {
   window:
     '<rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M3 9.5h18M6.5 7h.1M9.5 7h.1"/>',
   down: '<path d="M6 9.5l6 6 6-6"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
 };
 

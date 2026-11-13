@@ -192,6 +192,16 @@ fs.mkdirSync(evidence, { recursive: true });
     await main.screenshot({
       path: path.join(evidence, `${theme}-workspace.png`),
     });
+    // The approved main window: one primary action, the rest under a menu, no form-era controls.
+    assert.equal(await main.getByRole('button', { name: 'Copy link', exact: true }).count(), 1);
+    assert.equal(await main.getByText('Refresh playback').count(), 0);
+    assert.equal(await main.getByRole('button', { name: 'Refresh', exact: true }).count(), 0);
+    assert.equal(await main.getByRole('button', { name: 'Recording controls' }).count(), 0);
+    assert.equal(await main.getByRole('button', { name: 'New recording', exact: true }).count(), 1);
+    assert.equal(await main.locator('.record-row small').first().innerText().then((t) => /Ready/.test(t)), false);
+    await main.locator('[data-list=order]').selectOption('name');
+    await main.locator('[data-list=order]').selectOption('newest');
+    await main.locator('.record-menu summary').click();
     await main.getByRole('button', { name: 'Rename', exact: true }).click();
     await main
       .locator('dialog input[name=title]')

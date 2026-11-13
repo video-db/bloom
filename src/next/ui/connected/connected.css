@@ -39,21 +39,11 @@
   width: 100%;
 }
 .connected-status,
-.connected-actions,
-.connected-toggles,
 .connected-setting {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-}
-.connected-toggles label {
-  flex-direction: row;
-  align-items: center;
-}
-.connected-actions {
-  flex-wrap: wrap;
-  justify-content: flex-start;
 }
 .connected-setting {
   padding: 12px 0;
@@ -67,40 +57,6 @@
   filter: brightness(0) invert(1);
   height: 20px;
   width: 20px;
-}
-.connected-detail {
-  min-height: 100%;
-}
-.connected-detail .workspace-columns {
-  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 1fr);
-}
-.connected-transcript {
-  padding: 20px;
-}
-.connected-prose {
-  white-space: pre-wrap;
-  user-select: text;
-  font-size: 16px;
-  line-height: 1.8;
-  margin-bottom: 20px;
-  overflow-wrap: anywhere;
-}
-.connected-player-pane {
-  padding: 20px;
-  overflow-y: auto;
-}
-.connected-player-pane video {
-  width: 100%;
-  max-height: 320px;
-  background: var(--fill);
-  border-radius: 10px;
-}
-.connected-video-empty {
-  min-height: 150px;
-  padding: 20px;
-  background: var(--sub);
-  border: 1px solid var(--line);
-  border-radius: 10px;
 }
 .view > .note {
   margin: 12px;
@@ -304,4 +260,51 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 500;
+}
+
+/* ---- main window: the approved workspace, wired to real recordings ---- */
+.player-card {
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--paper);
+}
+.player-card video {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  background: #000;
+}
+.player-card .caption {
+  margin: 0;
+  padding: 0 12px;
+}
+.player-card .caption:not(:empty) {
+  padding: 8px 12px;
+}
+.player-empty {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  background: var(--fill);
+  color: var(--soft);
+  font-size: 12px;
+}
+.transcript-pane > .section-heading {
+  margin-top: 20px;
+}
+.transcript-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0 20px;
+  color: var(--mid);
+  font-size: 13px;
+}
+.transcript-empty p {
+  margin: 0;
+}
+.record-menu button:disabled {
+  opacity: 0.45;
 }

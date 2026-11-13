@@ -2,7 +2,7 @@ import { esc, clock, logo, button, problems } from './dom.js';
 import { icon } from './icons.js';
 import { sources } from './sources.js';
 
-export const phases = {
+const phases = {
   idle: 'Ready',
   starting: 'Starting',
   recording: 'Recording',

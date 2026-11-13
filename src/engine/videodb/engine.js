@@ -48,6 +48,10 @@ function createVideoDBEngine({
         result: null,
         notice: cache.warning || '',
         ...explore.cleared(),
+        // Another account must not see the last one's chosen window or window titles.
+        sources: { ...state.sources, window: '' },
+        windows: { supported: false, list: [] },
+        windowHidden: false,
       });
     },
     records(records) {

@@ -232,6 +232,7 @@ export function windowControls(s) {
 export function sources(s, { locked = false } = {}) {
   // While a session runs only the window switcher may be open.
   if (locked && open !== 'switch') open = null;
+  if (!locked && open === 'switch') open = null;
   // A chooser whose choice has gone (a display unplugged) closes itself.
   if (
     open === 'display' &&

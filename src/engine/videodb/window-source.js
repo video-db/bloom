@@ -9,11 +9,12 @@ function createWindowSource(ctx, recorder) {
   const recording = () => ['recording', 'paused'].includes(ctx.get().phase);
 
   // Read the open windows afresh. Their ids last only as long as the recorder process.
+  // Resolves true only when the list was read for the account that is still signed in.
   async function refresh() {
-    if (typeof recorder.windows !== 'function') return;
+    if (typeof recorder.windows !== 'function') return false;
     const scope = ctx.scope();
     const found = await recorder.windows();
-    if (scope !== ctx.scope()) return;
+    if (scope !== ctx.scope()) return false;
     // The window being recorded stays in the list even if it is off screen for a moment,
     // so its name stays on the panel.
     const current =
@@ -28,6 +29,7 @@ function createWindowSource(ctx, recorder) {
         sources: { ...ctx.get().sources, window: '' },
         problem: { kind: 'source', message: GONE },
       });
+    return true;
   }
 
   return {
@@ -35,8 +37,8 @@ function createWindowSource(ctx, recorder) {
     // True when Start may go ahead: no window is chosen, or the chosen one is still there.
     async ready() {
       if (!chosen()) return true;
-      await refresh();
-      return !!chosen();
+      // A window that could not be checked is not recorded.
+      return (await refresh()) && !!chosen();
     },
     commands: {
       // While recording a window: carry on with another one, without stopping.
@@ -53,6 +55,8 @@ function createWindowSource(ctx, recorder) {
           return;
         }
         await recorder.switchWindow(id);
+        // Stopped while the switch was under way: the next recording keeps its own choice.
+        if (!recording()) return;
         ctx.set({
           sources: { ...ctx.get().sources, window: id },
           problem: null,

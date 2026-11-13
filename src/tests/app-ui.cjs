@@ -215,7 +215,11 @@ fs.mkdirSync(evidence, { recursive: true });
       .getByRole('button', { name: 'Open recording', exact: true })
       .click();
     const main = await windowFor('workspace');
-    await main.getByText('Recorded words', { exact: true }).waitFor();
+    await main.locator('.para').first().waitFor();
+    // The transcript reads as paragraphs, each starting with its time.
+    assert.equal(await main.locator('.para').count(), 2);
+    assert.deepEqual(await main.locator('.para .ts').allInnerTexts(), ['0:00', '0:04']);
+    assert.match(await main.locator('.para').first().innerText(), /Recorded words here\.$/);
     assert.equal(
       await main.getByRole('button', { name: 'Edit', exact: true }).count(),
       0,
@@ -248,7 +252,7 @@ fs.mkdirSync(evidence, { recursive: true });
     await main.getByRole('button', { name: 'All', exact: true }).click();
     await main.screenshot({ path: path.join(evidence, `${theme}-recordings.png`) });
     await main.locator('.tile').first().click();
-    await main.getByText('Recorded words', { exact: true }).waitFor();
+    await main.locator('.para').first().waitFor();
     assert.equal(await main.getByText('What Bloom knows about this recording').count(), 1);
     await main.getByRole('button', { name: 'Recordings', exact: true }).first().waitFor();
     await main.locator('.record-menu summary').click();

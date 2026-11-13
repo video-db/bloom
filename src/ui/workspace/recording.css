@@ -100,16 +100,26 @@
 }
 #transcript {
   max-width: 68ch;
-  margin: 0;
   font-size: var(--t-read);
   line-height: 1.65;
   color: var(--ink2);
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
   user-select: text;
   cursor: text;
 }
-#transcript::selection {
+.para {
+  margin: 0 0 12px;
+}
+.para .ts {
+  margin-right: 8px;
+  border: 0;
+  vertical-align: 2px;
+  user-select: none;
+}
+.para .ts:hover {
+  color: var(--ink);
+}
+#transcript ::selection {
   background: var(--evbg);
 }
 .reading-empty {

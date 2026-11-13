@@ -56,7 +56,7 @@ src/
 
 - One responsibility per file, named for what it owns. If a file needs a table of contents, split it.
 - State has one owner. Pass what a module needs into it; do not reach across files for shared variables.
-- The main process and engine are CommonJS. Renderer code is ES modules with explicit imports, no globals.
+- The main process and engine are CommonJS. Renderer code is ES modules with explicit imports, no globals. `ui/package.json` marks that folder as ES modules so its pure functions can be unit-tested from Node.
 - A renderer never trusts itself: every message is validated in the main process.
 - Views are small functions that return markup for one state. Keep markup readable across lines.
 - Each surface has one stylesheet beside its views; shared controls live in `ui/shared/base.css`. Styles use the tokens in `ui/shared/tokens.css`. No colour or size literals that a token already covers.

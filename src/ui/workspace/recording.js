@@ -3,6 +3,7 @@
 import { esc, clock, button } from '../shared/dom.js';
 import { icon } from '../shared/icons.js';
 import { meta, status } from './format.js';
+import { transcript } from './transcript.js';
 
 const head = (r) =>
   /* HTML */ `<header class="page-head">
@@ -75,23 +76,6 @@ const notices = (r) =>
         </div>`
       : ''
   }`;
-
-// What the reading column says when there is no transcript text to show.
-const WAITING = {
-  processing: 'Preparing the transcript…',
-  error: 'The transcript could not be loaded.',
-  empty:
-    'No transcript text is available yet. This does not confirm there was no speech.',
-};
-const transcript = (r) =>
-  /* HTML */ `<section class="reading" aria-label="Transcript">
-    <h2 class="label">Transcript</h2>
-    ${
-      r.transcript
-        ? `<p id="transcript" tabindex="0">${esc(r.transcript)}</p>`
-        : `<p class="reading-empty">${WAITING[r.transcriptStatus] || 'No transcript yet.'}</p>`
-    }
-  </section>`;
 
 // What Bloom knows about this recording, in plain words, and how to add to it.
 function knowledge(r, signedIn) {

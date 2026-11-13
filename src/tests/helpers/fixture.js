@@ -42,8 +42,19 @@ function createFixture({
     getPlayback: async (id) => remote.get(id),
     transcript: async () => ({
       status: 'ready',
-      text: 'Recorded words',
-      words: [],
+      text: 'Recorded words here. A second thought after a pause.',
+      // A pause before the fourth word, so the transcript reads as two paragraphs.
+      words: [
+        ['Recorded', 0],
+        ['words', 0.4],
+        ['here.', 0.8],
+        ['A', 4],
+        ['second', 4.3],
+        ['thought', 4.7],
+        ['after', 5.1],
+        ['a', 5.4],
+        ['pause.', 5.6],
+      ].map(([word, start]) => ({ word, start, end: start + 0.25 })),
     }),
     rename: async (id, title) => {
       calls.push(['rename', id, title]);

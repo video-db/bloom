@@ -71,12 +71,17 @@ function createWindows({
       movable: false,
       fullscreenable: false,
       skipTaskbar: true,
+      ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
       alwaysOnTop: true,
       hasShadow: true,
       backgroundColor: theme.paper(), // solid: a translucent panel turned grey over the desktop
       webPreferences,
     });
-    panel.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    // A native panel floats over fullscreen apps without hiding the entire app's Dock icon.
+    panel.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreen: true,
+      skipTransformProcessType: true,
+    });
     load(panel, 'panel');
     panel.on('close', (event) => {
       if (!isQuitting()) {

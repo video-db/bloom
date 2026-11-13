@@ -13,7 +13,7 @@ npm start
 
 `npm start` runs Bloom with the real engine against the dev API; `npm start -- --production` selects production, which a packaged app always uses. First launch opens setup: use **Create a VideoDB account** to open the VideoDB console if you need a key, paste the key, then grant screen recording (which also covers system audio) and, optionally, the microphone. The key is validated and encrypted with Electron safeStorage. Flags and file locations are in the [configuration reference](reference/configuration.md).
 
-The tray icon appears only after sign-in, required permissions and setup completion. Until then, the recording shortcut opens setup, and recording, library and Settings menu actions are unavailable. Signing out removes the tray, closes the main window and returns to setup. Active capture controls remain available to stop or recover an existing recording.
+Bloom remains in the macOS Dock while it is running. The tray icon appears only after sign-in, required permissions and setup completion. Until then, the recording shortcut opens setup, and recording, library and Settings menu actions are unavailable. Signing out removes the tray, closes the main window and returns to setup. Active capture controls remain available to stop or recover an existing recording.
 
 Bloom refreshes available displays and audio devices after a permission grant and whenever the tray panel opens. With more than one display, use the arrow beside the screen icon to choose one; with one display, it is selected automatically. If devices were connected or removed, close and reopen the tray to refresh the choices.
 
@@ -32,7 +32,9 @@ With Playwright available, run the Electron walkthroughs one at a time (the app 
 | `node src/tests/app-ui.cjs light` | The tray panel through every recording state, the main window and Settings, with a fake recorder |
 | `node src/tests/onboarding-ui.cjs light` | First run with a fake service and recorder: key check, automatic advance, recorder failure, reopen, optional microphone, hand-off to the menu bar |
 
-Both run the real engine against a fake service and recorder (`--fixture`). Neither contacts VideoDB, looks at the screen or opens the microphone, and the fixture mode is ignored by packaged builds. Set `BLOOM_ELECTRON_PATH` and `BLOOM_PLAYWRIGHT_MODULE` if the tools are not installed in this checkout. Screenshots are saved under `.context/` (override with `BLOOM_UI_EVIDENCE`); look at them after a change to what a person sees.
+On macOS, `node src/tests/dock-ui.cjs` checks native Dock visibility through tray creation/show/hide, workspace/setup and window closure, plus preservation of accessory mode for background automation. It uses isolated blank windows without accounts or capture.
+
+The app and onboarding walkthroughs run the real engine against a fake service and recorder (`--fixture`). Neither contacts VideoDB, looks at the screen or opens the microphone, and the fixture mode is ignored by packaged builds. Set `BLOOM_ELECTRON_PATH` and `BLOOM_PLAYWRIGHT_MODULE` if the tools are not installed in this checkout. Screenshots are saved under `.context/` (override with `BLOOM_UI_EVIDENCE`); look at them after a change to what a person sees.
 
 For a change that must not alter any screen, set `BLOOM_STYLE_SNAPSHOT=1` and a different `BLOOM_UI_EVIDENCE` folder before and after; each screenshot then also saves every element's computed style and box. `node src/tests/helpers/compare-styles.cjs <before> <after>` lists what differs.
 

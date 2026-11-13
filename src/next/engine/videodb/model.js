@@ -54,6 +54,19 @@ function newRecord({ id, sessionId, title, duration = 0, marks = [] }) {
   };
 }
 
+// The name a recording gets until someone renames it: when it was made.
+function datedTitle(date) {
+  const day = date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+  });
+  const time = date.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return `Recording · ${day}, ${time}`;
+}
+
 function pending(records) {
   return records
     .filter((r) => r.recordingId && !r.videoId)
@@ -72,4 +85,4 @@ function pending(records) {
     }));
 }
 
-module.exports = { initialState, newRecord, pending };
+module.exports = { initialState, newRecord, datedTitle, pending };

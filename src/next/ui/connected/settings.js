@@ -33,7 +33,7 @@ export function settings(s) {
       ${toggle('defaultMic', 'Microphone on by default')}${toggle(
         'defaultSystemAudio',
         'Include system audio by default',
-      )}${toggle('askPurpose', 'Show an optional recording title')}
+      )}
     </div>
     <h2>Notifications</h2>
     <div class="card">

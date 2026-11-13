@@ -62,11 +62,7 @@
 .connected-form p {
   margin: 0;
 }
-.capture-start {
-  color: var(--on) !important;
-  background: var(--rect) !important;
-  min-height: var(--control-height);
-}
+
 .capture-start .connected-logo {
   filter: brightness(0) invert(1);
   height: 20px;
@@ -158,5 +154,187 @@
   background: var(--evbg);
   color: var(--ev);
   font-size: 12px;
+  font-weight: 500;
+}
+
+/* ---- tray panel: the approved icon row, wired to real sources ---- */
+.capture-start .connected-logo {
+  height: 15px;
+  width: 15px;
+}
+/* A source with a choice: the icon turns it on or off, the arrow beside it opens the list. */
+.source {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+}
+.source.on {
+  background: var(--evbg);
+}
+.source .capture-option.on {
+  background: none;
+}
+.source-arrow {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 36px;
+  margin-left: -3px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 0 8px 8px 0;
+  background: none;
+  color: var(--mid);
+}
+.source.on .source-arrow {
+  color: var(--ev);
+}
+.source-arrow::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 1px;
+  background: color-mix(in srgb, currentColor 28%, transparent);
+}
+.source-arrow .ic {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.4;
+}
+.source-arrow:hover,
+.source-arrow.open {
+  border-color: var(--ev);
+  background: var(--paper);
+}
+.source-list {
+  margin: 6px 0;
+  padding: 6px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--sub);
+}
+.source-list h4 {
+  margin: 4px 6px 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.source-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  text-align: left;
+  font-size: 12.5px;
+}
+.source-choice:hover {
+  background: var(--fill);
+}
+.source-choice.selected {
+  background: var(--evbg);
+  color: var(--ev);
+  font-weight: 500;
+}
+.source-tick {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+}
+.source-tick .ic {
+  width: 14px;
+  height: 14px;
+}
+.display-tile b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Header and footer icon buttons, named on hover. */
+.panel-open,
+.panel-gear {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--mid);
+}
+.panel-open:hover,
+.panel-gear:hover {
+  background: var(--fill);
+  color: var(--ink);
+}
+.panel-open:disabled,
+.panel-gear:disabled {
+  opacity: 0.4;
+}
+.panel-open .ic,
+.panel-gear .ic {
+  width: 18px;
+  height: 18px;
+}
+.panel-open[data-tooltip]::after,
+.panel-gear[data-tooltip]::after,
+.source-arrow[data-tooltip]::after {
+  content: attr(data-tooltip);
+  display: none;
+  position: absolute;
+  z-index: 5;
+  right: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 5px 7px;
+  border-radius: 5px;
+  background: var(--ink);
+  color: var(--on);
+  font-size: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.source-arrow[data-tooltip]::after {
+  right: auto;
+  left: 50%;
+  top: auto;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
+}
+.panel-open:hover::after,
+.panel-open:focus-visible::after,
+.panel-gear:hover::after,
+.panel-gear:focus-visible::after,
+.source-arrow:hover::after,
+.source-arrow:focus-visible::after {
+  display: block;
+}
+.panel .pf {
+  align-items: center;
+  padding: 8px 14px;
+}
+.panel button.rc {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+}
+.rc-copy {
+  min-width: 0;
+}
+.rc-copy b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 500;
 }

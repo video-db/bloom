@@ -1,5 +1,5 @@
 const { randomUUID } = require('node:crypto');
-const { newRecord } = require('./model');
+const { newRecord, datedTitle } = require('./model');
 const { ServiceError, safeError } = require('./errors');
 
 function createCapture(
@@ -93,7 +93,7 @@ function createCapture(
         record = newRecord({
           id: `local-${operationId}`,
           sessionId,
-          title: state.purpose || 'Untitled recording',
+          title: state.purpose || datedTitle(new Date()),
         });
         record.requestedTitle = state.purpose || '';
         ctx.records([record, ...ctx.get().recordings]);

@@ -111,6 +111,54 @@ fs.mkdirSync(evidence, { recursive: true });
       .click();
     assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), true);
     const recorder = await windowFor('panel');
+    const sourcesNow = () =>
+      app.evaluate(() => global.__bloomNext.getEngine().getState().sources);
+
+    // The tray is the approved icon row: no form controls, no refresh button, no title field.
+    await recorder.getByRole('button', { name: 'Microphone: On' }).waitFor();
+    assert.equal(await recorder.locator('select, input').count(), 0);
+    assert.equal(await recorder.getByText('Refresh connection').count(), 0);
+    assert.equal(await recorder.getByText('Recording title').count(), 0);
+    assert.equal(await recorder.getByRole('button', { name: 'Open Bloom' }).count(), 1);
+    assert.equal(await recorder.locator('[data-chooser]').count(), 0, 'no arrow without a choice');
+    await recorder.getByRole('button', { name: 'Microphone: On' }).click();
+    await recorder.getByRole('button', { name: 'Microphone: Off' }).waitFor();
+    assert.equal((await sourcesNow()).mic, false);
+    await recorder.getByRole('button', { name: 'Microphone: Off' }).click();
+    await recorder.getByRole('button', { name: 'System audio: Off' }).click();
+    await recorder.getByRole('button', { name: 'System audio: On' }).click();
+    assert.deepEqual(
+      [(await sourcesNow()).mic, (await sourcesNow()).systemAudio],
+      [true, false],
+    );
+    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-ready.png`) });
+
+    // A second microphone and display each add an arrow beside their icon.
+    await app.evaluate(async () => {
+      const fixture = global.__bloomNext.getFixture();
+      const base = await fixture.recorder.channels();
+      fixture.recorder.channels = async () => ({
+        displays: [...base.displays, { id: 'display:2', name: 'Studio Display' }],
+        mics: [...base.mics, { id: 'mic:2', name: 'AirPods Pro' }],
+        systemAudio: base.systemAudio,
+      });
+      await fixture.command('checkConnection');
+    });
+    await recorder.getByRole('button', { name: 'Choose a microphone' }).click();
+    await recorder.getByRole('button', { name: 'AirPods Pro' }).waitFor();
+    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-microphones.png`) });
+    await recorder.getByRole('button', { name: 'AirPods Pro' }).click();
+    assert.equal((await sourcesNow()).microphone, 'mic:2');
+    assert.equal(await recorder.locator('.source-list').count(), 0, 'choosing closes the list');
+    assert.equal((await sourcesNow()).mic, true, 'choosing a microphone does not turn it off');
+    await recorder.getByRole('button', { name: 'Choose a display' }).click();
+    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-displays.png`) });
+    await recorder.locator('[data-pick=screen][data-id="display:2"]').click();
+    assert.equal((await sourcesNow()).screen, 'display:2');
+    await recorder.getByRole('button', { name: 'Choose a display' }).click();
+    await recorder.keyboard.press('Escape');
+    assert.equal(await recorder.locator('.display-choices').count(), 0, 'Escape closes it');
+
     await recorder.locator('[data-command=start]').click();
     await phase('recording');
     await recorder

@@ -1,5 +1,6 @@
 import { esc, clock } from './dom.js';
 import { panel } from './panel.js';
+import { chooser } from './sources.js';
 import { createOnboarding } from './onboarding/index.js';
 import { workspace } from './workspace.js';
 import { releasePlayer, mountPlayer, seek } from './player.js';
@@ -47,8 +48,7 @@ function render(force = false) {
       const target = [...root.querySelectorAll('[data-focus]')].find(
         (el) => el.dataset.focus === focusKey,
       );
-      if (target && ['purpose', 'note'].includes(focusKey))
-        target.value = focusValue;
+      if (target && focusKey === 'note') target.value = focusValue;
       target?.focus();
       if (range && target?.setSelectionRange && target.type !== 'number')
         target.setSelectionRange(...range);
@@ -151,6 +151,18 @@ root.addEventListener('click', async (event) => {
       ...(target.dataset.key ? { key: target.dataset.key } : {}),
       ...(target.dataset.view ? { view: target.dataset.view } : {}),
     });
+  if (target.dataset.chooser) {
+    chooser.toggle(target.dataset.chooser);
+    render(true);
+  }
+  if (target.dataset.pick) {
+    window.bloom.command('setSource', {
+      key: target.dataset.pick,
+      value: target.dataset.id,
+    });
+    chooser.close();
+    render(true);
+  }
   if (target.dataset.record) go(`detail/${target.dataset.record}`);
   if (target.dataset.view && !target.dataset.ui) go(target.dataset.view);
   if (target.dataset.seek !== undefined) seek(Number(target.dataset.seek));
@@ -195,14 +207,16 @@ root.addEventListener('change', (event) => {
     });
 });
 root.addEventListener('input', (event) => {
-  if (event.target.hasAttribute('data-purpose'))
-    window.bloom.command('setPurpose', { text: event.target.value });
   if (event.target.hasAttribute('data-query')) {
     query = event.target.value;
     render(true);
   }
 });
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    chooser.close();
+    render(true);
+  }
   if ((event.metaKey || event.ctrlKey) && event.key === ',') {
     event.preventDefault();
     window.bloom.ui('open-preferences');
@@ -220,6 +234,21 @@ window.bloom.getState().then((s) => {
   receive(s);
   window.bloom.ui('main-ready');
 });
+// Devices come and go. The tray panel asks again each time it opens, at most every 15 s,
+// and only between recordings.
+let refreshedAt = 0;
+if (surface === 'panel')
+  window.addEventListener('focus', () => {
+    const between = state && ['idle', 'finished'].includes(state.phase);
+    if (
+      !between ||
+      state.account.status !== 'signed-in' ||
+      Date.now() - refreshedAt < 15000
+    )
+      return;
+    refreshedAt = Date.now();
+    window.bloom.command('checkConnection');
+  });
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
 const syncMotion = () =>
   window.bloom.ui('reduced-motion', { value: motion.matches });

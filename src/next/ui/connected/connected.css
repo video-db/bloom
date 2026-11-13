@@ -401,3 +401,26 @@
   position: static;
   padding: 0;
 }
+
+/* ---- quiet focus for text fields: no coloured border or ring ---- */
+.panel .field:focus,
+.app .field:focus,
+.app .search:focus-within,
+.app .search input:focus {
+  outline: none;
+  box-shadow: none;
+}
+.panel .field:focus,
+.app .field:focus,
+.app .search:focus-within {
+  border-color: color-mix(in srgb, var(--ink) 26%, var(--line2));
+  background: color-mix(in srgb, var(--brand) 3%, var(--paper));
+}
+@media (forced-colors: active) {
+  .panel .field:focus,
+  .app .field:focus,
+  .app .search:focus-within {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}

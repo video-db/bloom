@@ -159,7 +159,7 @@ function createWindows({
   // A requested view waits here until the renderer says it can take it.
   function deliverPendingView() {
     if (!mainReady || !pendingMainView) return;
-    mainWindow.webContents.send('next:view', pendingMainView);
+    mainWindow.webContents.send('bloom:view', pendingMainView);
     pendingMainView = null;
   }
 

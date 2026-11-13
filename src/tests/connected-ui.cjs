@@ -4,7 +4,7 @@ const path = require('node:path');
 const { _electron } = require(
   process.env.BLOOM_PLAYWRIGHT_MODULE || 'playwright',
 );
-const root = path.resolve(__dirname, '../../..');
+const root = path.resolve(__dirname, '../..');
 const evidence = path.join(root, '.context/connected-ui');
 fs.mkdirSync(evidence, { recursive: true });
 
@@ -18,7 +18,7 @@ fs.mkdirSync(evidence, { recursive: true });
   const app = await _electron.launch({
     executablePath: require('electron'),
     args: [
-      path.join(root, 'src/next/main/index.js'),
+      path.join(root, 'src/main/index.js'),
       '--connected-fixture',
       '--fresh',
       '--keep-open',
@@ -47,7 +47,7 @@ fs.mkdirSync(evidence, { recursive: true });
     for (let i = 0; i < 100; i++) {
       if (
         (await app.evaluate(
-          () => global.__bloomNext.getEngine().getState().phase,
+          () => global.__bloom.getEngine().getState().phase,
         )) === value
       )
         return;
@@ -63,17 +63,17 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await signedOutPanel.getByRole('button', { name: 'Start recording', exact: true }).isDisabled(), true);
     assert.equal(await signedOutPanel.locator('[data-ui="open-main"]').isDisabled(), true);
     const locked = await app.evaluate(({ BrowserWindow, Menu }) => {
-      global.__bloomNext.showPanel();
-      global.__bloomNext.openMain('library');
-      global.__bloomNext.openMain('settings');
-      global.__bloomNext.toggleCapture();
+      global.__bloom.showPanel();
+      global.__bloom.openMain('library');
+      global.__bloom.openMain('settings');
+      global.__bloom.toggleCapture();
       return {
         visible: BrowserWindow.getAllWindows().filter(w => w.isVisible()).map(w => w.webContents.getURL()),
         menus: ['recordings', 'recording-controls', 'settings'].map(id => Menu.getApplicationMenu().getMenuItemById(id).enabled),
-        phase: global.__bloomNext.getEngine().getState().phase,
+        phase: global.__bloom.getEngine().getState().phase,
       };
     });
-    assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), false);
+    assert.equal(await app.evaluate(() => global.__bloom.hasTray()), false);
     assert.equal(locked.phase, 'idle');
     assert.deepEqual(locked.menus, [false, false, false]);
     assert.ok(locked.visible.every(url => url.includes('surface=onboarding')));
@@ -104,7 +104,7 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await onboarding.getByRole('button', { name: 'Next', exact: true }).count(), 0);
     assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('recordings').enabled), false);
     assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('sign-out').enabled), true);
-    assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), false);
+    assert.equal(await app.evaluate(() => global.__bloom.hasTray()), false);
     await onboarding.screenshot({
       path: path.join(evidence, `${theme}-onboarding.png`),
     });
@@ -114,10 +114,10 @@ fs.mkdirSync(evidence, { recursive: true });
     await onboarding
       .getByRole('button', { name: 'Open Bloom', exact: true })
       .click();
-    assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), true);
+    assert.equal(await app.evaluate(() => global.__bloom.hasTray()), true);
     const recorder = await windowFor('panel');
     const sourcesNow = () =>
-      app.evaluate(() => global.__bloomNext.getEngine().getState().sources);
+      app.evaluate(() => global.__bloom.getEngine().getState().sources);
 
     // The tray is the approved icon row: no form controls, no refresh button, no title field.
     await recorder.getByRole('button', { name: 'Microphone: On' }).waitFor();
@@ -140,7 +140,7 @@ fs.mkdirSync(evidence, { recursive: true });
 
     // A second microphone and display each add an arrow beside their icon.
     await app.evaluate(async () => {
-      const fixture = global.__bloomNext.getFixture();
+      const fixture = global.__bloom.getFixture();
       const base = await fixture.recorder.channels();
       fixture.recorder.channels = async () => ({
         displays: [...base.displays, { id: 'display:2', name: 'Studio Display' }],
@@ -193,13 +193,13 @@ fs.mkdirSync(evidence, { recursive: true });
     await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-saving.png`) });
     assert.equal(
       await app.evaluate(
-        () => global.__bloomNext.getEngine().getState().result,
+        () => global.__bloom.getEngine().getState().result,
       ),
       null,
     );
-    await app.evaluate(() => global.__bloomNext.getFixture().recorder.finish());
+    await app.evaluate(() => global.__bloom.getFixture().recorder.finish());
     await phase('finished');
-    assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), true);
+    assert.equal(await app.evaluate(() => global.__bloom.hasTray()), true);
     assert.equal(await recorder.getByText('Ready to play').count(), 1);
     assert.equal(await recorder.getByRole('button', { name: /Start recording/ }).count(), 1, 'the next recording is one click away');
     await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-finished.png`) });
@@ -248,17 +248,17 @@ fs.mkdirSync(evidence, { recursive: true });
       .waitFor();
     await main.getByLabel('Microphone on by default').uncheck();
     assert.equal(
-      await app.evaluate(() => global.__bloomNext.getPrefs().defaultMic),
+      await app.evaluate(() => global.__bloom.getPrefs().defaultMic),
       false,
     );
     await main.screenshot({
       path: path.join(evidence, `${theme}-settings.png`),
     });
     await Promise.all([main.waitForEvent('close'), main.getByRole('button', { name: 'Sign out', exact: true }).click()]);
-    assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), false);
+    assert.equal(await app.evaluate(() => global.__bloom.hasTray()), false);
     const reconnect = await windowFor('onboarding');
     await reconnect.getByLabel('VideoDB API key').waitFor();
-    await app.evaluate(() => global.__bloomNext.openMain('library'));
+    await app.evaluate(() => global.__bloom.openMain('library'));
     assert.equal(app.windows().some(p => p.url().includes('surface=workspace')), false);
     assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('recordings').enabled), false);
     assert.deepEqual(errors, []);
@@ -267,7 +267,7 @@ fs.mkdirSync(evidence, { recursive: true });
     );
   } finally {
     await app
-      .evaluate(() => global.__bloomNext.getEngine().dispose())
+      .evaluate(() => global.__bloom.getEngine().dispose())
       .catch(() => {});
     await Promise.race([
       app.close(),

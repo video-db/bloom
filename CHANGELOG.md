@@ -2,10 +2,16 @@
 
 ## [Unreleased]
 
-### Rebuilt app integration
-- Added the connected entry with secure API-key storage, real capture orchestration, durable recovery state, library/playback/transcript actions and settings behind the public Node SDK lifecycle.
-- Added bundled HLS playback, confirmed remote mutations and downloads, a single-instance guard and completion-aware quit handling.
-- Kept the sample design entry separate; production cutover is not performed by these changes.
+### Rebuilt app
+- Bloom is rebuilt: a menu-bar recorder with one tray panel for every recording state, a three-step setup, and a main window with a recording browser, transcript and player. The previous app's code is removed.
+- Recording is local, with marks, pause and resume; each recording is finalised, uploaded and processed with durable recovery after a quit or lost connection.
+- The API key is validated before saving and encrypted with the system keychain; sign-out is available from the menu and Settings.
+- Bundled HLS playback, confirmed rename, delete and download, a single-instance guard and a quit prompt while a recording is saving.
+- `npm start` runs the app; `npm run sample` runs the sample design; `npm test` runs the automated tests.
+
+### Removed
+- The floating control bar, camera bubble, separate permission and display-picker windows, and the local SQLite database with its `sql.js`, `dotenv` and older `videodb` SDK dependencies.
+- Data from earlier releases is not migrated; sign in again after updating.
 
 ### Documentation
 - Centralised architecture, decisions and work tracking in architectures under Products/Bloom.
@@ -16,7 +22,6 @@
 - Added shared ignore rules for local agent context, environment overrides, database sidecars, recordings and generated installers.
 
 ### Branding
-- Standardised local database naming as `bloom.db`; existing local data is not migrated.
 - Aligned package license metadata with the MIT license file.
 
 ## [2.3.0] - 2026-04-06

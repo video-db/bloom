@@ -1,12 +1,12 @@
 // Walks the first-run flow in the real app with a fake service and recorder: no live API,
-// no screen capture, no microphone. Usage: node src/next/tests/onboarding-ui.cjs [light|dark]
+// no screen capture, no microphone. Usage: node src/tests/onboarding-ui.cjs [light|dark]
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { _electron } = require(
   process.env.BLOOM_PLAYWRIGHT_MODULE || 'playwright',
 );
-const root = path.resolve(__dirname, '../../..');
+const root = path.resolve(__dirname, '../..');
 const evidence = path.resolve(
   process.env.BLOOM_UI_EVIDENCE || path.join(root, '.context/onboarding-ui'),
 );
@@ -22,7 +22,7 @@ fs.mkdirSync(evidence, { recursive: true });
   const app = await _electron.launch({
     executablePath: require('electron'),
     args: [
-      path.join(root, 'src/next/main/index.js'),
+      path.join(root, 'src/main/index.js'),
       '--connected-fixture',
       '--fresh',
       '--keep-open',
@@ -55,7 +55,7 @@ fs.mkdirSync(evidence, { recursive: true });
 
     // What macOS and VideoDB will answer, and what the app asked them for.
     await main(({ app: electron, shell }) => {
-      const fixture = global.__bloomNext.getFixture();
+      const fixture = global.__bloom.getFixture();
       global.__asked = { opened: [], relaunched: 0 };
       shell.openExternal = async (url) => void global.__asked.opened.push(url);
       electron.relaunch = () => void global.__asked.relaunched++;
@@ -143,7 +143,7 @@ fs.mkdirSync(evidence, { recursive: true });
     // ---- a good key moves on by itself; a recorder failure is not a key failure ----
     await main(() => {
       global.__signIn('good');
-      global.__bloomNext.getFixture().recorder.channels = async () => {
+      global.__bloom.getFixture().recorder.channels = async () => {
         throw new Error('capture binary missing');
       };
     });
@@ -153,7 +153,7 @@ fs.mkdirSync(evidence, { recursive: true });
     await button('Connected').waitFor();
     await shot(page, '1-connect-connected');
     await heading('You’re in control.').waitFor({ timeout: 3000 });
-    assert.equal(await main(() => global.__bloomNext.hasTray()), false);
+    assert.equal(await main(() => global.__bloom.hasTray()), false);
     const alert = page.getByRole('alert');
     await alert.waitFor();
     assert(
@@ -163,7 +163,7 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await button('Continue').isDisabled(), true);
     await shot(page, '2-recorder-failed');
     await main(() => {
-      global.__bloomNext.getFixture().recorder.channels = global.__channels;
+      global.__bloom.getFixture().recorder.channels = global.__channels;
     });
     await alert.getByRole('button', { name: 'Try again' }).click();
     await page.getByText('While you record').waitFor();
@@ -185,7 +185,7 @@ fs.mkdirSync(evidence, { recursive: true });
     await button('Reopen Bloom').click();
     assert.equal(await main(() => global.__asked.relaunched), 1);
     await main(() => {
-      global.__bloomNext.getFixture().recorder.permission.screen = true;
+      global.__bloom.getFixture().recorder.permission.screen = true;
     });
     await comeBack();
     await page.locator('.setup-row.on').first().waitFor();
@@ -211,11 +211,11 @@ fs.mkdirSync(evidence, { recursive: true });
     // ---- 3 · Ready, and the hand-off to the menu bar ----
     await heading('A click away.').waitFor();
     assert.equal(
-      await main(() => global.__bloomNext.getPrefs().defaultMic),
+      await main(() => global.__bloom.getPrefs().defaultMic),
       false,
     );
     assert.equal(
-      await main(() => global.__bloomNext.hasTray()),
+      await main(() => global.__bloom.hasTray()),
       false,
       'no tray until setup ends',
     );
@@ -227,22 +227,22 @@ fs.mkdirSync(evidence, { recursive: true });
       page.waitForEvent('close'),
       button('Open Bloom').click(),
     ]);
-    assert.equal(await main(() => global.__bloomNext.hasTray()), true);
+    assert.equal(await main(() => global.__bloom.hasTray()), true);
     assert.equal(
-      await main(() => global.__bloomNext.getPrefs().onboardingComplete),
+      await main(() => global.__bloom.getPrefs().onboardingComplete),
       true,
     );
     const panel = app.windows().find((p) => p.url().includes('surface=panel'));
     await panel.emulateMedia({ colorScheme: theme });
     await panel.getByText('Start your first recording here').waitFor();
     await shot(panel, '4-panel-hint');
-    await main(() => global.__bloomNext.getEngine().command('start'));
+    await main(() => global.__bloom.getEngine().command('start'));
     await panel
       .getByText('Start your first recording here')
       .waitFor({ state: 'detached' });
     // Finish the fake recording so the app can quit without waiting on it.
     await main(async () => {
-      const fixture = global.__bloomNext.getFixture();
+      const fixture = global.__bloom.getFixture();
       await fixture.command('stop');
       fixture.recorder.finish();
       await fixture.engine.whenIdle();
@@ -255,7 +255,7 @@ fs.mkdirSync(evidence, { recursive: true });
   } finally {
     await main(({ app: electron }) => {
       if (global.__quit) electron.quit = global.__quit;
-      global.__bloomNext.getEngine().dispose();
+      global.__bloom.getEngine().dispose();
     }).catch(() => {});
     await app.close();
   }

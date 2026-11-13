@@ -44,7 +44,7 @@ function createAppState({
     windows.syncAccess(state);
     tray.paint(state);
     notifications.observe(state);
-    windows.send('next:state', withPrefs(state));
+    windows.send('bloom:state', withPrefs(state));
   }
 
   return {

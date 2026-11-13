@@ -4,12 +4,13 @@ Bloom is the Electron desktop recorder in `video-db/bloom`. Use `git` locally an
 
 ## Code and checks
 
-- `src/main/`: Electron lifecycle, IPC handlers, persistence and VideoDB services.
-- `src/preload/index.js`: main/renderer bridge; keep renderers context-isolated.
-- `src/renderer/`: UI, with existing dark/light CSS variables and controls.
+- `src/main/`: Electron lifecycle, tray, windows, notifications, preferences and the validated renderer bridge.
+- `src/engine/`: the only code that talks to capture and VideoDB (`videodb/` real, `sample/` for design and tests).
+- `src/preload.js`: main/renderer bridge; keep renderers context-isolated.
+- `src/ui/`: renderers; `connected/` is the running app. See `src/README.md` for the layout and conventions.
 - `build/`: native capture packaging and macOS signing hook.
 - Install with `npm ci`; run with `npm start`; package with `npm run pack` or `npm run dist`.
-- No automated test/lint script is declared. Use `node --check` for CommonJS and `node --input-type=module --check < <file>` for browser ES modules, plus the manual verification in `docs/runbook.md`.
+- Run `npm test` for the state and engine tests, and the Electron walkthroughs in `src/tests/*.cjs` as described in `docs/runbook.md`. No lint script is declared.
 - Do not assume main has the newest release. Check branch and package version before updating or building.
 
 ## Documentation
@@ -31,8 +32,8 @@ Keep each page's established structure; obtain the owner's approval before a str
 
 ## Interface changes
 
-The rebuilt app's interface follows the approved designs. Record every change to what a person sees in the [interface change log](https://github.com/Spext/architectures/blob/main/Products/Bloom/docs/trackers/ui-change-log.md) before making it, with what, why and who asked, then add the commit. Wiring a surface to real data keeps its approved layout, controls and wording; if real data needs something the design lacks, stop and ask the owner. One interface change per commit, with the surface named in the message. Only the owner approves a design.
+The interface follows the approved designs. Record every change to what a person sees in the [interface change log](https://github.com/Spext/architectures/blob/main/Products/Bloom/docs/trackers/ui-change-log.md) before making it, with what, why and who asked, then add the commit. Wiring a surface to real data keeps its approved layout, controls and wording; if real data needs something the design lacks, stop and ask the owner. One interface change per commit, with the surface named in the message. Only the owner approves a design.
 
 ## Branding
 
-Use Bloom in product text and `bloom` in package/artifact names. The app ID is `com.videodb.bloom`; the database is `bloom.db`. This cleanup intentionally has no legacy-data migration. SDK binary names and IPC identifiers are technical contracts, not product branding.
+Use Bloom in product text and `bloom` in package/artifact names. The app ID is `com.videodb.bloom`; local data lives in the `bloom-next` application-support folder. There is intentionally no legacy-data migration: the app never opens the earlier app's folder. SDK binary names and IPC identifiers are technical contracts, not product branding.

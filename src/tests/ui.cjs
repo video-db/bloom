@@ -5,7 +5,7 @@ const { _electron } = require(
   process.env.BLOOM_PLAYWRIGHT_MODULE || 'playwright',
 );
 const electronPath = process.env.BLOOM_ELECTRON_PATH || require('electron');
-const workspace = path.resolve(__dirname, '../../..');
+const workspace = path.resolve(__dirname, '../..');
 const evidence = path.resolve(
   process.env.BLOOM_UI_EVIDENCE ||
     path.join(workspace, '.context/ui-completion'),
@@ -16,7 +16,8 @@ fs.mkdirSync(evidence, { recursive: true });
   const app = await _electron.launch({
     executablePath: electronPath,
     args: [
-      path.join(workspace, 'src/next/main/index.js'),
+      path.join(workspace, 'src/main/index.js'),
+      '--sample',
       '--fresh',
       '--skip-onboarding',
       '--open-main',
@@ -36,7 +37,7 @@ fs.mkdirSync(evidence, { recursive: true });
   };
   const cmd = (name, args = {}) =>
     app.evaluate(
-      (_, a) => global.__bloomNext.getEngine().command(a.name, a.args),
+      (_, a) => global.__bloom.getEngine().command(a.name, a.args),
       { name, args },
     );
   try {
@@ -57,7 +58,7 @@ fs.mkdirSync(evidence, { recursive: true });
       path: evidence + '/' + theme + '-workspace.png',
       scale: 'css',
     });
-    await app.evaluate(() => global.__bloomNext.showPanel());
+    await app.evaluate(() => global.__bloom.showPanel());
     await panel.locator('#purpose').waitFor();
     await panel.screenshot({
       path: evidence + '/' + theme + '-tray.png',
@@ -285,7 +286,7 @@ fs.mkdirSync(evidence, { recursive: true });
     await main.locator('[data-detail=r4]').waitFor({ state: 'detached' });
     await main.locator('[data-cmd=restoreRecording]').click();
     await main.locator('[data-detail=r4]').waitFor();
-    await app.evaluate(() => global.__bloomNext.showPanel());
+    await app.evaluate(() => global.__bloom.showPanel());
     await panel.locator('[data-cmd=start]').click();
     await panel.locator('[data-cmd=mark]').waitFor();
     for (let i = 0; i < 30; i++)

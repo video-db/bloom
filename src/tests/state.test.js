@@ -302,7 +302,7 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
               : require(name),
     __dirname: mainDir,
     process: {
-      argv: ['node', 'main/index.js', '--fresh', '--skip-onboarding'],
+      argv: ['node', 'main/index.js', '--sample', '--fresh', '--skip-onboarding'],
       env: {},
       platform: 'darwin',
     },
@@ -331,15 +331,15 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
   loadMain('./index');
   await new Promise((resolve) => setImmediate(resolve));
   return {
-    api: context.__bloomNext,
+    api: context.__bloom,
     windows,
     notifications,
     shortcuts,
     messages,
     command: (window, name, args = {}) =>
-      ipcMain.emit('next:command', { sender: window.webContents }, name, args),
+      ipcMain.emit('bloom:command', { sender: window.webContents }, name, args),
     ui: (window, name, args = {}) =>
-      ipcMain.emit('next:ui', { sender: window.webContents }, name, args),
+      ipcMain.emit('bloom:ui', { sender: window.webContents }, name, args),
     dispose: () => {
       app.emit('before-quit', { preventDefault() {} });
       app.emit('will-quit');
@@ -359,18 +359,18 @@ test('native panel Close hides the panel and latest main route waits for rendere
     h.api.openMain('library');
     h.api.openMain('settings');
     const main = h.windows.find((w) => w.file.endsWith('main.html'));
-    assert.equal(h.messages.filter((m) => m.name === 'next:view').length, 0);
+    assert.equal(h.messages.filter((m) => m.name === 'bloom:view').length, 0);
     h.ui(main, 'main-ready');
     assert.deepEqual(
-      h.messages.filter((m) => m.name === 'next:view').map((m) => m.value),
+      h.messages.filter((m) => m.name === 'bloom:view').map((m) => m.value),
       ['settings'],
     );
     main.webContents.emit('did-start-loading');
     h.api.openMain('editor/r2');
-    assert.equal(h.messages.filter((m) => m.name === 'next:view').length, 1);
+    assert.equal(h.messages.filter((m) => m.name === 'bloom:view').length, 1);
     h.ui(main, 'main-ready');
     assert.equal(
-      h.messages.filter((m) => m.name === 'next:view').at(-1).value,
+      h.messages.filter((m) => m.name === 'bloom:view').at(-1).value,
       'editor/r2',
     );
   } finally {
@@ -422,7 +422,7 @@ test('onboarding stays open when completion cannot be persisted and malformed UI
     assert(
       h.messages.some(
         (m) =>
-          m.name === 'next:state' &&
+          m.name === 'bloom:state' &&
           m.value.prefError.includes('setup completion'),
       ),
     );
@@ -606,12 +606,12 @@ test('main navigation can reopen while an earlier native window is still closing
     closing.emit('closed');
     h.ui(replacement, 'main-ready');
     assert.equal(
-      h.messages.filter((m) => m.name === 'next:view').at(-1).value,
+      h.messages.filter((m) => m.name === 'bloom:view').at(-1).value,
       'editor/r2',
     );
     h.api.openMain('settings');
     assert.equal(
-      h.messages.filter((m) => m.name === 'next:view').at(-1).value,
+      h.messages.filter((m) => m.name === 'bloom:view').at(-1).value,
       'settings',
     );
   } finally {

@@ -1,14 +1,14 @@
-# Rebuilt-app VideoDB boundary
+# VideoDB boundary
 
-The trusted-process service in `src/next/engine/videodb/` is separate from the engine's renderer-facing state surface. `npm run next:connected` selects the real state engine and connected UI; `npm run next` retains the separate sample design path. The packaged rebuild entry selects the real engine and production API. The root package entry still points to the existing app until cutover. The integration plan and SDK handoff are canonical in [Bloom's architecture tracker](https://github.com/Spext/architectures/blob/main/Products/Bloom/docs/trackers/integration-v1.md).
+The trusted-process service in `src/engine/videodb/` is separate from the engine's renderer-facing state surface. `npm start` selects the real state engine and connected UI; `npm run sample` runs the sample design path, which is never available in a packaged app. A packaged app uses the production API. The integration plan and SDK handoff are canonical in [Bloom's architecture tracker](https://github.com/Spext/architectures/blob/main/Products/Bloom/docs/trackers/integration-v1.md).
 
 ## Construction
 
-Call `createVideoDBBoundary` from Electron main after `app.whenReady()`. Pass the rebuilt app's own data directory and Electron `safeStorage`; do not point it at the old app's data. Construction loads dependencies and any operation journal but performs no network requests, launches no capture process and requests no permissions.
+Call `createVideoDBBoundary` from Electron main after `app.whenReady()`. Pass Bloom's own data directory and Electron `safeStorage`; never the folder used by releases up to 2.3.0. Construction loads dependencies and any operation journal but performs no network requests, launches no capture process and requests no permissions.
 
 ```javascript
 const { app, safeStorage } = require('electron');
-const { createVideoDBBoundary } = require('./src/next/engine/videodb');
+const { createVideoDBBoundary } = require('./src/engine/videodb');
 
 app.whenReady().then(() => {
   const service = createVideoDBBoundary({
@@ -19,7 +19,7 @@ app.whenReady().then(() => {
 });
 ```
 
-The service constructor defaults to development. Production can be explicitly selected with `https://api.videodb.io`; arbitrary origins are rejected. Each environment has its own credential and operation files under `videodb-dev/` or `videodb-prod/`. The rebuilt SDK is installed as `videodb-capture` from `github:video-db/videodb-node#release-0.3.3`; the existing app retains its separate `videodb` dependency until cutover; package-lock.json records the resolved revision. The SDK recorder adapter uses public CaptureClient lifecycle APIs, not the native development wrapper. HLS playback code is bundled as the hls.js dependency; no player code is loaded from a CDN.
+The service constructor defaults to development. Production can be explicitly selected with `https://api.videodb.io`; arbitrary origins are rejected. Each environment has its own credential and operation files under `videodb-dev/` or `videodb-prod/`. The SDK is installed as `videodb-capture` from `github:video-db/videodb-node#release-0.3.3`; package-lock.json records the resolved revision. The SDK recorder adapter uses public CaptureClient lifecycle APIs, not the native development wrapper. HLS playback code is bundled as the hls.js dependency; no player code is loaded from a CDN.
 
 ## Public operations
 
@@ -51,7 +51,7 @@ Errors crossing the service boundary use safe `code`, `message` and `uncertain` 
 
 ## Verification
 
-Run `node --test src/next/tests/videodb-service.test.js` for fake-SDK checks of collection isolation, acknowledgement, timeouts, late-result reconciliation, restart receipts, account switching, credential encryption, corruption and safe error mapping. These tests make no network requests and start no capture. `videodb-engine.test.js` verifies the capture state machine, source exclusion, pause timing, recovery and shutdown against a fake recorder; `videodb-recorder.test.js` verifies the SDK adapter. `connected-ui.cjs light` and `dark` verify the connected views with a fake engine and blocked external media requests. The --connected-fixture mode is ignored by packaged builds. `node --check` applies to every module in this boundary. Installed binary checks and real recording/playback acceptance are separate evidence in the architecture tracker.
+Run `node --test src/tests/videodb-service.test.js` for fake-SDK checks of collection isolation, acknowledgement, timeouts, late-result reconciliation, restart receipts, account switching, credential encryption, corruption and safe error mapping. These tests make no network requests and start no capture. `videodb-engine.test.js` verifies the capture state machine, source exclusion, pause timing, recovery and shutdown against a fake recorder; `videodb-recorder.test.js` verifies the SDK adapter. `connected-ui.cjs light` and `dark` verify the connected views with a fake engine and blocked external media requests. The --connected-fixture mode is ignored by packaged builds. `node --check` applies to every module in this boundary. Installed binary checks and real recording/playback acceptance are separate evidence in the architecture tracker.
 
 ## Engine and renderer integration
 

@@ -35,11 +35,11 @@
 
 ## What is Bloom?
 
-Bloom is a desktop screen recorder built for agentic workflows, with local library metadata and VideoDB-backed capture sessions.
+Bloom is a desktop screen recorder built for agentic workflows. It lives in the menu bar, records locally and saves every recording to your VideoDB account.
 
 - **Capture from your desktop** — Screen, microphone and system audio
 - **Upload to VideoDB** — Automatic cloud sync with AI processing.
-- **Find recordings** — Search the library by name and view generated transcripts.
+- **Find recordings** — Search titles and transcripts, play back and share a link.
 - **Let agents work on your recordings** — Query via APIs or agent frameworks like Claude Code and access your recordings data.
 
 Recordings are no longer files, they are inputs for AI.
@@ -62,7 +62,7 @@ curl -fsSL https://artifacts.videodb.io/bloom/install | bash
 
 This detects your Mac architecture and installs the published build to `/Applications`. For the version in this checkout, follow the [local build and installation runbook](docs/runbook.md#build-and-install-locally).
 
-For the rebuilt local-recording implementation, run `npm ci` then `npm run next:connected`; see the [connected runbook](docs/runbook.md#run-the-rebuilt-app-with-videodb). It is a separate source entry until the release cutover.
+The published build is an earlier release. This checkout is the rebuilt app, which has not been published yet; run it from source with `npm ci` then `npm start`.
 
 <details>
 <summary>Manual install — v2.2.0 artifact URLs</summary>
@@ -91,12 +91,12 @@ For the rebuilt local-recording implementation, run `npm ci` then `npm run next:
 | **Desktop recording** | Capture screen and audio into VideoDB-backed sessions |
 | **AI-ready** | Spoken-word indexing and transcripts through VideoDB |
 | **Screen recording** | Capture screen, microphone, and system audio via [VideoDB Capture SDK](https://docs.videodb.io) |
-| **Camera overlay** | Draggable camera bubble during recording |
-| **Floating bar** | Always-on-top control bar that never blocks your apps |
+| **Menu bar recorder** | One small panel from the tray icon; nothing floats over your work |
+| **Truthful recording state** | Starting, recording, paused, saving and finished each look different, on the tray and in the main window |
+| **Marks** | Mark a moment or type a note while recording |
 | **Multi-monitor** | Display picker to choose which screen to record |
-| **Library** | Browse, search, play, rename, and download recordings |
-| **Transcription** | Automatic transcript generation with subtitled playback |
-| **Chat with video** | Ask questions about your recording via [VideoDB Chat](https://chat.videodb.io) |
+| **Library** | Browse, search, play, rename, download and delete recordings |
+| **Transcription** | Transcripts through VideoDB, prepared on request |
 | **Share** | One-click shareable link for any recording |
 | **Keyboard shortcut** | `Cmd+Shift+R` to start/stop recording from anywhere |
 | **Open source** | Fully customizable UI layer |
@@ -149,7 +149,7 @@ npm ci
 npm start
 ```
 
-On first launch, grant the required permissions, then enter your VideoDB API key. A network connection and a valid API key are required to start recording.
+On first launch, enter your VideoDB API key, then grant the required permissions. A network connection and a valid API key are required to start recording.
 
 | Task | Documentation |
 |---|---|
@@ -158,7 +158,7 @@ On first launch, grant the required permissions, then enter your VideoDB API key
 | Contribute | [Contributor guide](CONTRIBUTING.md) |
 | Report a vulnerability | [Security policy](SECURITY.md) |
 
-No automated test or lint command is currently declared in `package.json`.
+Run `npm test` for the automated tests; the [runbook](docs/runbook.md#automated-checks) covers the Electron walkthroughs.
 
 ---
 
@@ -166,26 +166,21 @@ No automated test or lint command is currently declared in `package.json`.
 
 | Path | Purpose |
 |---|---|
-| `src/main/index.js` | Electron lifecycle, windows and tray |
-| `src/main/ipc/` | Capture, permissions, camera, configuration and library handlers |
-| `src/main/services/` | VideoDB sessions, synchronisation, transcripts and subtitles |
-| `src/main/db/`, `src/main/lib/` | Local persistence, configuration, logging and runtime paths |
-| `src/preload/index.js` | Context-isolated renderer bridge |
-| `src/renderer/` | Floating bar, onboarding, permissions, display picker, camera and library |
+| `src/main/` | Electron lifecycle, tray, windows, notifications, preferences and the renderer bridge |
+| `src/engine/` | Capture and VideoDB; the only code that talks to either |
+| `src/preload.js` | Context-isolated renderer bridge |
+| `src/ui/` | Onboarding, tray panel, main window and settings |
+| `src/tests/` | State and engine tests, Electron walkthroughs |
 | `build/` | App icons, macOS entitlements and afterPack signing hook |
 | `docs/` | Configuration reference and operating runbook |
 
 ## Troubleshooting
 
 ### Permissions denied
-- **macOS**: System Settings → Privacy & Security → enable Screen Recording / Microphone / Camera
-
-### Camera not showing
-- Toggle camera off/on in source controls
-- Check Camera permission in system settings
+- **macOS**: System Settings → Privacy & Security → enable Screen Recording (also covers system audio) and Microphone
 
 ### Reset
-Follow [Reset local state](docs/runbook.md#reset-local-state) for the correct userData path and reset procedure.
+Follow [Reset local state](docs/runbook.md#reset-local-state).
 
 ---
 

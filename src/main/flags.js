@@ -1,5 +1,4 @@
 // Command-line and environment flags, and the paths this entry reads and writes.
-// Runs beside the shipping app without touching it: separate entry, separate user data.
 const path = require('node:path');
 const { app } = require('electron');
 
@@ -8,10 +7,10 @@ const ASSETS = path.join(ROOT, 'assets');
 const UI = path.join(ROOT, 'ui');
 const PRELOAD = path.join(ROOT, 'preload.js');
 
-// On when passed as --name, or as BLOOM_NEXT_NAME=1 in the environment.
+// On when passed as --name, or as BLOOM_NAME=1 in the environment.
 const flag = (name) =>
   process.argv.includes(`--${name}`) ||
-  process.env[`BLOOM_NEXT_${name.toUpperCase().replace(/-/g, '_')}`] === '1';
+  process.env[`BLOOM_${name.toUpperCase().replace(/-/g, '_')}`] === '1';
 
 // Lets either theme be reviewed on any machine.
 const forcedTheme = () =>
@@ -21,8 +20,10 @@ const forcedTheme = () =>
 // A run driven by the tests rather than by a person.
 const automated = () => flag('fresh') || flag('connected-fixture');
 
+// The folder is not the system default on purpose: the app this one replaced kept its key and
+// database there, and this app never opens them (no legacy-data migration).
 function separateUserData() {
-  app.setName('Bloom Next');
+  app.setName('Bloom');
   // Automated runs get their own folder: they must not read or write a person's data, and
   // they must be able to start while that person's Bloom is open (one instance per folder).
   const folder = automated() ? 'bloom-next-test' : 'bloom-next';

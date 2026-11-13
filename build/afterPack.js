@@ -5,10 +5,10 @@ const { execSync, execFileSync } = require('child_process');
 /**
  * electron-builder afterPack hook.
  *
- * 1. Adds microphone/camera usage descriptions to VideoDBCapture.app Info.plist
+ * 1. Adds the microphone usage description to VideoDBCapture.app Info.plist
  * 2. Re-codesigns the VideoDBCapture.app bundle inside-out (dylib → binary → bundle)
  *    so macOS TCC recognises it after electron-builder packing.
- *    This mirrors what the videodb SDK installer does after extraction.
+ *    This mirrors what the videodb-capture SDK installer does after extraction.
  */
 module.exports = async function afterPack(context) {
   const appOutDir = context.appOutDir;
@@ -24,7 +24,7 @@ module.exports = async function afterPack(context) {
   const unpackedPath = path.join(resourcesPath, 'app.asar.unpacked');
 
   const videodbAppBundle = path.join(
-    unpackedPath, 'node_modules', 'videodb', 'bin', 'VideoDBCapture.app'
+    unpackedPath, 'node_modules', 'videodb-capture', 'bin', 'VideoDBCapture.app'
   );
   const macosDir = path.join(videodbAppBundle, 'Contents', 'MacOS');
   const infoPlistPath = path.join(videodbAppBundle, 'Contents', 'Info.plist');
@@ -50,7 +50,7 @@ module.exports = async function afterPack(context) {
     console.log('Set librecorder.dylib permissions to 644');
   }
 
-  // --- Patch Info.plist with mic/camera usage descriptions ---
+  // --- Patch Info.plist with the microphone usage description ---
   if (fs.existsSync(infoPlistPath)) {
     try {
       let plistContent = fs.readFileSync(infoPlistPath, 'utf8');
@@ -59,13 +59,11 @@ module.exports = async function afterPack(context) {
         plistContent = plistContent.replace(
           '</dict>',
           '    <key>NSMicrophoneUsageDescription</key>\n' +
-          '    <string>VideoDB Capture needs microphone access to record audio.</string>\n' +
-          '    <key>NSCameraUsageDescription</key>\n' +
-          '    <string>VideoDB Capture needs camera access to record video.</string>\n' +
+          '    <string>Bloom needs microphone access to record your voice.</string>\n' +
           '</dict>'
         );
         fs.writeFileSync(infoPlistPath, plistContent);
-        console.log('Patched VideoDBCapture Info.plist with mic/camera usage descriptions');
+        console.log('Patched VideoDBCapture Info.plist with the microphone usage description');
       }
     } catch (err) {
       console.warn('Failed to patch Info.plist:', err.message);

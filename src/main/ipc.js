@@ -29,19 +29,19 @@ function registerIpc({
     'onboarding';
   // Paste in onboarding: the web clipboard API can wait forever on a permission question
   // nobody sees, so the main process answers, and only that window.
-  ipcMain.handle('next:clipboard-text', (event) =>
+  ipcMain.handle('bloom:clipboard-text', (event) =>
     fromOnboarding(event) ? clipboard.readText().slice(0, 4096) : '',
   );
-  ipcMain.handle('next:screen-preview', (event) =>
+  ipcMain.handle('bloom:screen-preview', (event) =>
     fromOnboarding(event) ? screenPreview.capture() : null,
   );
-  ipcMain.handle('next:get-state', (event) => {
+  ipcMain.handle('bloom:get-state', (event) => {
     if (!windows.roleOf(BrowserWindow.fromWebContents(event.sender)))
       return null;
     return appState.withPrefs(engine.getState());
   });
 
-  ipcMain.on('next:command', (event, name, args) => {
+  ipcMain.on('bloom:command', (event, name, args) => {
     const from = BrowserWindow.fromWebContents(event.sender);
     const role = windows.roleOf(from);
     if (!role) return;
@@ -57,7 +57,7 @@ function registerIpc({
       );
   });
 
-  ipcMain.on('next:ui', (event, name, args = {}) => {
+  ipcMain.on('bloom:ui', (event, name, args = {}) => {
     const from = BrowserWindow.fromWebContents(event.sender);
     const role = windows.roleOf(from);
     if (

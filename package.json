@@ -1,14 +1,14 @@
 {
   "name": "bloom",
   "version": "2.3.0",
-  "description": "Bloom \u2014 Screen recorder powered by VideoDB",
+  "description": "Bloom — Screen recorder powered by VideoDB",
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
-    "next": "electron src/next/main/index.js",
-    "dist": "electron-builder",
+    "sample": "electron . --sample",
+    "test": "node --test src/tests/*.test.js",
     "pack": "electron-builder --dir",
-    "next:connected": "electron src/next/main/index.js --connected"
+    "dist": "electron-builder"
   },
   "keywords": [],
   "author": "VideoDB",
@@ -23,11 +23,12 @@
     "productName": "Bloom",
     "files": [
       "src/**/*",
+      "!src/tests/**",
+      "!src/README.md",
       "package.json"
     ],
     "asar": true,
     "asarUnpack": [
-      "node_modules/videodb/bin/**",
       "node_modules/videodb-capture/bin/**"
     ],
     "mac": {
@@ -37,9 +38,8 @@
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
-        "NSScreenCaptureUsageDescription": "Bloom needs screen recording permission to capture your display during sessions.",
-        "NSMicrophoneUsageDescription": "Bloom needs microphone access to capture audio during sessions.",
-        "NSCameraUsageDescription": "Bloom needs camera access to capture your webcam during sessions."
+        "NSScreenCaptureUsageDescription": "Bloom needs screen recording permission to capture your display and system audio.",
+        "NSMicrophoneUsageDescription": "Bloom needs microphone access to record your voice."
       },
       "target": [
         {
@@ -87,10 +87,7 @@
     "afterPack": "./build/afterPack.js"
   },
   "dependencies": {
-    "dotenv": "^17.2.3",
     "hls.js": "^1.7.4",
-    "sql.js": "^1.11.0",
-    "videodb": "video-db/videodb-node#release-0.2.6",
     "videodb-capture": "github:video-db/videodb-node#release-0.3.3"
   }
 }

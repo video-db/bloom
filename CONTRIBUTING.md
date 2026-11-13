@@ -14,9 +14,10 @@ npm start
 ## Development
 
 - **Run**: `npm start` — launches the Electron app directly
-- **Main process**: `src/main/` — window management, IPC handlers, services
-- **Renderer**: `src/renderer/` — UI (floating bar, library, camera bubble)
-- **Preload**: `src/preload/index.js` — context bridge between renderer and main
+- **Main process**: `src/main/` — tray, windows, notifications, preferences, renderer bridge
+- **Engine**: `src/engine/` — capture and VideoDB; the only code that talks to either
+- **Renderer**: `src/ui/` — onboarding, tray panel and main window
+- **Preload**: `src/preload.js` — context bridge between renderer and main
 
 ## Submitting Changes
 

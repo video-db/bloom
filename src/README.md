@@ -1,6 +1,6 @@
-# The rebuilt Bloom app
+# Bloom source
 
-This folder is the rebuilt Bloom desktop recorder. It replaces the app in `src/main`, `src/renderer` and `src/preload` at cutover. Run the real integration with `npm run next:connected`, or the sample design with `npm run next`; see `docs/runbook.md` for flags and checks.
+This folder is the Bloom desktop recorder. `npm start` runs it with the real capture engine; `npm run sample` runs the same windows on the sample engine for design work. See `docs/runbook.md` for flags and checks.
 
 ## How it works
 
@@ -19,7 +19,7 @@ renderer windows  ──command──▶  main process  ──command──▶  
 ## Layout
 
 ```
-src/next/
+src/
   preload.js          the only bridge between a renderer and the main process
   main/               main process, one responsibility per file
     index.js          lifecycle and wiring
@@ -39,11 +39,11 @@ src/next/
     videodb/          real state engine, SDK adapter, credentials, receipts and recording cache
     sample/           sample engine: records nothing; used by tests and for design work
   ui/
-    connected/        connected onboarding, capture, library, playback and settings views
-    shared/           tokens, base styles, controls, the Bloom mark and icons, DOM helpers
-    panel/            the tray panel
-    workspace/        the main window: recording browser, editor, player, versions, settings
-    onboarding/       first run
+    connected.html    page for every window of the running app (?surface=panel|workspace|onboarding)
+    connected/        the running app's views: onboarding, tray panel, main window, settings, player
+    tokens.css, ui.css, panel.css, workspace.css
+                      the approved design's tokens and styles, shared by both sets of views
+    *.html, *.js      sample-engine views of the approved design, including surfaces not built yet
   assets/             tray icons, fonts, the mark
   tests/              state tests and the Electron walkthrough
 ```
@@ -55,10 +55,10 @@ src/next/
 - The main process and engine are CommonJS. Renderer code is ES modules with explicit imports, no globals.
 - A renderer never trusts itself: every message is validated in the main process.
 - Views are small functions that return markup for one state. Keep markup readable across lines.
-- Styles live beside the part they style and use the tokens in `ui/shared/tokens.css`. No colour or size literals that a token already covers.
+- Styles use the tokens in `ui/tokens.css`. No colour or size literals that a token already covers.
 - Comments say why, briefly. The what belongs in names.
 - A release build has no sample data, no "preview" wording and no control that does nothing. Features that are not built are hidden through the engine's capabilities, not left as dead buttons.
 - The interface follows the approved designs. Record a change to what a person sees in the [interface change log](https://github.com/Spext/architectures/blob/main/Products/Bloom/docs/trackers/ui-change-log.md) before making it, and never redesign a surface while wiring it to real data.
 - Behaviour changes come with a test. Run the state tests and the walkthrough in both themes, then look at the screens.
 
-The real integration uses the public Node SDK from GitHub branch release-0.3.3; the lockfile records its resolved revision. Read [the boundary reference](../../docs/reference/videodb-integration.md) before changing the SDK adapter or recovery state. Real capture is selected explicitly from source and by the packaged rebuilt entry; test fixtures never run in a packaged app.
+The real integration uses the public Node SDK from GitHub branch release-0.3.3; the lockfile records its resolved revision. Read [the boundary reference](../docs/reference/videodb-integration.md) before changing the SDK adapter or recovery state. The sample engine and test fixtures never run in a packaged app.

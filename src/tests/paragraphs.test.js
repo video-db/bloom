@@ -22,6 +22,15 @@ test('a pause in speech starts a new paragraph at the time speech resumes', () =
   ]);
 });
 
+test('a short pause in the middle of a sentence does not break it; a long silence does', () => {
+  const hesitant = [...say("I'm like a", 50), ...say('tech fan.', 52.5)];
+  assert.deepEqual(paragraphs(hesitant), [
+    { at: 50, text: "I'm like a tech fan." },
+  ]);
+  const silence = [...say('And then', 0), ...say('we moved on.', 6)];
+  assert.equal(paragraphs(silence).length, 2);
+});
+
 test('a long run of speech breaks at a sentence end, never mid-sentence', () => {
   const sentence = `${Array(69).fill('word').join(' ')} end.`;
   const words = say(`${sentence} Next sentence starts`, 0);

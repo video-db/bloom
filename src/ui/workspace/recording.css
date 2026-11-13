@@ -74,7 +74,8 @@
 }
 .recording-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
+  /* The player is worth watching: it takes close to half the page, within limits. */
+  grid-template-columns: minmax(0, 1fr) clamp(380px, 45%, 560px);
   align-items: start;
   gap: 24px;
 }
@@ -137,7 +138,9 @@
 .player-card video {
   display: block;
   width: 100%;
-  max-height: 320px;
+  /* Holds its shape before the video loads, then follows the video's own. */
+  aspect-ratio: auto 16 / 9;
+  max-height: 420px;
   background: #000;
 }
 .player-card .caption {

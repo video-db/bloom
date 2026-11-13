@@ -1,11 +1,18 @@
 // Entry point of Bloom: lifecycle and wiring only. Capture is supplied by src/engine.
-const { app, desktopCapturer, dialog, systemPreferences } = require('electron');
+const {
+  app,
+  screen,
+  desktopCapturer,
+  dialog,
+  systemPreferences,
+} = require('electron');
 const { createEngine } = require('../engine');
 const flags = require('./flags');
 const { createPrefs } = require('./prefs');
 const { createTheme } = require('./theme');
 const { createTray } = require('./tray');
 const { createWindows } = require('./windows');
+const { createFloating } = require('./floating');
 const { createNotifications } = require('./notifications');
 const { createAppState } = require('./state');
 const { createShortcuts } = require('./shortcuts');
@@ -30,7 +37,15 @@ if (!primaryInstance) app.quit();
 const theme = createTheme({ forced: flags.forcedTheme() });
 
 // Everything else needs a ready app, so it is built in start() and kept here for quit and the test hook.
-let engine, prefs, tray, windows, notifications, shortcuts, quitGuard, fixture;
+let engine,
+  prefs,
+  tray,
+  windows,
+  floating,
+  notifications,
+  shortcuts,
+  quitGuard,
+  fixture;
 let quitting = false,
   shutdownPending = false;
 
@@ -80,6 +95,12 @@ function start() {
     tray,
     isQuitting: () => quitting,
   });
+  floating = createFloating({
+    screen,
+    surface: windows.surface,
+    prefs,
+    isQuitting: () => quitting,
+  });
   notifications = createNotifications({ engine, prefs, windows });
   shortcuts = createShortcuts({ engine, windows, notifications, prefs });
   const syncMenu = installMenu({ engine, windows, prefs });
@@ -91,6 +112,7 @@ function start() {
     tray,
     notifications,
     windows,
+    floating,
     loginSupported: !!app.isPackaged,
     version: app.getVersion?.() || '',
     livePreviews: real,
@@ -109,6 +131,7 @@ function start() {
     tray,
     windows,
     appState,
+    floating,
     screenPreview,
     restart: restartForPermission,
   });
@@ -198,6 +221,7 @@ app.on('window-all-closed', () => {}); // a tray app keeps running with no windo
 app.on('will-quit', () => {
   shortcuts?.unregister();
   tray?.dispose();
+  floating?.dispose();
   notifications?.dispose();
   engine?.dispose();
 });
@@ -211,4 +235,5 @@ global.__bloom = {
   getPrefs: () => prefs.all(),
   hasTray: () => tray.isAvailable(),
   getFixture: () => (!app.isPackaged ? fixture : undefined),
+  floatingControlShowing: () => floating.isShowing(),
 };

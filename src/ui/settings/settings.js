@@ -56,6 +56,11 @@ const recording = (s) =>
         toggle(s, 'autoTranscribe', 'Transcribe new recordings'),
       )}
       ${row(
+        'Show controls on screen while recording',
+        'A small floating control for Stop, Pause and each sound source. Shown only where it cannot appear in the recording.',
+        toggle(s, 'floatingControl', 'Show controls on screen while recording'),
+      )}
+      ${row(
         'Shortcuts',
         'Start or stop <kbd>⇧⌘R</kbd> · Mark a moment <kbd>⇧⌘M</kbd>',
         '<span class="soft">Fixed for now</span>',

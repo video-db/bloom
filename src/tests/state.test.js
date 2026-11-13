@@ -268,6 +268,13 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
       unregisterAll: () => shortcuts.clear(),
     },
     screen: {
+      getAllDisplays: () => [
+        { id: 1, workArea: { x: 0, y: 0, width: 1440, height: 900 } },
+      ],
+      getPrimaryDisplay: () => ({
+        id: 1,
+        workArea: { x: 0, y: 0, width: 1440, height: 900 },
+      }),
       getDisplayNearestPoint: () => ({
         workArea: { x: 0, y: 20, width: 1440, height: 900 },
       }),

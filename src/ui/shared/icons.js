@@ -19,6 +19,7 @@ const SHAPES = {
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   pause:
     '<rect x="6.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/>',
+  play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/>',
   stop: '<rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor" stroke="none"/>',
   mark: '<path d="M6.5 4h11v16.5L12 16.6l-5.5 3.9z"/>',
   warning: '<path d="M12 4.5l8.5 15h-17zM12 10.5v4M12 17.3v.1"/>',

@@ -11,6 +11,8 @@ const commandArgs = {
   prepareRecorder: none,
   refreshSources: none,
   refreshWindows: none,
+  setMuted: (a) =>
+    ['mic', 'systemAudio'].includes(a.key) && typeof a.value === 'boolean',
   switchWindow: (a) => id(a.id),
   setWindowHidden: (a) => typeof a.value === 'boolean',
   chooseWindow: (a) => a.id === '' || id(a.id),

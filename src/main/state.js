@@ -8,6 +8,7 @@ function createAppState({
   tray,
   notifications,
   windows,
+  floating = null,
   loginSupported = false,
   version = '',
   livePreviews = false,
@@ -48,6 +49,8 @@ function createAppState({
     tray.paint(state);
     notifications.observe(state);
     windows.send('bloom:state', withPrefs(state));
+    floating?.sync(state);
+    floating?.send('bloom:state', withPrefs(state));
   }
 
   return {

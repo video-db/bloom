@@ -77,14 +77,53 @@ fs.mkdirSync(evidence, { recursive: true });
       ['setWindowEnabled', false],
       ['setWindowEnabled', true],
     ]);
+    // The floating control is up while a window is recorded: it can never be in the picture.
+    assert.equal(
+      await app.evaluate(() => global.__bloom.floatingControlShowing()),
+      true,
+    );
+    let float;
+    for (let i = 0; i < 100 && !float; i++) {
+      float = app.windows().find((p) => p.url().includes('surface=control'));
+      if (!float) await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    await float.emulateMedia({ colorScheme: theme });
+    await float.getByRole('button', { name: 'Stop recording' }).waitFor();
+    assert.deepEqual(
+      await float.locator('.fb').evaluateAll((els) =>
+        els.map((el) => el.getAttribute('aria-label')),
+      ),
+      ['Stop recording', 'Pause', 'Mark this moment', 'Mute microphone', 'Hide window'],
+    );
+    await float.getByRole('button', { name: 'Mute microphone' }).click();
+    await float.getByRole('button', { name: 'Unmute microphone' }).waitFor();
+    assert.equal(
+      await app.evaluate(() => global.__bloom.getEngine().getState().muted.mic),
+      true,
+    );
+    await float.screenshot({
+      path: path.join(evidence, `${theme}-control.png`),
+      omitBackground: true,
+    });
+    await float.getByRole('button', { name: 'Pause', exact: true }).click();
+    await float.getByRole('button', { name: 'Resume', exact: true }).waitFor();
+    await float.getByRole('button', { name: 'Resume', exact: true }).click();
+    await float.getByRole('button', { name: 'Unmute microphone' }).click();
+    // Recording a display with only that display to sit on, it stays away (no fake display here
+    // matches the recorded one, so nowhere is known to be safe).
     // Pause keeps the same controls; Stop ends as any recording does.
     await panel.getByRole('button', { name: 'Pause', exact: true }).click();
     await panel.getByRole('button', { name: /Switch window/ }).waitFor();
     await panel.getByRole('button', { name: 'Resume', exact: true }).click();
     await panel.getByRole('button', { name: 'Stop recording', exact: true }).click();
     await panel.locator('.tray-card', { hasText: 'Processing' }).waitFor();
+    assert.equal(
+      await app.evaluate(() => global.__bloom.floatingControlShowing()),
+      false,
+      'the control goes when the recording stops',
+    );
     assert.deepEqual(errors, []);
-    console.log(`Window ${theme} walkthrough passes: named, switched, hidden, shown, paused, stopped.`);
+    console.log(`Window ${theme} walkthrough passes: named, switched, hidden, shown, floating control, paused, stopped.`);
   } finally {
     await app
       .evaluate(() => global.__bloom.getEngine().dispose())

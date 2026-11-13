@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A floating recording control: a small translucent capsule with Stop and the time, Pause, Mark, the microphone and system audio each muted on their own, and Hide window. It appears while a window is recorded, or on a display that is not the one being recorded, so it is never in the recording. It can be dragged and turned off in Settings.
 - Record a single window: the chooser beside the screen icon lists open windows by app. While recording a window you can switch to another or hide it behind a plain card. A window that has closed is never replaced by the whole display.
 - Recording uses the SDK's standalone mode: no session or token is needed to start, the recording is a file on this Mac, and Bloom sends it to VideoDB itself. An earlier recording keeps being processed while you record the next. Recording uses the default microphone, so the microphone chooser is gone.
 - Quit: a second, older check could still ask "Bloom is still processing a recording" after the quiet quit and leave Bloom running; it now applies to the sample engine only.

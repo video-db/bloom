@@ -748,3 +748,35 @@ test('a recorded window can be switched and hidden without stopping', async (t) 
   await f.command('setWindowHidden', { value: true });
   assert.equal(f.engine.getState().windowHidden, false);
 });
+
+test('one sound source can be muted while the recording carries on', async (t) => {
+  const f = await setup(t);
+  await f.command('setSource', { key: 'systemAudio', value: true });
+  await f.command('start');
+  await f.command('setMuted', { key: 'mic', value: true });
+  assert.deepEqual(f.engine.getState().muted, {
+    mic: true,
+    systemAudio: false,
+  });
+  assert.equal(f.engine.getState().phase, 'recording');
+  assert.deepEqual(f.calls.at(-1), ['pause', ['mic']]);
+  // A whole pause, then resume: the muted microphone stays silent.
+  await f.command('pause');
+  await f.command('resume');
+  assert.deepEqual(f.calls.at(-1), ['resume', ['screen', 'system_audio']]);
+  await f.command('setMuted', { key: 'mic', value: false });
+  assert.deepEqual(f.calls.at(-1), ['resume', ['mic']]);
+  // A source that is not being recorded cannot be muted, and a new recording starts unmuted.
+  await f.command('stop');
+  f.recorder.finish();
+  await flush();
+  await f.command('setSource', { key: 'systemAudio', value: false });
+  await f.command('setMuted', { key: 'mic', value: true });
+  assert.equal(f.engine.getState().muted.mic, false, 'nothing is recording');
+  await f.command('start');
+  await f.command('setMuted', { key: 'systemAudio', value: true });
+  assert.deepEqual(f.engine.getState().muted, {
+    mic: false,
+    systemAudio: false,
+  });
+});

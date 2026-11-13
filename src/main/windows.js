@@ -299,6 +299,12 @@ function createWindows({
       onboardingSession = sessionId;
     },
     roleOf,
+    // Another window of the app, with the same isolation and navigation rules.
+    surface(name, options) {
+      const window = new BrowserWindow({ ...options, webPreferences });
+      load(window, name);
+      return window;
+    },
     outOfSight,
     send(channel, payload) {
       for (const w of open()) w.webContents.send(channel, payload);

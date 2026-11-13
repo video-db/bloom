@@ -3,6 +3,7 @@ import { clock } from './shared/dom.js';
 import { panel } from './panel/panel.js';
 import { createOnboarding } from './onboarding/index.js';
 import { workspace } from './workspace/workspace.js';
+import { control } from './control/control.js';
 import { releasePlayer, mountPlayer } from './workspace/player.js';
 import { bindActions } from './actions.js';
 
@@ -50,7 +51,9 @@ function render(force = false) {
     root.innerHTML =
       surface === 'panel'
         ? panel(state)
-        : workspace(state, route(), browse, tab);
+        : surface === 'control'
+          ? control(state)
+          : workspace(state, route(), browse, tab);
     if (note !== undefined && root.querySelector('input[name="note"]'))
       root.querySelector('input[name="note"]').value = note;
     if (focusKey) {
@@ -69,6 +72,11 @@ function render(force = false) {
     if (scrolled) root.querySelector('.view')?.scrollTo(0, scrolled);
     if (route().place === 'recording')
       mountPlayer(state.recordings.find((r) => r.id === activeId));
+    // The floating control's window is exactly as tall as its buttons.
+    if (surface === 'control')
+      window.bloom.ui('float-size', {
+        height: (root.firstElementChild?.offsetHeight || 0) + 8,
+      });
     if (surface === 'panel') {
       const header = root.querySelector('.ph'),
         body = root.querySelector('.pb'),
@@ -130,7 +138,7 @@ window.bloom.getState().then((s) => {
 // and the main window its library each time they come forward, at most every 15 s and only
 // between recordings. That is why neither has a Refresh button.
 let refreshedAt = 0;
-if (surface !== 'onboarding')
+if (['panel', 'workspace'].includes(surface))
   window.addEventListener('focus', () => {
     const between = state && ['idle', 'finished'].includes(state.phase);
     if (

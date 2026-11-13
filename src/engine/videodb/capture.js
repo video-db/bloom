@@ -30,6 +30,16 @@ function createCapture(
     ...(ctx.get().sources.mic ? ['mic'] : []),
     ...(ctx.get().sources.systemAudio ? ['system_audio'] : []),
   ];
+  // The recorder's name for a sound source that can be muted on its own.
+  const TRACK = { mic: 'mic', systemAudio: 'system_audio' };
+  // What resumes after a pause: everything being recorded that is not muted.
+  const audible = () =>
+    tracks().filter(
+      (track) =>
+        !Object.entries(TRACK).some(
+          ([key, name]) => name === track && ctx.get().muted[key],
+        ),
+    );
   function freeze() {
     if (clock) accumulated += Math.max(0, now() - startedAt);
     clearInterval(clock);
@@ -83,6 +93,7 @@ function createCapture(
       ctx.set({
         phase: 'starting',
         upload: null,
+        muted: { mic: false, systemAudio: false },
         operationId,
         sessionId: `starting-${operationId}`,
         elapsed: 0,
@@ -250,7 +261,7 @@ function createCapture(
       if (transitioning || ctx.get().phase !== 'paused') return;
       transitioning = true;
       try {
-        await recorder.resume(tracks());
+        await recorder.resume(audible());
         closePause();
         ctx.set({ phase: 'recording', problem: null });
         tick();
@@ -266,6 +277,18 @@ function createCapture(
       } finally {
         transitioning = false;
       }
+    },
+    // Silence one sound source while the recording carries on, or bring it back.
+    async setMuted({ key, value }) {
+      const state = ctx.get();
+      if (!['recording', 'paused'].includes(state.phase)) return;
+      if (!state.sources[key] || !!state.muted[key] === value) return;
+      // While everything is paused the source is already silent; resume will respect this.
+      if (state.phase === 'recording')
+        await (value
+          ? recorder.pause([TRACK[key]])
+          : recorder.resume([TRACK[key]]));
+      ctx.set({ muted: { ...ctx.get().muted, [key]: value } });
     },
     mark({ text = '' }) {
       if (ctx.get().phase !== 'recording') return;

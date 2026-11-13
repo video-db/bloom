@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const DEFAULTS = {
   onboardingComplete: false,
   appearance: 'system', // system | light | dark
+  floatingControl: true, // show the recording control on screen while recording
+  floatAt: { x: -1, y: -1 }, // where the control was last dragged to; -1 means not yet
   openAtLogin: true, // a menu-bar app that is gone after a restart is confusing; setup shows the switch
   defaultMic: true,
   autoTranscribe: true, // transcribe a new recording once it has been processed
@@ -40,6 +42,8 @@ function createPrefs(file) {
   function valid(key, value) {
     if (!Object.hasOwn(DEFAULTS, key)) return false;
     if (CHOICES[key]) return CHOICES[key].includes(value);
+    if (key === 'floatAt')
+      return !!value && Number.isFinite(value.x) && Number.isFinite(value.y);
     return typeof value === typeof DEFAULTS[key];
   }
 

@@ -28,13 +28,16 @@ function registerIpc({
   tray,
   windows,
   appState,
+  floating,
   screenPreview,
   restart,
 }) {
+  // Which of Bloom's windows a message came from, floating ones included.
+  const roleOf = (window) =>
+    windows.roleOf(window) || floating?.roleOf(window) || null;
   const download = createDownloads({ engine, dialog });
   const fromOnboarding = (event) =>
-    windows.roleOf(BrowserWindow.fromWebContents(event.sender)) ===
-    'onboarding';
+    roleOf(BrowserWindow.fromWebContents(event.sender)) === 'onboarding';
   // Paste in onboarding: the web clipboard API can wait forever on a permission question
   // nobody sees, so the main process answers, and only that window.
   ipcMain.handle('bloom:clipboard-text', (event) =>
@@ -44,14 +47,13 @@ function registerIpc({
     fromOnboarding(event) ? screenPreview.capture() : null,
   );
   ipcMain.handle('bloom:get-state', (event) => {
-    if (!windows.roleOf(BrowserWindow.fromWebContents(event.sender)))
-      return null;
+    if (!roleOf(BrowserWindow.fromWebContents(event.sender))) return null;
     return appState.withPrefs(engine.getState());
   });
 
   ipcMain.on('bloom:command', (event, name, args) => {
     const from = BrowserWindow.fromWebContents(event.sender);
-    const role = windows.roleOf(from);
+    const role = roleOf(from);
     if (!role) return;
     const previousSession = engine.getState().sessionId;
     engine.command(name, args);
@@ -67,7 +69,7 @@ function registerIpc({
 
   ipcMain.on('bloom:ui', (event, name, args = {}) => {
     const from = BrowserWindow.fromWebContents(event.sender);
-    const role = windows.roleOf(from);
+    const role = roleOf(from);
     if (
       !role ||
       typeof name !== 'string' ||
@@ -104,6 +106,8 @@ function registerIpc({
       windows.mainRendererReady();
       return;
     }
+    if (name === 'float-size' && role === 'control')
+      floating.resize(args.height);
     if (
       name === 'panel-height' &&
       role === 'panel' &&
@@ -128,6 +132,7 @@ function registerIpc({
           : 'Could not save this preference. Check available disk space and try again.',
       );
       if (ok) {
+        if (args.key === 'floatingControl') floating?.sync(engine.getState());
         if (
           args.key === 'openAtLogin' &&
           app.isPackaged &&
@@ -145,9 +150,7 @@ function registerIpc({
       (args.id === undefined || typeof args.id === 'string')
     ) {
       windows.hidePanel();
-      windows.openMain(
-        args.id ? `recording/${args.id}` : args.view,
-      );
+      windows.openMain(args.id ? `recording/${args.id}` : args.view);
     }
     if (name === 'copy-link') {
       if (engine.getState().sample) copyLink();

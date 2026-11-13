@@ -33,6 +33,8 @@ src/
     menu.js           application menu
     shortcuts.js      global shortcuts
     ipc.js            messages from renderers
+    floating.js       windows that float over the screen while recording (the control)
+    float-placement.js  where a floating window may sit so it is not in the recording
     clock.js          mm:ss formatting shared by the tray and notifications
   engine/
     index.js          the engine surface and factory
@@ -46,6 +48,7 @@ src/
     panel/            the tray panel: sources and their choosers, each recording state
     workspace/        the main window: title bar, sidebar of places (places.js), and one
                       view and stylesheet per page: home, recordings, recording
+    control/          the floating recording control
     settings/         the Settings view
     onboarding/       first run: Connect, Permissions, Ready
   assets/             tray icons, fonts, the mark

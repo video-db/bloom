@@ -20,6 +20,7 @@ function initialState() {
       window: '', // the id of a single window to record instead of the display
     },
     channels: { displays: [], mics: [], systemAudio: [] },
+    muted: { mic: false, systemAudio: false }, // a sound source silenced during this recording
     windowHidden: false, // a recorded window is blanked with a plain card for now
     windows: { supported: false, list: [] }, // open windows: [{ id, app, title, width, height }]
     permissions: { screen: false, mic: false, camera: false },

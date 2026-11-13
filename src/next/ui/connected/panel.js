@@ -210,7 +210,7 @@ export function panel(s) {
         data-ui="open-main"
         data-view="library"
         aria-label="Open Bloom"
-        data-tooltip="Open Bloom"
+        title="Open Bloom"
         ${s.account.status !== 'signed-in' ? 'disabled' : ''}
       >
         ${icon('window')}
@@ -270,7 +270,7 @@ export function panel(s) {
         class="panel-gear"
         data-ui="open-preferences"
         aria-label="Settings"
-        data-tooltip="Settings"
+        title="Settings"
         ${s.account.status !== 'signed-in' ? 'disabled' : ''}
       >
         ${icon('settings')}

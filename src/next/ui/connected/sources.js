@@ -22,7 +22,7 @@ const arrow = (name, label) =>
     aria-expanded="${open === name}"
     aria-controls="source-chooser"
     aria-label="${label}"
-    data-tooltip="${label}"
+    title="${label}"
   >
     ${icon('down')}
   </button>`;
@@ -41,7 +41,7 @@ function display(s) {
       class="capture-option on"
       role="img"
       aria-label="Recording ${esc(name)}"
-      data-tooltip="${esc(name)}"
+      title="${esc(name)}"
     >
       ${icon('screen')}${
         several ? `<span class="display-number">${index + 1}</span>` : ''
@@ -60,7 +60,7 @@ function toggle({ key, glyph, label, on, detail = '' }) {
     data-value="${!on}"
     aria-pressed="${on}"
     aria-label="${label}: ${state}"
-    data-tooltip="${esc(detail || label)}: ${state}"
+    title="${esc(detail || label)}: ${state}"
   >
     ${icon(glyph)}${on ? '' : '<span class="source-slash"></span>'}
   </button>`;

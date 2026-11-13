@@ -284,39 +284,6 @@
   width: 18px;
   height: 18px;
 }
-.panel-open[data-tooltip]::after,
-.panel-gear[data-tooltip]::after,
-.source-arrow[data-tooltip]::after {
-  content: attr(data-tooltip);
-  display: none;
-  position: absolute;
-  z-index: 5;
-  right: calc(100% + 6px);
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 5px 7px;
-  border-radius: 5px;
-  background: var(--ink);
-  color: var(--on);
-  font-size: 10px;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.source-arrow[data-tooltip]::after {
-  right: auto;
-  left: 50%;
-  top: auto;
-  bottom: calc(100% + 4px);
-  transform: translateX(-50%);
-}
-.panel-open:hover::after,
-.panel-open:focus-visible::after,
-.panel-gear:hover::after,
-.panel-gear:focus-visible::after,
-.source-arrow:hover::after,
-.source-arrow:focus-visible::after {
-  display: block;
-}
 .panel .pf {
   align-items: center;
   padding: 8px 14px;

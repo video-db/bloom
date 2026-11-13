@@ -424,3 +424,16 @@
     outline-offset: 2px;
   }
 }
+
+/* One orange per state, in the Start button's deeper tone with white text. */
+.panel .btn.pri,
+.app .btn.pri {
+  background: color-mix(in srgb, var(--brand) 78%, #000);
+  border-color: transparent;
+  color: #fff;
+}
+.panel .btn.pri:hover,
+.app .btn.pri:hover {
+  background: color-mix(in srgb, var(--brand) 70%, #000);
+  opacity: 1;
+}

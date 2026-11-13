@@ -202,7 +202,7 @@ export function panel(s) {
   return /* HTML */ `<section class="panel">
     <header class="ph">
       <span class="brandname">${logo} Bloom</span
-      ><button class="link" data-ui="open-main" data-view="library">
+      ><button class="link" data-ui="open-main" data-view="library" ${s.account.status !== 'signed-in' ? 'disabled' : ''}>
         Recordings ↗
       </button>
     </header>
@@ -249,7 +249,7 @@ export function panel(s) {
         : ''}
     </div>
     <footer class="pf">
-      <button class="link" data-ui="open-preferences">Settings</button
+      <button class="link" data-ui="open-preferences" ${s.account.status !== 'signed-in' ? 'disabled' : ''}>Settings</button
       ><button class="link" data-ui="quit">Quit</button>
     </footer>
   </section>`;

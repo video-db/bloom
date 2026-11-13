@@ -1,3 +1,4 @@
+const { controlsAvailable } = require('./access');
 // The state flow: every engine change reaches the tray, the notifications and each open window,
 // joined with preferences. Also applies the preferences that change the app itself.
 function createAppState({
@@ -8,6 +9,7 @@ function createAppState({
   notifications,
   windows,
   loginSupported = false,
+  syncMenu = () => {},
 }) {
   let prefError = ''; // why the last preference save failed; windows show it until one succeeds
 
@@ -32,6 +34,9 @@ function createAppState({
   });
 
   function broadcast(state) {
+    tray.setAvailable(controlsAvailable(state, prefs.all()));
+    syncMenu(state);
+    windows.syncAccess(state);
     tray.paint(state);
     notifications.observe(state);
     windows.send('next:state', withPrefs(state));

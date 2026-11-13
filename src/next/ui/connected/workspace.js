@@ -1,4 +1,4 @@
-import { esc, clock, logo, button, problems, accountForm } from './dom.js';
+import { esc, clock, logo, button, problems } from './dom.js';
 import { phases } from './panel.js';
 import { settings } from './settings.js';
 
@@ -9,7 +9,7 @@ function details(s, id) {
       <h1>Your workspace is ready</h1>
       <p>Select a recording or start one from the menu bar.</p>
       <button class="btn pri" data-ui="show-panel">New recording</button
-      >${accountForm(s)}
+      >
     </div>`;
   const transcriptLabel = {
     'not-requested': 'A transcript has not been requested.',
@@ -135,6 +135,8 @@ function details(s, id) {
 }
 
 export function workspace(s, view, activeId, query = '') {
+  if (s.account.status !== 'signed-in')
+    return '<main class="workspace-empty"><h1>Sign in to continue</h1><button class="btn" data-ui="open-onboarding">Open setup</button></main>';
   const records = s.recordings.filter((r) =>
     `${r.title} ${r.transcript}`.toLowerCase().includes(query.toLowerCase()),
   );

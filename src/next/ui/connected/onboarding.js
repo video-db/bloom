@@ -52,6 +52,7 @@ export function onboarding(s, step) {
             data-step="${step + 1}"
             ${!connected ||
             (step > 0 && !s.permissions.screen) ||
+            (step === 2 && s.sources.mic && !s.permissions.mic) ||
             !['idle', 'finished'].includes(s.phase)
               ? 'disabled'
               : ''}

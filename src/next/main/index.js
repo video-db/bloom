@@ -63,12 +63,15 @@ function start() {
     keepOpen: flags.flag('keep-open'),
     theme,
     engine,
+    prefs,
     tray,
     isQuitting: () => quitting,
   });
   notifications = createNotifications({ engine, prefs, windows });
-  shortcuts = createShortcuts({ engine, windows, notifications });
+  shortcuts = createShortcuts({ engine, windows, notifications, prefs });
+  const syncMenu = installMenu({ engine, windows, prefs });
   const appState = createAppState({
+    syncMenu,
     engine,
     prefs,
     theme,
@@ -79,12 +82,11 @@ function start() {
   });
 
   appState.applyPrefs(); // before any window exists, so the first one opens in the right theme
-  installMenu({ engine, windows });
   tray.onClick(windows.togglePanel);
   theme.onChange(windows.repaint);
   windows.createPanel();
   engine.onState(appState.broadcast);
-  tray.paint(engine.getState());
+  appState.broadcast(engine.getState());
   registerIpc({ engine, prefs, theme, tray, windows, appState });
   shortcuts.register();
 }
@@ -175,5 +177,6 @@ global.__bloomNext = {
   toggleCapture: () => shortcuts.toggleCapture(),
   getEngine: () => engine,
   getPrefs: () => prefs.all(),
+  hasTray: () => tray.isAvailable(),
   getFixture: () => (!app.isPackaged ? fixture : undefined),
 };

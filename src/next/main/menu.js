@@ -1,5 +1,6 @@
 // The application menu, and the About panel it opens.
 const { app, Menu } = require('electron');
+const { setupReady, controlsAvailable } = require('./access');
 
 const PREVIEW_SCENARIOS = [
   ['permission', 'Missing permission'],
@@ -10,7 +11,7 @@ const PREVIEW_SCENARIOS = [
   ['processing-error', 'Processing failed'],
 ];
 
-function installMenu({ engine, windows }) {
+function installMenu({ engine, windows, prefs }) {
   const sample = engine.getState().sample;
   app.setAboutPanelOptions({
     applicationName: sample ? 'Bloom Preview' : 'Bloom',
@@ -27,6 +28,7 @@ function installMenu({ engine, windows }) {
           { role: 'about' },
           { type: 'separator' },
           {
+            id: 'settings',
             label: 'Settings…',
             accelerator: 'CmdOrCtrl+,',
             click: () => windows.openMain('settings'),
@@ -43,11 +45,13 @@ function installMenu({ engine, windows }) {
         label: 'File',
         submenu: [
           {
+            id: 'recording-controls',
             label: 'New Recording…',
             accelerator: 'CmdOrCtrl+N',
             click: windows.showPanel,
           },
           {
+            id: 'recordings',
             label: 'Recordings',
             accelerator: 'CmdOrCtrl+1',
             click: () => windows.openMain('library'),
@@ -94,6 +98,18 @@ function installMenu({ engine, windows }) {
       },
     ]),
   );
+  const updateAccess = (state) => {
+    const menu = Menu.getApplicationMenu?.();
+    for (const id of ['settings', 'recordings', 'recording-controls']) {
+      const item = menu?.getMenuItemById(id);
+      if (item)
+        item.enabled = id === 'recording-controls'
+          ? controlsAvailable(state, prefs.all())
+          : setupReady(state, prefs.all());
+    }
+  };
+  updateAccess(engine.getState());
+  return updateAccess;
 }
 
 module.exports = { installMenu };

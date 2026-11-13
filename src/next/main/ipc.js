@@ -143,7 +143,8 @@ function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
       if (
         !engine.getState().sample &&
         (engine.getState().account.status !== 'signed-in' ||
-          !engine.getState().permissions.screen)
+          !engine.getState().permissions.screen ||
+          (engine.getState().sources.mic && !engine.getState().permissions.mic))
       )
         return;
       if (!prefs.set('onboardingComplete', true)) {
@@ -161,6 +162,7 @@ function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
         return;
       }
       appState.setPrefError('');
+      appState.broadcast(engine.getState());
       windows.closeOnboarding();
       windows.showPanel();
     }

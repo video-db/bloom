@@ -2,6 +2,7 @@
 // Owns their creation, placement and visibility, and knows which of them a renderer message came from.
 const path = require('node:path');
 const { BrowserWindow, screen } = require('electron');
+const { setupReady, captureActive, controlsAvailable } = require('./access');
 
 const alive = (window) => !!window && !window.isDestroyed();
 
@@ -11,10 +12,13 @@ function createWindows({
   keepOpen,
   theme,
   engine,
+  prefs,
   tray,
   isQuitting,
 }) {
   let panel, mainWindow, onboarding;
+  const ready = (state = engine.getState()) => setupReady(state, prefs.all());
+  let hadAccess = ready();
   let mainReady = false,
     pendingMainView = null,
     onboardingSession = null;
@@ -96,6 +100,12 @@ function createWindows({
   }
 
   function showPanel() {
+    const state = engine.getState();
+    if (!controlsAvailable(state, prefs.all())) {
+      hidePanel();
+      openOnboarding();
+      return;
+    }
     if (!alive(panel)) {
       createPanel();
       panel.once('ready-to-show', showPanel);
@@ -112,7 +122,7 @@ function createWindows({
   }
 
   function hidePanel() {
-    panel.hide();
+    if (alive(panel)) panel.hide();
   }
 
   // The panel grows and shrinks with its content, within the display it hangs on.
@@ -136,6 +146,10 @@ function createWindows({
   }
 
   function openMain(view) {
+    if (!ready()) {
+      openOnboarding();
+      return;
+    }
     if (typeof view === 'string') pendingMainView = view;
     if (alive(mainWindow)) {
       mainWindow.show();
@@ -161,7 +175,7 @@ function createWindows({
     });
     load(window, 'workspace', { hash: view || 'library' });
     window.once('ready-to-show', () => {
-      if (alive(window)) window.show();
+      if (alive(window) && ready()) window.show();
     });
     // Native close is asynchronous; a new request must not target the window being closed.
     const release = () => {
@@ -182,9 +196,8 @@ function createWindows({
   // ---- onboarding: first run, and replay from the Help menu -------------------------------
   function openOnboarding() {
     if (
-      ['starting', 'recording', 'paused', 'saving'].includes(
-        engine.getState().phase,
-      )
+      (engine.getState().sample || prefs.all().onboardingComplete) &&
+      captureActive(engine.getState())
     ) {
       showPanel();
       return;
@@ -246,6 +259,16 @@ function createWindows({
     !(alive(onboarding) && onboarding.isFocused());
 
   return {
+    syncAccess(state) {
+      const allowed = ready(state);
+      if (hadAccess && !allowed) {
+        pendingMainView = null;
+        if (alive(mainWindow)) mainWindow.close();
+        hidePanel();
+        openOnboarding();
+      }
+      hadAccess = allowed;
+    },
     createPanel,
     showPanel,
     togglePanel,

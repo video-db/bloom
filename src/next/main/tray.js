@@ -18,7 +18,8 @@ function createTray({ assets }) {
       img(`${dir}/bloom-${dir}-${String(i).padStart(2, '0')}${suffix}.png`),
     );
 
-  const tray = new Tray(img('bloomTemplate.png'));
+  let tray = null;
+  const listeners = new Set();
   const recFrames = frames('recording', 12, '');
   const busyFrames = frames('busy', 8, 'Template');
   let timer = null,
@@ -38,6 +39,7 @@ function createTray({ assets }) {
   }
 
   function paint(state) {
+    if (!tray) return;
     // The image only changes with the phase; the title below changes every second.
     const next = `${state.phase}:${!!state.problem}:${reducedMotion}`;
     if (next !== key) {
@@ -71,18 +73,39 @@ function createTray({ assets }) {
   }
 
   return {
+    setAvailable(available) {
+      if (available && !tray) {
+        tray = new Tray(img('bloomTemplate.png'));
+        key = '';
+        for (const listener of listeners) {
+          tray.on('click', listener);
+          tray.on('right-click', listener);
+        }
+      } else if (!available && tray) {
+        clearInterval(timer);
+        timer = null;
+        tray.destroy();
+        tray = null;
+        key = '';
+      }
+    },
+    isAvailable: () => tray !== null,
     paint,
     // Takes effect on the next paint.
     setReducedMotion(value) {
       reducedMotion = value;
     },
-    getBounds: () => tray.getBounds(),
+    getBounds: () => tray?.getBounds() || { x: 0, y: 0, width: 0, height: 0 },
     onClick(listener) {
-      tray.on('click', listener);
-      tray.on('right-click', listener);
+      listeners.add(listener);
+      tray?.on('click', listener);
+      tray?.on('right-click', listener);
     },
     dispose() {
       clearInterval(timer);
+      tray?.destroy?.();
+      tray = null;
+      listeners.clear();
     },
   };
 }

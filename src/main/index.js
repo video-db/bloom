@@ -180,7 +180,15 @@ app.on('before-quit', (event) => {
       });
     return;
   }
-  if (quitGuard && !quitGuard.allows()) return event.preventDefault();
+  // The older question about a recording still being processed belongs to the sample engine
+  // only; with the real engine, quitting never asks about processing (ADR 0004).
+  if (
+    engine?.getState().sample &&
+    !quitting &&
+    quitGuard &&
+    !quitGuard.allows()
+  )
+    return event.preventDefault();
   quitting = true;
 });
 // macOS reopens a running app through activation rather than a second process.

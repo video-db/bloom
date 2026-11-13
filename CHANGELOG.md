@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Quit: a second, older check could still ask "Bloom is still processing a recording" after the quiet quit and leave Bloom running; it now applies to the sample engine only.
+
 ## [2.3.5] - 2026-11-13
 
 - An earlier recording never blocks the next one: Start is available as soon as a recording's file is on this Mac, including after a failed recording or a failed recovery. A recording still being processed is set aside while you record and continues afterwards.

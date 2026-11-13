@@ -10,6 +10,21 @@ function createCapture(
   let startedAt = 0;
   let accumulated = 0;
   let transitioning = false;
+  // When this capture began and where it was paused, in seconds from its start as the file
+  // counts them. The file keeps running through a pause; these are what a later edit cuts.
+  let began = 0;
+  let pausedFrom = null;
+  let pauses = [];
+  const sinceBegan = () => Math.round((now() - began) / 100) / 10;
+  function closePause() {
+    if (pausedFrom === null) return;
+    pauses = [...pauses, { from: pausedFrom, to: sinceBegan() }];
+    pausedFrom = null;
+    const record = ctx
+      .get()
+      .recordings.find((r) => r.sessionId === ctx.get().sessionId);
+    if (record) ctx.update(record.id, { pauses });
+  }
   const tracks = () => [
     'screen',
     ...(ctx.get().sources.mic ? ['mic'] : []),
@@ -111,6 +126,9 @@ function createCapture(
         await recorder.start({ sessionId, channels, title });
         started = true;
         accumulated = 0;
+        began = now();
+        pausedFrom = null;
+        pauses = [];
         ctx.set({ phase: 'recording' });
         tick();
         ctx.update(record.id, { jobStage: 'recording' });
@@ -153,6 +171,7 @@ function createCapture(
       try {
         await recorder.stop();
         confirmed = true;
+        closePause(); // stopped while paused: the pause runs to the end
         freeze();
         const record = ctx
           .get()
@@ -211,6 +230,7 @@ function createCapture(
       transitioning = true;
       try {
         await recorder.pause(tracks());
+        pausedFrom = sinceBegan();
         freeze();
         ctx.set({ phase: 'paused' });
       } catch {
@@ -230,6 +250,7 @@ function createCapture(
       transitioning = true;
       try {
         await recorder.resume(tracks());
+        closePause();
         ctx.set({ phase: 'recording', problem: null });
         tick();
       } catch {

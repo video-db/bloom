@@ -52,6 +52,13 @@ test('selected sources are paused together and paused time is excluded from mark
   f.advance(3000);
   await f.command('pause');
   assert.equal(f.engine.getState().elapsed, 8);
+  // Where it was paused, as the file counts time (it keeps running through a pause).
+  f.advance(2000);
+  await f.command('stop');
+  assert.deepEqual(f.engine.getState().recordings[0].pauses, [
+    { from: 5, to: 14 },
+    { from: 17, to: 19 },
+  ]);
 });
 
 test('Stop remains uncertain after rejection and another Start cannot overlap', async (t) => {

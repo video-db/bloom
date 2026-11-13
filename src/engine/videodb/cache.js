@@ -14,6 +14,7 @@ const fields = [
   'status',
   'jobStage',
   'marks',
+  'pauses',
   'transcript',
   'transcriptStatus',
   'transcriptRequested',

@@ -1,14 +1,16 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync, execFileSync } = require('child_process');
+const { execFileSync } = require('child_process');
+const { signAsync } = require('@electron/osx-sign');
+const { verifyMacSignature } = require('./verify-mac-signature');
 
 /**
  * electron-builder afterPack hook.
  *
  * 1. Adds the microphone usage description to VideoDBCapture.app Info.plist
- * 2. Re-codesigns the VideoDBCapture.app bundle inside-out (dylib → binary → bundle)
- *    so macOS TCC recognises it after electron-builder packing.
- *    This mirrors what the videodb-capture SDK installer does after extraction.
+ * 2. Signs all nested code and the outer app, binding Bloom's Info.plist and identity.
+ *    Signing only the recorder leaves the outer executable identified as Electron;
+ *    macOS then attributes capture to an independent executable-path permission.
  */
 module.exports = async function afterPack(context) {
   const appOutDir = context.appOutDir;
@@ -20,11 +22,20 @@ module.exports = async function afterPack(context) {
   if (platform !== 'mac') return;
 
   const appName = context.packager.appInfo.productFilename;
-  const resourcesPath = path.join(appOutDir, `${appName}.app`, 'Contents', 'Resources');
+  const resourcesPath = path.join(
+    appOutDir,
+    `${appName}.app`,
+    'Contents',
+    'Resources',
+  );
   const unpackedPath = path.join(resourcesPath, 'app.asar.unpacked');
 
   const videodbAppBundle = path.join(
-    unpackedPath, 'node_modules', 'videodb-capture', 'bin', 'VideoDBCapture.app'
+    unpackedPath,
+    'node_modules',
+    'videodb-capture',
+    'bin',
+    'VideoDBCapture.app',
   );
   const macosDir = path.join(videodbAppBundle, 'Contents', 'MacOS');
   const infoPlistPath = path.join(videodbAppBundle, 'Contents', 'Info.plist');
@@ -33,12 +44,11 @@ module.exports = async function afterPack(context) {
   const librecorderPath = path.join(macosDir, 'librecorder.dylib');
 
   if (!fs.existsSync(capturePath)) {
-    console.error('ERROR: capture binary not found at', capturePath);
-    return;
+    throw new Error('Capture binary missing from packaged Bloom app.');
   }
 
   // --- Log binary info ---
-  const fileOutput = execSync(`file "${capturePath}"`).toString();
+  const fileOutput = execFileSync('file', [capturePath]).toString();
   console.log('Capture binary type:', fileOutput.trim());
 
   // --- Set permissions ---
@@ -59,32 +69,35 @@ module.exports = async function afterPack(context) {
         plistContent = plistContent.replace(
           '</dict>',
           '    <key>NSMicrophoneUsageDescription</key>\n' +
-          '    <string>Bloom needs microphone access to record your voice.</string>\n' +
-          '</dict>'
+            '    <string>Bloom needs microphone access to record your voice.</string>\n' +
+            '</dict>',
         );
         fs.writeFileSync(infoPlistPath, plistContent);
-        console.log('Patched VideoDBCapture Info.plist with the microphone usage description');
+        console.log(
+          'Patched VideoDBCapture Info.plist with the microphone usage description',
+        );
       }
     } catch (err) {
-      console.warn('Failed to patch Info.plist:', err.message);
+      throw new Error('Failed to patch capture permissions.', { cause: err });
     }
+  } else {
+    throw new Error('Capture Info.plist missing from packaged Bloom app.');
   }
 
-  // --- Re-codesign the .app bundle inside-out ---
-  // Packing can invalidate the code signature. Sign in order:
-  // 1. dylib  2. capture binary  3. entire .app bundle
-  try {
-    if (fs.existsSync(librecorderPath)) {
-      execFileSync('codesign', ['--force', '--sign', '-', librecorderPath]);
-      console.log('Codesigned librecorder.dylib');
-    }
-
-    execFileSync('codesign', ['--force', '--sign', '-', capturePath]);
-    console.log('Codesigned capture binary');
-
-    execFileSync('codesign', ['--force', '--sign', '-', videodbAppBundle]);
-    console.log('Codesigned VideoDBCapture.app bundle');
-  } catch (err) {
-    console.warn('Codesign failed (screen recording/mic may not work):', err.message);
-  }
+  // Local builds have no Developer ID certificate. Seal the whole bundle anyway;
+  // electron-builder may subsequently replace this with a configured distribution signature.
+  const appPath = path.join(appOutDir, `${appName}.app`);
+  await signAsync({
+    app: appPath,
+    platform: 'darwin',
+    identity: '-',
+    identityValidation: false,
+    preAutoEntitlements: false,
+    optionsForFile: () => ({
+      entitlements: path.join(__dirname, 'entitlements.mac.plist'),
+      hardenedRuntime: false,
+    }),
+  });
+  verifyMacSignature(appPath, context.packager.appInfo.id);
+  console.log('Verified complete Bloom bundle signature.');
 };

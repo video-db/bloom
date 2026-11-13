@@ -12,7 +12,7 @@ function getUserData() {
 }
 
 /** SQLite database file */
-const DB_FILE       = () => path.join(getUserData(), 'async-recorder.db');
+const DB_FILE       = () => path.join(getUserData(), 'bloom.db');
 
 /** Persistent user auth config (accessToken, userName) */
 const CONFIG_FILE   = () => path.join(getUserData(), 'config.json');
@@ -20,7 +20,7 @@ const CONFIG_FILE   = () => path.join(getUserData(), 'config.json');
 /** Application log file */
 const LOG_PATH      = () => path.join(getUserData(), 'app.log');
 
-/** One-time setup file dropped by `npm run setup` or manual placement */
+/** Optional one-time registration file placed manually at the project root */
 const AUTH_CONFIG_FILE = path.join(__dirname, '..', '..', '..', 'auth_config.json');
 
 /** .env file at project root */

@@ -1,16 +1,17 @@
 {
   "name": "bloom",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Bloom — Screen recorder powered by VideoDB",
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
+    "next": "electron src/next/main.js",
     "dist": "electron-builder",
     "pack": "electron-builder --dir"
   },
   "keywords": [],
   "author": "VideoDB",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
     "electron": "^39.7.0",
@@ -75,6 +76,6 @@
   "dependencies": {
     "dotenv": "^17.2.3",
     "sql.js": "^1.11.0",
-    "videodb": "^0.2.4"
+    "videodb": "video-db/videodb-node#release-0.2.6"
   }
 }

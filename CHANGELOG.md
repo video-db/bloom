@@ -1,5 +1,27 @@
 # Changelog
 
+## [Unreleased]
+
+### Documentation
+- Centralised architecture, decisions and work tracking in architectures under Products/Bloom.
+- Added configuration, local-install and verification instructions.
+- Consolidated reset instructions, corrected source-backed feature/configuration descriptions and shortened the repository map.
+
+### Repository
+- Added shared ignore rules for local agent context, environment overrides, database sidecars, recordings and generated installers.
+
+### Branding
+- Standardised local database naming as `bloom.db`; existing local data is not migrated.
+- Aligned package license metadata with the MIT license file.
+
+## [2.3.0] - 2026-04-06
+
+### Audio
+- Better audio input device support
+
+### Library
+- Updated VideoDB SDK to 0.2.6
+
 ## [2.2.0] - 2026-03-25
 
 ### Platform Support
@@ -45,7 +67,7 @@
 ## [2.0.0] - 2026-03-19
 
 ### Rebrand
-- Renamed from "Async Recorder" to "Bloom" with new icon and branding
+- Bloom name, icon and branding refresh
 
 ### Floating Bar
 - Always-on-top bottom bar with click-through and drag support

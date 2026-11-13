@@ -15,7 +15,7 @@
 <h3 align="center">An open source, agentic Loom alternative.</h3>
 
 <p align="center">
-  Record locally. Make recordings AI-ready. Run workflows on top.
+  Capture on your desktop. Make recordings AI-ready. Run workflows on top.
   <br />
   <br />
   <strong>Record → Query → Automate</strong>
@@ -35,11 +35,11 @@
 
 ## What is Bloom?
 
-Bloom is a local-first screen recorder built for agentic workflows. 
+Bloom is a desktop screen recorder built for agentic workflows, with local library metadata and VideoDB-backed capture sessions.
 
-- **Record locally** — No lock-in, your files stay yours
-- **Upload to VideoDB** — Automatic cloud sync with AI processing. 
-- **Find any moment** — Transcripts, visual embeddings, metadata.
+- **Capture from your desktop** — Screen, microphone and system audio
+- **Upload to VideoDB** — Automatic cloud sync with AI processing.
+- **Find recordings** — Search the library by name and view generated transcripts.
 - **Let agents work on your recordings** — Query via APIs or agent frameworks like Claude Code and access your recordings data.
 
 Recordings are no longer files, they are inputs for AI.
@@ -54,16 +54,16 @@ https://github.com/user-attachments/assets/bf075217-b256-43b7-9369-b5d172bfc6b2
 
 ## Installation
 
-Run this in your terminal to install Bloom:
+To install the published build, run:
 
 ```bash
 curl -fsSL https://artifacts.videodb.io/bloom/install | bash
 ```
 
-This will automatically detect your Mac architecture, download the right build, and install it to `/Applications`.
+This detects your Mac architecture and installs the published build to `/Applications`. For the version in this checkout, follow the [local build and installation runbook](docs/runbook.md#build-and-install-locally).
 
 <details>
-<summary>Manual install</summary>
+<summary>Manual install — v2.2.0 artifact URLs</summary>
 
 - **Apple Silicon (M1/M2/M3/M4)**: [bloom-2.2.0-arm64.dmg](https://artifacts.videodb.io/bloom/bloom-2.2.0-arm64.dmg)
 - **Apple Intel**: [bloom-2.2.0-x64.dmg](https://artifacts.videodb.io/bloom/bloom-2.2.0-x64.dmg)
@@ -76,19 +76,18 @@ This will automatically detect your Mac architecture, download the right build, 
 </details>
 
 <p>
-  <em>Supported on macOS and Windows (pre-built installer available for macOS). Linux support coming soon.</em>
+  <em>The repository includes macOS DMG and Windows NSIS packaging. Verify each build on its target platform using the runbook.</em>
 </p>
 
 ---
-
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
 | **No subscription** | Pay only for usage |
-| **Local-first** | Record locally, no lock-in |
-| **AI-ready** | Search, summarize, extract |
+| **Desktop recording** | Capture screen and audio into VideoDB-backed sessions |
+| **AI-ready** | Spoken-word indexing and transcripts through VideoDB |
 | **Screen recording** | Capture screen, microphone, and system audio via [VideoDB Capture SDK](https://docs.videodb.io) |
 | **Camera overlay** | Draggable camera bubble during recording |
 | **Floating bar** | Always-on-top control bar that never blocks your apps |
@@ -102,76 +101,9 @@ This will automatically detect your Mac architecture, download the right build, 
 
 ---
 
-
 ## Architecture
 
-```
-Bloom = UI layer (open source)
-VideoDB = Intelligence layer (cloud)
-```
-
-```mermaid
-graph LR
-    subgraph EA["  Electron App  "]
-        R["Renderer UI"]
-        M["Main Process"]
-        DB[("SQLite")]
-        R -->|IPC| M
-        M --> DB
-        M --> SDK
-    end
-
-    subgraph VS["  VideoDB SDK  "]
-        SDK["Node SDK"]
-        CC["CaptureClient"]
-        WS["WebSocket"]
-        API["Connection API"]
-        BIN["Native Binary"]
-        SDK --> CC & WS & API
-        CC --> BIN
-    end
-
-    subgraph LC["  Local Capture  "]
-        SC["Screen Capture"]
-        MIC["Microphone"]
-        SA["System Audio"]
-        BIN --> SC & MIC & SA
-    end
-
-    subgraph VC["  VideoDB  "]
-        UPLOAD["Upload & Export"]
-        STREAM["HLS Streaming"]
-        IDX["Indexing"]
-        TRX["Transcription"]
-        UPLOAD --> STREAM
-        IDX --> TRX
-    end
-
-    BIN -->|"upload chunks"| UPLOAD
-    WS -->|"session events"| UPLOAD
-    API -->|"index / transcribe"| IDX
-
-    classDef orange fill:#2e1a08,stroke:#EC5B16,stroke-width:1.5px,color:#f5a36a
-    classDef amber  fill:#2e2008,stroke:#E8A317,stroke-width:1.5px,color:#f5d080
-    classDef red    fill:#2e0d08,stroke:#FF4000,stroke-width:1.5px,color:#ff8a60
-    classDef green  fill:#0d2e1a,stroke:#4CAF50,stroke-width:1.5px,color:#8ed4a0
-    classDef db     fill:#1a1208,stroke:#EC5B16,stroke-width:1.5px,color:#f5a36a
-
-    class R,M orange
-    class SDK,CC,WS,API,BIN amber
-    class SC,MIC,SA red
-    class UPLOAD,IDX,TRX,STREAM green
-    class DB db
-
-    style EA fill:#1a0e04,stroke:#EC5B16,stroke-width:2px,color:#f5a36a
-    style VS fill:#1a1504,stroke:#E8A317,stroke-width:2px,color:#f5d080
-    style LC fill:#1a0804,stroke:#FF4000,stroke-width:2px,color:#ff8a60
-    style VC fill:#071810,stroke:#4CAF50,stroke-width:2px,color:#8ed4a0
-```
-
-**Recording flow:** The app creates a `CaptureClient` which spawns a native binary to capture screen, mic, and system audio. Chunks are uploaded to VideoDB Cloud in real-time. A WebSocket connection delivers session events (started, stopped, exported) back to the app.
-
-**Post-recording:** Once the video is exported, the app calls the VideoDB API to index spoken words, generate a transcript, and create a subtitled stream — all available for in-app HLS playback or sharing via URL.
+Architecture, decisions, gaps and active work live in [Products/Bloom in architectures](https://github.com/Spext/architectures/tree/main/Products/Bloom/docs). Build, configuration and operating instructions stay in this repository.
 
 ---
 
@@ -193,7 +125,7 @@ Your recorder should not trap your data.
 
 It should:
 
-- **Give you ownership** — Local-first, no lock-in
+- **Give you access** — Local library metadata and VideoDB-backed recordings
 - **Enable intelligence** — AI-ready from day one
 - **Power your agents** — APIs and integrations built-in
 
@@ -211,61 +143,35 @@ Bloom is built for that future.
 ### Quick Start
 
 ```bash
-npm install
+npm ci
 npm start
 ```
 
-On first launch, grant microphone and screen recording permissions, then enter your VideoDB API key.
+On first launch, grant the required permissions, then enter your VideoDB API key. A network connection and a valid API key are required to start recording.
+
+| Task | Documentation |
+|---|---|
+| Configure | [Configuration reference](docs/reference/configuration.md) |
+| Build, install, verify or reset | [Runbook](docs/runbook.md) |
+| Contribute | [Contributor guide](CONTRIBUTING.md) |
+| Report a vulnerability | [Security policy](SECURITY.md) |
+
+No automated test or lint command is currently declared in `package.json`.
 
 ---
 
 ## Project Structure
 
-```
-src/
-├── main/                       # Electron Main Process
-│   ├── index.js                # App entry, windows, tray, IPC routing
-│   ├── db/
-│   │   └── database.js         # SQLite via sql.js
-│   ├── ipc/                    # IPC handlers
-│   │   ├── capture.js          # Recording start/stop, channels, devices
-│   │   ├── permissions.js      # Permission check/request/open settings
-│   │   ├── camera.js           # Camera bubble control
-│   │   ├── history.js          # Library: recordings list, delete, sync
-│   │   └── auth.js             # Login, logout, onboarding
-│   ├── lib/                    # Utilities
-│   │   ├── config.js           # App config
-│   │   ├── logger.js           # File + console logging
-│   │   ├── paths.js            # App paths (DB, config, logs)
-│   │   └── videodb-patch.js    # Binary relocation for packaged apps
-│   └── services/
-│       ├── videodb.service.js  # VideoDB SDK wrapper
-│       ├── session.service.js  # Session tokens, WebSocket, sync
-│       └── insights.service.js # Transcript + subtitle indexing
-├── renderer/                   # Renderer (context-isolated)
-│   ├── index.html              # Floating bar page
-│   ├── renderer.js             # Bar init + event routing
-│   ├── permissions.html        # Permissions modal window
-│   ├── onboarding.html         # Onboarding modal window
-│   ├── history.html            # Library window
-│   ├── history.js              # Library — list, player, download, share, sync
-│   ├── display-picker.html     # Display picker popup
-│   ├── camera.html             # Camera bubble
-│   ├── ui/
-│   │   └── bar.js              # Bar controls, toggles, timer, devices
-│   ├── utils/
-│   │   ├── permissions.js      # Permission check/request utility
-│   │   └── logger.js           # Renderer-side logging
-│   └── img/                    # Icons, brand assets, animated previews
-└── preload/
-    └── index.js                # Context bridge (renderer ↔ main)
-
-build/
-├── afterPack.js                # electron-builder hook (codesign, plist patch)
-├── entitlements.mac.plist      # macOS entitlements
-└── icon.icns                   # App icon
-```
-
+| Path | Purpose |
+|---|---|
+| `src/main/index.js` | Electron lifecycle, windows and tray |
+| `src/main/ipc/` | Capture, permissions, camera, configuration and library handlers |
+| `src/main/services/` | VideoDB sessions, synchronisation, transcripts and subtitles |
+| `src/main/db/`, `src/main/lib/` | Local persistence, configuration, logging and runtime paths |
+| `src/preload/index.js` | Context-isolated renderer bridge |
+| `src/renderer/` | Floating bar, onboarding, permissions, display picker, camera and library |
+| `build/` | App icons, macOS entitlements and afterPack signing hook |
+| `docs/` | Configuration reference and operating runbook |
 
 ## Troubleshooting
 
@@ -277,17 +183,13 @@ build/
 - Check Camera permission in system settings
 
 ### Reset
-```bash
-# Delete the app database (stored in Electron userData)
-# macOS
-rm ~/Library/Application\ Support/bloom/bloom.db
-rm ~/Library/Application\ Support/bloom/config.json
-```
-Then run `npm start`
+Follow [Reset local state](docs/runbook.md#reset-local-state) for the correct userData path and reset procedure.
 
 ---
 
 ## Building
+
+See the [runbook](docs/runbook.md) for local installation, verification and rollback.
 
 ```bash
 # Build directory (for testing)

@@ -7,7 +7,7 @@ We welcome contributions! Here's how to get started:
 ```bash
 git clone https://github.com/video-db/bloom.git
 cd bloom
-npm install
+npm ci
 npm start
 ```
 
@@ -22,7 +22,10 @@ npm start
 
 1. Fork the repo and create a feature branch
 2. Make your changes with clear commit messages
-3. Open a Pull Request against `main`
+3. Run the [verification checks](docs/runbook.md#verify) and update code-coupled docs in the same PR.
+4. Open a Pull Request against `main`; link the paired architectures PR when architecture, decisions or plans change.
+
+Read [AGENTS.md](AGENTS.md) for documentation placement and contributor checks.
 
 ## Issues
 

@@ -7,6 +7,9 @@ out/
 
 # Database
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Logs
 logs/
@@ -25,8 +28,9 @@ Thumbs.db
 
 # Environment
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.sample
 
 # Config files with secrets
 config.json
@@ -38,3 +42,17 @@ runtime.json
 
 # Publish script
 publish.sh
+
+# Local agent workspace
+.offrun/
+.offloop/
+.claude/settings.local.json
+
+# Generated installers
+*.dmg
+*.exe
+*.blockmap
+*.app/
+
+# Local recordings
+/recordings/

@@ -74,6 +74,7 @@
 }
 .sidebar-brand {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 7px;
   padding: 4px 9px 10px;
@@ -86,6 +87,7 @@
 }
 .place {
   display: flex;
+  flex: none; /* a long collections list scrolls; it never squeezes the places */
   align-items: center;
   gap: 9px;
   height: 32px;
@@ -316,6 +318,7 @@ dialog .field {
 
 /* ---- sidebar: collections and the balance ---- */
 .sidebar-group {
+  flex: none;
   padding: 14px 9px 4px;
   font-size: var(--t-caption);
   color: var(--soft);

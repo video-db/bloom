@@ -381,9 +381,9 @@ test('the account overview, a browsed collection and search are read-only views'
   let s = engine.getState();
   assert.equal(s.credits, 316.28);
   assert.deepEqual(
-    s.collections.map((c) => c.name),
+    s.collections.slice(0, 2).map((c) => c.name),
     ['Bloom Recordings', 'Product reviews'],
-    'Bloom’s own collection comes first',
+    'Bloom’s own collection comes first, the rest by name',
   );
 
   await command('openCollection', { id: 'collection-2' });

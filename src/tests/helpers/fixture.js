@@ -58,9 +58,15 @@ function createFixture({
       };
     },
     usage: async () => ({ credits: 316.28 }),
+    // More collections than the sidebar can show at once, as a real account can have.
     listCollections: async () => [
       { id: 'collection-2', name: 'Product reviews', bloom: false },
       { id: 'collection-1', name: 'Bloom Recordings', bloom: true },
+      ...Array.from({ length: 30 }, (_, index) => ({
+        id: `collection-x${index}`,
+        name: `Team archive ${String(index + 1).padStart(2, '0')}`,
+        bloom: false,
+      })),
     ],
     listCollectionVideos: async (id) => {
       calls.push(['listCollectionVideos', id]);

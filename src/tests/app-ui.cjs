@@ -243,7 +243,18 @@ fs.mkdirSync(evidence, { recursive: true });
     // The app shell: places in the sidebar, no recording list beside the page.
     assert.deepEqual(await main.locator('.sidebar .place > span:first-of-type').allInnerTexts(), ['Home', 'Recordings', 'Search']);
     // The account's collections and balance, from VideoDB.
-    assert.deepEqual(await main.locator('.collection > span:first-child').allInnerTexts(), ['Bloom Recordings', 'Product reviews']);
+    const collections = await main.locator('.collection > span:first-child').allInnerTexts();
+    assert.deepEqual(collections.slice(0, 2), ['Bloom Recordings', 'Product reviews']);
+    assert.equal(collections.length, 32);
+    // A long list scrolls by itself; it never squeezes the places above it.
+    assert.deepEqual(
+      await main.locator('.sidebar .place').evaluateAll((els) => els.map((el) => el.offsetHeight)),
+      [32, 32, 32],
+    );
+    assert.equal(
+      await main.locator('.collections').evaluate((el) => el.scrollHeight > el.clientHeight),
+      true,
+    );
     assert.match(await main.locator('.balance').innerText(), /Balance\s*316\.28/);
     assert.equal(await main.locator('.sidebar [aria-current=page]').innerText().then((t) => /Recordings/.test(t)), true, 'an open recording belongs to Recordings');
     assert.equal(await main.locator('.record-row, .browser, [data-query]').count(), 0);

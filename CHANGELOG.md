@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.3.3] - Unreleased
+## [2.3.4] - Unreleased
 
 ### Rebuilt app
 - Bloom is rebuilt: a menu-bar recorder with one tray panel for every recording state, a three-step setup, and a main window with a recording browser, transcript and player. The previous app's code is removed.

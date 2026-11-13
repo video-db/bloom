@@ -62,7 +62,7 @@ curl -fsSL https://artifacts.videodb.io/bloom/install | bash
 
 This detects your Mac architecture and installs the published build to `/Applications`. For the version in this checkout, follow the [local build and installation runbook](docs/runbook.md#build-and-install-locally).
 
-The published build is an earlier release. This checkout is the rebuilt 2.3.3 app, which has not been published yet; run it from source with `npm ci` then `npm start`.
+The published build is an earlier release. This checkout is the rebuilt 2.3.4 app, which has not been published yet; run it from source with `npm ci` then `npm start`.
 
 <details>
 <summary>Manual install — v2.2.0 artifact URLs</summary>

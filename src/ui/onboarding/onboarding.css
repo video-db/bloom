@@ -1,14 +1,3 @@
-.live {
-  border-left: 2px solid var(--ev);
-  padding-left: 8px;
-  font-size: 12.5px;
-  color: var(--soft);
-  min-height: 38px;
-}
-.live b {
-  color: var(--ink);
-  font-weight: 500;
-}
 /* First run: Connect, Permissions, Ready. One fixed window; every step shares this frame. */
 .setup {
   --setup-action: color-mix(in srgb, var(--brand) 78%, #000);

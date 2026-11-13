@@ -42,13 +42,22 @@ export function bindActions(root, { state, browse, go, setTab, render }) {
     }
     if (target.dataset.chooser) {
       chooser.toggle(target.dataset.chooser);
+      // The list of open windows is read fresh each time the chooser opens.
+      if (chooser.isOpen()) window.bloom.command('refreshWindows');
+      render(true);
+    }
+    if (target.dataset.sourceTab) {
+      chooser.show(target.dataset.sourceTab);
       render(true);
     }
     if (target.dataset.pick) {
-      window.bloom.command('setSource', {
-        key: target.dataset.pick,
-        value: target.dataset.id,
-      });
+      if (target.dataset.pick === 'window')
+        window.bloom.command('chooseWindow', { id: target.dataset.id });
+      else
+        window.bloom.command('setSource', {
+          key: target.dataset.pick,
+          value: target.dataset.id,
+        });
       chooser.close();
       render(true);
     }

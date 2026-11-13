@@ -148,6 +148,33 @@ function createFixture({
       mics: [{ id: 'mic:1', name: 'Built-in microphone' }],
       systemAudio: [{ id: 'system_audio:1', name: 'System audio' }],
     }),
+    // Two apps with open windows; a test can change the list to make one disappear.
+    openWindows: [
+      {
+        id: 'window:a',
+        app: 'Google Chrome',
+        title: 'Billing – Northstar',
+        width: 1440,
+        height: 900,
+      },
+      {
+        id: 'window:b',
+        app: 'Google Chrome',
+        title: 'Pull request #214',
+        width: 1440,
+        height: 900,
+      },
+      {
+        id: 'window:c',
+        app: 'Figma',
+        title: 'Checkout flow',
+        width: 1680,
+        height: 1050,
+      },
+    ],
+    async windows() {
+      return { supported: true, windows: this.openWindows };
+    },
     recover: async () => recorder.jobs,
     onEvent(listener) {
       events.on('event', listener);

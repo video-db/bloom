@@ -152,6 +152,28 @@ function createLocalRecorder({
           : [],
       };
     },
+    // The windows that can be recorded right now. Bloom's own are left out, and so are
+    // windows that are not on screen, which cannot be captured.
+    async windows() {
+      const found = await request(() => ensure().getWindows());
+      return {
+        supported: !!(found?.supported && found.supportsDeferredWindow),
+        windows: Array.from(found?.windows || [])
+          .filter(
+            (w) =>
+              w.isOnScreen &&
+              w.bundleId !== 'com.videodb.bloom' &&
+              w.appName !== 'Bloom',
+          )
+          .map((w) => ({
+            id: w.channelId,
+            app: w.appName || 'App',
+            title: w.title || 'Untitled window',
+            width: w.width,
+            height: w.height,
+          })),
+      };
+    },
     // Recordings of this account that are not finished: found again after a restart.
     async recover() {
       const current = scope();

@@ -35,6 +35,41 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
         systemAudio: [{ id: 'system_audio:default', name: 'System audio' }],
       };
     }
+    async getWindows() {
+      return {
+        supported: true,
+        supportsDeferredWindow: true,
+        windows: [
+          {
+            channelId: 'window:1',
+            appName: 'Notes',
+            title: 'Plan',
+            bundleId: 'com.apple.Notes',
+            width: 900,
+            height: 600,
+            isOnScreen: true,
+          },
+          {
+            channelId: 'window:2',
+            appName: 'Notes',
+            title: '',
+            bundleId: 'com.apple.Notes',
+            width: 400,
+            height: 300,
+            isOnScreen: false,
+          },
+          {
+            channelId: 'window:3',
+            appName: 'Bloom',
+            title: 'Bloom',
+            bundleId: 'com.videodb.bloom',
+            width: 1180,
+            height: 760,
+            isOnScreen: true,
+          },
+        ],
+      };
+    }
     async startLocalRecording(options) {
       calls.push(['start', options]);
       return { recordingId: `rec-${++serial}`, mode: 'deferred' };
@@ -289,4 +324,14 @@ test('quitting while capturing finishes the file first, and no account means no 
     signedOut.recorder.start({ sessionId: 'rec-b', channels, title: 'Demo' }),
     { code: 'signed-out' },
   );
+});
+
+test("only windows that can be recorded are offered: on screen, and not Bloom's own", async () => {
+  const f = fixture();
+  assert.deepEqual(await f.recorder.windows(), {
+    supported: true,
+    windows: [
+      { id: 'window:1', app: 'Notes', title: 'Plan', width: 900, height: 600 },
+    ],
+  });
 });

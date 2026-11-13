@@ -17,8 +17,10 @@ function initialState() {
       microphone: '',
       systemAudio: false,
       camera: false,
+      window: '', // the id of a single window to record instead of the display
     },
     channels: { displays: [], mics: [], systemAudio: [] },
+    windows: { supported: false, list: [] }, // open windows: [{ id, app, title, width, height }]
     permissions: { screen: false, mic: false, camera: false },
     recordings: [],
     collections: [], // [{ id, name, bloom }] from VideoDB

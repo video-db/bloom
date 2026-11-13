@@ -669,3 +669,44 @@ test('Start is not offered while the file is still being written', async (t) => 
   );
   assert.equal(f.engine.getState().recordings.length, 1);
 });
+
+test('a single window can be chosen and recorded; a display choice clears it', async (t) => {
+  const f = await setup(t);
+  await f.command('refreshWindows');
+  assert.equal(f.engine.getState().windows.supported, true);
+  assert.equal(f.engine.getState().windows.list.length, 3);
+  await f.command('chooseWindow', { id: 'window:not-open' });
+  assert.equal(
+    f.engine.getState().sources.window,
+    '',
+    'only an open window can be chosen',
+  );
+  await f.command('chooseWindow', { id: 'window:c' });
+  await f.command('start');
+  assert.equal(f.engine.getState().phase, 'recording');
+  const video = f.calls.find(([name]) => name === 'start')[1].channels[0];
+  assert.deepEqual([video.channelId, video.type], ['window:c', 'video']);
+  await f.command('stop');
+  f.recorder.finish();
+  await flush();
+  await f.command('setSource', { key: 'screen', value: 'display:1' });
+  assert.equal(f.engine.getState().sources.window, '');
+});
+
+test('a chosen window that has closed is never replaced by the display', async (t) => {
+  const f = await setup(t);
+  await f.command('refreshWindows');
+  await f.command('chooseWindow', { id: 'window:a' });
+  f.recorder.openWindows = f.recorder.openWindows.filter(
+    (w) => w.id !== 'window:a',
+  );
+  await f.command('start');
+  const state = f.engine.getState();
+  assert.equal(state.phase, 'idle', 'nothing starts');
+  assert.equal(state.sources.window, '');
+  assert.match(state.problem.message, /window has closed/);
+  assert.equal(
+    f.calls.some(([name]) => name === 'start'),
+    false,
+  );
+});

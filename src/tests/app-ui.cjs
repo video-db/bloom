@@ -60,41 +60,86 @@ fs.mkdirSync(evidence, { recursive: true });
   try {
     const onboarding = await windowFor('onboarding');
     const signedOutPanel = await windowFor('panel');
-    await signedOutPanel.locator('[data-ui="open-onboarding"]').waitFor({ state: 'attached' });
-    assert.equal(await signedOutPanel.locator('input[type=password], form[data-form="sign-in"]').count(), 0);
-    assert.equal(await signedOutPanel.getByRole('button', { name: 'Start recording', exact: true }).isDisabled(), true);
-    assert.equal(await signedOutPanel.locator('[data-ui="open-main"]').isDisabled(), true);
+    await signedOutPanel
+      .locator('[data-ui="open-onboarding"]')
+      .waitFor({ state: 'attached' });
+    assert.equal(
+      await signedOutPanel
+        .locator('input[type=password], form[data-form="sign-in"]')
+        .count(),
+      0,
+    );
+    assert.equal(
+      await signedOutPanel
+        .getByRole('button', { name: 'Start recording', exact: true })
+        .isDisabled(),
+      true,
+    );
+    assert.equal(
+      await signedOutPanel.locator('[data-ui="open-main"]').isDisabled(),
+      true,
+    );
     const locked = await app.evaluate(({ BrowserWindow, Menu }) => {
       global.__bloom.showPanel();
       global.__bloom.openMain('home');
       global.__bloom.openMain('settings');
       global.__bloom.toggleCapture();
       return {
-        visible: BrowserWindow.getAllWindows().filter(w => w.isVisible()).map(w => w.webContents.getURL()),
-        menus: ['recordings', 'recording-controls', 'settings'].map(id => Menu.getApplicationMenu().getMenuItemById(id).enabled),
+        visible: BrowserWindow.getAllWindows()
+          .filter((w) => w.isVisible())
+          .map((w) => w.webContents.getURL()),
+        menus: ['recordings', 'recording-controls', 'settings'].map(
+          (id) => Menu.getApplicationMenu().getMenuItemById(id).enabled,
+        ),
         phase: global.__bloom.getEngine().getState().phase,
       };
     });
     assert.equal(await app.evaluate(() => global.__bloom.hasTray()), false);
     assert.equal(locked.phase, 'idle');
     assert.deepEqual(locked.menus, [false, false, false]);
-    assert.ok(locked.visible.every(url => url.includes('surface=onboarding')));
-    assert.equal(app.windows().some(p => p.url().includes('surface=workspace')), false);
+    assert.ok(
+      locked.visible.every((url) => url.includes('surface=onboarding')),
+    );
+    assert.equal(
+      app.windows().some((p) => p.url().includes('surface=workspace')),
+      false,
+    );
     await onboarding.getByLabel('VideoDB API key').waitFor();
-    assert.equal(await onboarding.getByRole('button', { name: 'Next', exact: true }).count(), 0);
+    assert.equal(
+      await onboarding
+        .getByRole('button', { name: 'Next', exact: true })
+        .count(),
+      0,
+    );
     await onboarding.evaluate(() => document.fonts.ready);
     // Let the native window finish its first paint before collecting visual evidence.
     await onboarding.waitForTimeout(1000);
-    await onboarding.screenshot({ path: path.join(evidence, `${theme}-connect.png`) });
+    await onboarding.screenshot({
+      path: path.join(evidence, `${theme}-connect.png`),
+    });
     await app.evaluate(({ shell }) => {
       global.__originalOpenExternal = shell.openExternal;
-      shell.openExternal = async (url) => { global.__openedKeyUrl = url; };
+      shell.openExternal = async (url) => {
+        global.__openedKeyUrl = url;
+      };
     });
-    await onboarding.getByRole('button', { name: 'Create a VideoDB account (opens browser)', exact: true }).click();
-    assert.equal(await app.evaluate(() => global.__openedKeyUrl), 'https://console.videodb.io/');
-    await app.evaluate(({ shell }) => { shell.openExternal = global.__originalOpenExternal; });
+    await onboarding
+      .getByRole('button', {
+        name: 'Create a VideoDB account (opens browser)',
+        exact: true,
+      })
+      .click();
+    assert.equal(
+      await app.evaluate(() => global.__openedKeyUrl),
+      'https://console.videodb.io/',
+    );
+    await app.evaluate(({ shell }) => {
+      shell.openExternal = global.__originalOpenExternal;
+    });
     await onboarding.getByLabel('VideoDB API key').focus();
-    await onboarding.screenshot({ path: path.join(evidence, `${theme}-key-focus.png`) });
+    await onboarding.screenshot({
+      path: path.join(evidence, `${theme}-key-focus.png`),
+    });
     // First run is covered in depth by onboarding-ui.cjs; here it only has to hand over.
     await onboarding.getByLabel('VideoDB API key').fill('synthetic-ui-key');
     await onboarding
@@ -103,9 +148,26 @@ fs.mkdirSync(evidence, { recursive: true });
     await onboarding
       .getByRole('heading', { name: 'You’re in control.' })
       .waitFor();
-    assert.equal(await onboarding.getByRole('button', { name: 'Next', exact: true }).count(), 0);
-    assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('recordings').enabled), false);
-    assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('sign-out').enabled), true);
+    assert.equal(
+      await onboarding
+        .getByRole('button', { name: 'Next', exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await app.evaluate(
+        ({ Menu }) =>
+          Menu.getApplicationMenu().getMenuItemById('recordings').enabled,
+      ),
+      false,
+    );
+    assert.equal(
+      await app.evaluate(
+        ({ Menu }) =>
+          Menu.getApplicationMenu().getMenuItemById('sign-out').enabled,
+      ),
+      true,
+    );
     assert.equal(await app.evaluate(() => global.__bloom.hasTray()), false);
     await onboarding.screenshot({
       path: path.join(evidence, `${theme}-onboarding.png`),
@@ -126,8 +188,15 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await recorder.locator('select, input').count(), 0);
     assert.equal(await recorder.getByText('Refresh connection').count(), 0);
     assert.equal(await recorder.getByText('Recording title').count(), 0);
-    assert.equal(await recorder.getByRole('button', { name: 'Open Bloom' }).count(), 1);
-    assert.equal(await recorder.locator('[data-chooser]').count(), 0, 'no arrow without a choice');
+    assert.equal(
+      await recorder.getByRole('button', { name: 'Open Bloom' }).count(),
+      1,
+    );
+    assert.equal(
+      await recorder.locator('[data-chooser]').count(),
+      0,
+      'no arrow without a choice',
+    );
     await recorder.getByRole('button', { name: 'Microphone: On' }).click();
     await recorder.getByRole('button', { name: 'Microphone: Off' }).waitFor();
     assert.equal((await sourcesNow()).mic, false);
@@ -138,7 +207,9 @@ fs.mkdirSync(evidence, { recursive: true });
       [(await sourcesNow()).mic, (await sourcesNow()).systemAudio],
       [true, false],
     );
-    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-ready.png`) });
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-ready.png`),
+    });
 
     // A second display adds an arrow beside its icon. The microphone has no chooser:
     // recording uses the Mac's default microphone.
@@ -146,37 +217,111 @@ fs.mkdirSync(evidence, { recursive: true });
       const fixture = global.__bloom.getFixture();
       const base = await fixture.recorder.channels();
       fixture.recorder.channels = async () => ({
-        displays: [...base.displays, { id: 'display:2', name: 'Studio Display' }],
+        displays: [
+          ...base.displays,
+          { id: 'display:2', name: 'Studio Display' },
+        ],
         mics: base.mics,
         systemAudio: base.systemAudio,
       });
       global.__bloom.showPanel();
     });
-    await recorder.getByRole('button', { name: 'Choose a display' }).waitFor();
-    assert.equal(await recorder.getByRole('button', { name: 'Choose a microphone' }).count(), 0);
-    await recorder.getByRole('button', { name: 'Choose a display' }).click();
-    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-displays.png`) });
+    await recorder
+      .getByRole('button', { name: 'Choose what to record' })
+      .waitFor();
+    assert.equal(
+      await recorder
+        .getByRole('button', { name: 'Choose a microphone' })
+        .count(),
+      0,
+    );
+    // Choosing a single window: the chooser's second list, grouped by app.
+    await recorder
+      .getByRole('button', { name: 'Choose what to record' })
+      .click();
+    await recorder
+      .getByRole('button', { name: 'Windows', exact: true })
+      .click();
+    await recorder.locator('.window-row').nth(2).waitFor();
+    assert.deepEqual(await recorder.locator('.window-app').allInnerTexts(), [
+      'Google Chrome',
+      'Figma',
+    ]);
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-windows.png`),
+    });
+    await recorder.locator('.window-row', { hasText: 'Checkout flow' }).click();
+    assert.match(
+      await recorder.locator('.source-what').innerText(),
+      /Window · Figma · Checkout flow/,
+    );
+    assert.equal((await sourcesNow()).window, 'window:c');
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-window-chosen.png`),
+    });
+    // If that window closes, Bloom says so and asks again; it never records the display instead.
+    await app.evaluate(() => {
+      const fake = global.__bloom.getFixture().recorder;
+      fake.openWindows = fake.openWindows.filter((w) => w.id !== 'window:c');
+    });
+    await recorder.getByRole('button', { name: /Start recording/ }).click();
+    await recorder
+      .getByText('That window has closed. Choose what to record.')
+      .waitFor();
+    assert.equal(
+      await app.evaluate(() => global.__bloom.getEngine().getState().phase),
+      'idle',
+    );
+    assert.equal((await sourcesNow()).window, '');
+    await recorder
+      .getByRole('button', { name: 'Choose what to record' })
+      .click();
+    await recorder
+      .getByRole('button', { name: 'Displays', exact: true })
+      .click();
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-displays.png`),
+    });
     await recorder.locator('[data-pick=screen][data-id="display:2"]').click();
     assert.equal((await sourcesNow()).screen, 'display:2');
-    await recorder.getByRole('button', { name: 'Choose a display' }).click();
+    await recorder
+      .getByRole('button', { name: 'Choose what to record' })
+      .click();
     await recorder.keyboard.press('Escape');
-    assert.equal(await recorder.locator('.display-choices').count(), 0, 'Escape closes it');
+    assert.equal(
+      await recorder.locator('.display-choices').count(),
+      0,
+      'Escape closes it',
+    );
 
     await recorder.locator('[data-command=start]').click();
     await phase('recording');
     // Recording: the state is in the header, a typed note becomes a mark, sources are locked.
     await recorder.locator('.ph .timer').waitFor();
-    assert.equal(await recorder.getByRole('button', { name: 'Microphone: On' }).isDisabled(), true);
+    assert.equal(
+      await recorder
+        .getByRole('button', { name: 'Microphone: On' })
+        .isDisabled(),
+      true,
+    );
     await recorder.getByLabel('Mark a moment').fill('First point');
     await recorder.getByLabel('Mark a moment').press('Enter');
     await recorder.locator('.tray-marks').getByText('First point').waitFor();
-    assert.equal(await recorder.getByLabel('Mark a moment').inputValue(), '', 'the note became a mark');
-    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-recording.png`) });
+    assert.equal(
+      await recorder.getByLabel('Mark a moment').inputValue(),
+      '',
+      'the note became a mark',
+    );
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-recording.png`),
+    });
     await recorder.getByRole('button', { name: 'Pause', exact: true }).click();
     await phase('paused');
     await recorder.getByText('Nothing is being captured.').waitFor();
     assert.equal(await recorder.locator('.ph.warn').count(), 1);
-    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-paused.png`) });
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-paused.png`),
+    });
     await recorder.getByRole('button', { name: 'Resume', exact: true }).click();
     await phase('recording');
     await recorder
@@ -186,11 +331,23 @@ fs.mkdirSync(evidence, { recursive: true });
     // The file is on this Mac: the recording shows as a card being processed, and the next
     // recording can start straight away. Nothing says upload or retry.
     await recorder.locator('.tray-card', { hasText: 'Processing' }).waitFor();
-    assert.equal(await recorder.getByRole('button', { name: /Start recording/ }).isEnabled(), true);
+    assert.equal(
+      await recorder
+        .getByRole('button', { name: /Start recording/ })
+        .isEnabled(),
+      true,
+    );
     assert.equal(await recorder.locator('.ph.warn').count(), 0);
-    assert.equal(await recorder.getByText(/upload|retry|awaiting_token|Still saving/i).count(), 0);
+    assert.equal(
+      await recorder
+        .getByText(/upload|retry|awaiting_token|Still saving/i)
+        .count(),
+      0,
+    );
     assert.equal(await recorder.locator('.stages').count(), 0);
-    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-processing.png`) });
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-processing.png`),
+    });
     // If processing fails, the recording waits to be recovered and still does not block Start.
     await app.evaluate(() => {
       const { recorder: fake } = global.__bloom.getFixture();
@@ -198,24 +355,46 @@ fs.mkdirSync(evidence, { recursive: true });
     });
     await phase('processing-error');
     await recorder.getByText('Kept on this Mac', { exact: true }).waitFor();
-    assert.equal(await recorder.getByRole('button', { name: 'Recover', exact: true }).count(), 1);
-    assert.equal(await recorder.getByRole('button', { name: /Start recording/ }).isEnabled(), true);
-    assert.equal(await recorder.locator('.ph.warn').count(), 0, 'a recording needing recovery does not take over the panel');
-    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-recovery.png`) });
-    await recorder.getByRole('button', { name: 'Recover', exact: true }).click();
+    assert.equal(
+      await recorder
+        .getByRole('button', { name: 'Recover', exact: true })
+        .count(),
+      1,
+    );
+    assert.equal(
+      await recorder
+        .getByRole('button', { name: /Start recording/ })
+        .isEnabled(),
+      true,
+    );
+    assert.equal(
+      await recorder.locator('.ph.warn').count(),
+      0,
+      'a recording needing recovery does not take over the panel',
+    );
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-recovery.png`),
+    });
+    await recorder
+      .getByRole('button', { name: 'Recover', exact: true })
+      .click();
     await phase('saving');
     assert.equal(
-      await app.evaluate(
-        () => global.__bloom.getEngine().getState().result,
-      ),
+      await app.evaluate(() => global.__bloom.getEngine().getState().result),
       null,
     );
     await app.evaluate(() => global.__bloom.getFixture().recorder.finish());
     await phase('finished');
     assert.equal(await app.evaluate(() => global.__bloom.hasTray()), true);
     assert.equal(await recorder.getByText('Ready to play').count(), 1);
-    assert.equal(await recorder.getByRole('button', { name: /Start recording/ }).count(), 1, 'the next recording is one click away');
-    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-finished.png`) });
+    assert.equal(
+      await recorder.getByRole('button', { name: /Start recording/ }).count(),
+      1,
+      'the next recording is one click away',
+    );
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-finished.png`),
+    });
     const panel = await windowFor('panel');
     await panel
       .getByRole('button', { name: 'Open recording', exact: true })
@@ -223,23 +402,43 @@ fs.mkdirSync(evidence, { recursive: true });
     await panel.screenshot({ path: path.join(evidence, `${theme}-panel.png`) });
     assert.equal(await panel.locator('input[type=password]').count(), 0);
     await panel.getByRole('button', { name: 'Copy link', exact: true }).click();
-    await panel.getByRole('status').filter({ hasText: 'Link copied.' }).waitFor();
+    await panel
+      .getByRole('status')
+      .filter({ hasText: 'Link copied.' })
+      .waitFor();
     await panel
       .getByRole('button', { name: 'Open recording', exact: true })
       .click();
     const main = await windowFor('workspace');
     // A recording opens on its summary: a few sentences, key points and action items with times.
     await main.locator('#summary .points').first().waitFor();
-    assert.deepEqual(await main.locator('.tab').allInnerTexts(), ['Summary', 'Transcript']);
-    assert.match(await main.locator('#summary').innerText(), /A short walk through two thoughts\./);
-    assert.deepEqual(await main.locator('#summary .ts').allInnerTexts(), ['0:00', '0:04']);
-    await main.screenshot({ path: path.join(evidence, `${theme}-summary.png`) });
+    assert.deepEqual(await main.locator('.tab').allInnerTexts(), [
+      'Summary',
+      'Transcript',
+    ]);
+    assert.match(
+      await main.locator('#summary').innerText(),
+      /A short walk through two thoughts\./,
+    );
+    assert.deepEqual(await main.locator('#summary .ts').allInnerTexts(), [
+      '0:00',
+      '0:04',
+    ]);
+    await main.screenshot({
+      path: path.join(evidence, `${theme}-summary.png`),
+    });
     await main.getByRole('tab', { name: 'Transcript' }).click();
     await main.locator('.para').first().waitFor();
     // The transcript reads as paragraphs, each starting with its time.
     assert.equal(await main.locator('#transcript .para').count(), 2);
-    assert.deepEqual(await main.locator('#transcript .ts').allInnerTexts(), ['0:00', '0:04']);
-    assert.match(await main.locator('#transcript .para').first().innerText(), /Recorded words here\.$/);
+    assert.deepEqual(await main.locator('#transcript .ts').allInnerTexts(), [
+      '0:00',
+      '0:04',
+    ]);
+    assert.match(
+      await main.locator('#transcript .para').first().innerText(),
+      /Recorded words here\.$/,
+    );
     assert.equal(
       await main.getByRole('button', { name: 'Edit', exact: true }).count(),
       0,
@@ -248,93 +447,196 @@ fs.mkdirSync(evidence, { recursive: true });
       path: path.join(evidence, `${theme}-workspace.png`),
     });
     // The approved main window: one primary action, the rest under a menu, no form-era controls.
-    assert.equal(await main.getByRole('button', { name: 'Copy link', exact: true }).count(), 1);
+    assert.equal(
+      await main
+        .getByRole('button', { name: 'Copy link', exact: true })
+        .count(),
+      1,
+    );
     assert.equal(await main.getByText('Refresh playback').count(), 0);
-    assert.equal(await main.getByRole('button', { name: 'Refresh', exact: true }).count(), 0);
-    assert.equal(await main.getByRole('button', { name: 'Recording controls' }).count(), 0);
-    assert.equal(await main.getByRole('button', { name: 'New recording', exact: true }).count(), 1);
+    assert.equal(
+      await main.getByRole('button', { name: 'Refresh', exact: true }).count(),
+      0,
+    );
+    assert.equal(
+      await main.getByRole('button', { name: 'Recording controls' }).count(),
+      0,
+    );
+    assert.equal(
+      await main
+        .getByRole('button', { name: 'New recording', exact: true })
+        .count(),
+      1,
+    );
     // The app shell: places in the sidebar, no recording list beside the page.
-    assert.deepEqual(await main.locator('.sidebar .place > span:first-of-type').allInnerTexts(), ['Home', 'Recordings', 'Search']);
+    assert.deepEqual(
+      await main
+        .locator('.sidebar .place > span:first-of-type')
+        .allInnerTexts(),
+      ['Home', 'Recordings', 'Search'],
+    );
     // The account's collections and balance, from VideoDB.
-    const collections = await main.locator('.collection > span:first-child').allInnerTexts();
-    assert.deepEqual(collections.slice(0, 2), ['Bloom Recordings', 'Product reviews']);
+    const collections = await main
+      .locator('.collection > span:first-child')
+      .allInnerTexts();
+    assert.deepEqual(collections.slice(0, 2), [
+      'Bloom Recordings',
+      'Product reviews',
+    ]);
     assert.equal(collections.length, 32);
     // A long list scrolls by itself; it never squeezes the places above it.
     assert.deepEqual(
-      await main.locator('.sidebar .place').evaluateAll((els) => els.map((el) => el.offsetHeight)),
+      await main
+        .locator('.sidebar .place')
+        .evaluateAll((els) => els.map((el) => el.offsetHeight)),
       [32, 32, 32],
     );
     assert.equal(
-      await main.locator('.collections').evaluate((el) => el.scrollHeight > el.clientHeight),
+      await main
+        .locator('.collections')
+        .evaluate((el) => el.scrollHeight > el.clientHeight),
       true,
     );
-    assert.match(await main.locator('.balance').innerText(), /Credits\s*316\.28/);
-    await main.locator('.sidebar-footer').screenshot({ path: path.join(evidence, `${theme}-credits.png`) });
-    assert.equal(await main.locator('.sidebar [aria-current=page]').innerText().then((t) => /Recordings/.test(t)), true, 'an open recording belongs to Recordings');
-    assert.equal(await main.locator('.record-row, .browser, [data-query]').count(), 0);
+    assert.match(
+      await main.locator('.balance').innerText(),
+      /Credits\s*316\.28/,
+    );
+    await main
+      .locator('.sidebar-footer')
+      .screenshot({ path: path.join(evidence, `${theme}-credits.png`) });
+    assert.equal(
+      await main
+        .locator('.sidebar [aria-current=page]')
+        .innerText()
+        .then((t) => /Recordings/.test(t)),
+      true,
+      'an open recording belongs to Recordings',
+    );
+    assert.equal(
+      await main.locator('.record-row, .browser, [data-query]').count(),
+      0,
+    );
     await main.getByRole('button', { name: 'Home', exact: true }).click();
     await main.getByRole('heading', { name: 'Home', exact: true }).waitFor();
     assert.equal(await main.locator('.stat').count(), 2);
     assert.equal(await main.locator('.recent-row').count(), 1);
     await main.screenshot({ path: path.join(evidence, `${theme}-home.png`) });
     await main.locator('.sidebar .place', { hasText: 'Recordings' }).click();
-    await main.getByRole('heading', { name: 'Recordings', exact: true }).waitFor();
-    assert.equal(await main.locator('.tile small').first().innerText().then((t) => /Ready/.test(t)), false);
+    await main
+      .getByRole('heading', { name: 'Recordings', exact: true })
+      .waitFor();
+    assert.equal(
+      await main
+        .locator('.tile small')
+        .first()
+        .innerText()
+        .then((t) => /Ready/.test(t)),
+      false,
+    );
     await main.locator('[data-browse=order]').selectOption('name');
     await main.locator('[data-browse=order]').selectOption('newest');
     await main.getByRole('button', { name: 'Processing', exact: true }).click();
     await main.getByText('Nothing here', { exact: true }).waitFor();
     await main.getByRole('button', { name: 'All', exact: true }).click();
-    await main.screenshot({ path: path.join(evidence, `${theme}-recordings.png`) });
-    await main.route('https://images.example/shelf-1.svg', (route) => route.fulfill({
-      contentType: 'image/svg+xml',
-      body: '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="160" height="90" fill="#557080"/></svg>',
-    }));
+    await main.screenshot({
+      path: path.join(evidence, `${theme}-recordings.png`),
+    });
+    await main.route('https://images.example/shelf-1.svg', (route) =>
+      route.fulfill({
+        contentType: 'image/svg+xml',
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="160" height="90" fill="#557080"/></svg>',
+      }),
+    );
     // Another collection opens read-only: its videos can be played and read, not changed.
     await main.locator('.collection', { hasText: 'Product reviews' }).click();
-    await main.getByRole('heading', { name: 'Product reviews', exact: true }).waitFor();
+    await main
+      .getByRole('heading', { name: 'Product reviews', exact: true })
+      .waitFor();
     await main.locator('.tile').nth(1).waitFor();
     assert.equal(await main.locator('.tile').count(), 2);
-    await main.waitForFunction(() => document.querySelector('.tile .shot img')?.naturalWidth > 0);
-    await main.waitForFunction(() => !document.querySelector('.tile:nth-child(2) .shot img'));
+    await main.waitForFunction(
+      () => document.querySelector('.tile .shot img')?.naturalWidth > 0,
+    );
+    await main.waitForFunction(
+      () => !document.querySelector('.tile:nth-child(2) .shot img'),
+    );
     assert.equal(await main.locator('.tile .shot').count(), 2);
-    assert.equal(await main.locator('.sidebar .place.on').count(), 0, 'no place is lit while a collection is browsed');
-    await main.screenshot({ path: path.join(evidence, `${theme}-collection.png`) });
+    assert.equal(
+      await main.locator('.sidebar .place.on').count(),
+      0,
+      'no place is lit while a collection is browsed',
+    );
+    await main.screenshot({
+      path: path.join(evidence, `${theme}-collection.png`),
+    });
     await main.locator('.tile', { hasText: 'Design critique' }).click();
-    await main.getByRole('heading', { name: 'Design critique', exact: true }).waitFor();
+    await main
+      .getByRole('heading', { name: 'Design critique', exact: true })
+      .waitFor();
     assert.equal(await main.locator('.record-menu').count(), 0);
-    assert.equal(await main.getByRole('button', { name: 'Copy link', exact: true }).count(), 1);
+    assert.equal(
+      await main
+        .getByRole('button', { name: 'Copy link', exact: true })
+        .count(),
+      1,
+    );
     assert.match(await main.locator('.crumb').innerText(), /Product reviews/);
     await main.getByRole('button', { name: 'Copy link', exact: true }).click();
-    await main.getByRole('status').filter({ hasText: 'Link copied.' }).waitFor();
+    await main
+      .getByRole('status')
+      .filter({ hasText: 'Link copied.' })
+      .waitFor();
     // Exercise the native menu callbacks without depending on OS menu automation.
     await app.evaluate(({ Menu }) => {
       global.__originalMenuBuilder = Menu.buildFromTemplate;
-      Menu.buildFromTemplate = (template) => ({ popup() { global.__collectionMenu = template; } });
+      Menu.buildFromTemplate = (template) => ({
+        popup() {
+          global.__collectionMenu = template;
+        },
+      });
     });
     const chooseCollectionAction = async (label) => {
       await app.evaluate((_electron, label) => {
         global.__collectionMenu.find((item) => item.label === label).click();
       }, label);
     };
-    await main.locator('[data-collection="collection-2"]').click({ button: 'right' });
+    await main
+      .locator('[data-collection="collection-2"]')
+      .click({ button: 'right' });
     await chooseCollectionAction('Rename…');
     await main.getByRole('dialog').waitFor();
     await main.getByLabel('Collection name').fill('Reviewed demos');
-    await main.screenshot({ path: path.join(evidence, `${theme}-rename-collection.png`) });
+    await main.screenshot({
+      path: path.join(evidence, `${theme}-rename-collection.png`),
+    });
     await main.getByRole('button', { name: 'Save', exact: true }).click();
     await main.locator('.collection', { hasText: 'Reviewed demos' }).waitFor();
-    await main.locator('[data-collection="collection-2"]').click({ button: 'right' });
+    await main
+      .locator('[data-collection="collection-2"]')
+      .click({ button: 'right' });
     await chooseCollectionAction('Delete collection…');
     await main.getByRole('dialog').waitFor();
-    await main.screenshot({ path: path.join(evidence, `${theme}-delete-collection.png`) });
+    await main.screenshot({
+      path: path.join(evidence, `${theme}-delete-collection.png`),
+    });
     await main.getByRole('button', { name: 'Cancel', exact: true }).click();
-    assert.equal(await main.locator('[data-collection="collection-2"]').count(), 1);
-    await main.locator('[data-collection="collection-2"]').click({ button: 'right' });
+    assert.equal(
+      await main.locator('[data-collection="collection-2"]').count(),
+      1,
+    );
+    await main
+      .locator('[data-collection="collection-2"]')
+      .click({ button: 'right' });
     await chooseCollectionAction('Delete collection…');
-    await main.getByRole('button', { name: 'Delete collection', exact: true }).click();
-    await main.locator('[data-collection="collection-2"]').waitFor({ state: 'detached' });
-    await app.evaluate(({ Menu }) => { Menu.buildFromTemplate = global.__originalMenuBuilder; });
+    await main
+      .getByRole('button', { name: 'Delete collection', exact: true })
+      .click();
+    await main
+      .locator('[data-collection="collection-2"]')
+      .waitFor({ state: 'detached' });
+    await app.evaluate(({ Menu }) => {
+      Menu.buildFromTemplate = global.__originalMenuBuilder;
+    });
     // Search finds a moment and opens its recording there.
     await main.locator('.sidebar .place', { hasText: 'Search' }).click();
     await main.getByRole('heading', { name: 'Search', exact: true }).waitFor();
@@ -342,16 +644,27 @@ fs.mkdirSync(evidence, { recursive: true });
     await main.getByLabel('Search what was said').press('Enter');
     await main.locator('.hit').first().waitFor();
     assert.equal(await main.locator('.hit').count(), 1);
-    assert.equal(await main.getByLabel('Search what was said').inputValue(), 'second thought');
+    assert.equal(
+      await main.getByLabel('Search what was said').inputValue(),
+      'second thought',
+    );
     await main.screenshot({ path: path.join(evidence, `${theme}-search.png`) });
     await main.locator('.hit').first().click();
     await main.locator('.para').first().waitFor();
     await main.locator('.sidebar .place', { hasText: 'Recordings' }).click();
-    await main.getByRole('heading', { name: 'Recordings', exact: true }).waitFor();
+    await main
+      .getByRole('heading', { name: 'Recordings', exact: true })
+      .waitFor();
     await main.locator('.tile').first().click();
     await main.locator('.para').first().waitFor();
-    assert.equal(await main.getByText('What Bloom knows about this recording').count(), 1);
-    await main.getByRole('button', { name: 'Recordings', exact: true }).first().waitFor();
+    assert.equal(
+      await main.getByText('What Bloom knows about this recording').count(),
+      1,
+    );
+    await main
+      .getByRole('button', { name: 'Recordings', exact: true })
+      .first()
+      .waitFor();
     await main.locator('.record-menu summary').click();
     await main.getByRole('button', { name: 'Rename', exact: true }).click();
     await main
@@ -374,10 +687,20 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await micDefault.getAttribute('aria-pressed'), 'true');
     await micDefault.click();
     await main
-      .locator('.tgl[aria-label="Microphone on by default"][aria-pressed="false"]')
+      .locator(
+        '.tgl[aria-label="Microphone on by default"][aria-pressed="false"]',
+      )
       .waitFor();
-    assert.equal(await main.locator('.set .srow').count() >= 10, true, 'settings rows use the approved layout');
-    assert.equal(await main.locator('.set input, .set select').count(), 0, 'no bare form controls');
+    assert.equal(
+      (await main.locator('.set .srow').count()) >= 10,
+      true,
+      'settings rows use the approved layout',
+    );
+    assert.equal(
+      await main.locator('.set input, .set select').count(),
+      0,
+      'no bare form controls',
+    );
     assert.equal(
       await app.evaluate(() => global.__bloom.getPrefs().defaultMic),
       false,
@@ -385,13 +708,25 @@ fs.mkdirSync(evidence, { recursive: true });
     await main.screenshot({
       path: path.join(evidence, `${theme}-settings.png`),
     });
-    await Promise.all([main.waitForEvent('close'), main.getByRole('button', { name: 'Sign out', exact: true }).click()]);
+    await Promise.all([
+      main.waitForEvent('close'),
+      main.getByRole('button', { name: 'Sign out', exact: true }).click(),
+    ]);
     assert.equal(await app.evaluate(() => global.__bloom.hasTray()), false);
     const reconnect = await windowFor('onboarding');
     await reconnect.getByLabel('VideoDB API key').waitFor();
     await app.evaluate(() => global.__bloom.openMain('home'));
-    assert.equal(app.windows().some(p => p.url().includes('surface=workspace')), false);
-    assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('recordings').enabled), false);
+    assert.equal(
+      app.windows().some((p) => p.url().includes('surface=workspace')),
+      false,
+    );
+    assert.equal(
+      await app.evaluate(
+        ({ Menu }) =>
+          Menu.getApplicationMenu().getMenuItemById('recordings').enabled,
+      ),
+      false,
+    );
     assert.deepEqual(errors, []);
     console.log(
       `App ${theme} walkthrough passes with fake recorder, no live API or screen capture.`,

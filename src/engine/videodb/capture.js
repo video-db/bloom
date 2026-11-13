@@ -68,8 +68,9 @@ function createCapture(
       const mic = state.channels.mics.find(
         (c) => c.id === state.sources.microphone,
       );
+      const video = state.sources.window || display?.id;
       if (
-        !display ||
+        !video ||
         (state.sources.mic && !mic) ||
         (state.sources.systemAudio && !state.channels.systemAudio.length)
       )
@@ -104,7 +105,7 @@ function createCapture(
         ctx.set({ sessionId });
         const channels = [
           {
-            channelId: display.id,
+            channelId: video,
             type: 'video',
             isPrimary: true,
             store: false,

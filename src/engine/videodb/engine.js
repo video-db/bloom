@@ -7,6 +7,7 @@ const { createAccess } = require('./access');
 const { createLibraryCommands } = require('./library-commands');
 const { createExploreCommands } = require('./explore-commands');
 const { createUnderstandCommands } = require('./understand-commands');
+const { createWindowSource } = require('./window-source');
 const { validCommand } = require('./validate');
 
 // One owner for app state. SDK, disk and UI code never share mutable state objects.
@@ -111,6 +112,7 @@ function createVideoDBEngine({
   });
   const explore = createExploreCommands(ctx, service);
   const understand = createUnderstandCommands(ctx, service);
+  const windowSource = createWindowSource(ctx, recorder);
   const ownLibrary = createLibraryCommands(ctx, service, {
     beforeRename: understand.whenNamed,
   });
@@ -136,6 +138,7 @@ function createVideoDBEngine({
     refresh: library.refresh,
     ...explore.commands,
     ...understand.commands,
+    ...windowSource.commands,
     // Opening a recording, or getting its transcript, also makes its summary when it can.
     async openRecording({ id }) {
       await ownLibrary.open(id);
@@ -146,6 +149,10 @@ function createVideoDBEngine({
       await understand.ensure(id);
     },
     ...capture.commands,
+    // A chosen window is checked again at the last moment; if it has gone, nothing starts.
+    async start() {
+      if (await windowSource.ready()) await capture.commands.start();
+    },
     setPurpose({ text }) {
       if (between()) ctx.set({ purpose: text });
     },
@@ -162,7 +169,14 @@ function createVideoDBEngine({
       )
         return;
       sourceOverrides.add(key);
-      ctx.set({ sources: { ...state.sources, [key]: value } });
+      ctx.set({
+        sources: {
+          ...state.sources,
+          [key]: value,
+          // Choosing a display means recording the display, not a window.
+          ...(key === 'screen' ? { window: '' } : {}),
+        },
+      });
     },
     configure({ sources, autoTranscribe: auto }) {
       if (auto !== undefined) autoTranscribe = auto;

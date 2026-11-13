@@ -10,6 +10,8 @@ const commandArgs = {
   checkPermission: none,
   prepareRecorder: none,
   refreshSources: none,
+  refreshWindows: none,
+  chooseWindow: (a) => a.id === '' || id(a.id),
   start: none,
   stop: none,
   pause: none,

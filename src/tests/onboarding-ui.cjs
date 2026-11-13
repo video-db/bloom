@@ -267,7 +267,7 @@ fs.mkdirSync(evidence, { recursive: true });
     const panel = app.windows().find((p) => p.url().includes('surface=panel'));
     await panel.emulateMedia({ colorScheme: theme });
     await panel.getByText('Start your first recording here').waitFor();
-    await panel.getByRole('button', { name: 'Choose a display' }).click();
+    await panel.getByRole('button', { name: 'Choose what to record' }).click();
     await panel.locator('[data-pick=screen][data-id="display:2"]').click();
     assert.equal(await main(() => global.__bloom.getEngine().getState().sources.screen), 'display:2');
     await shot(panel, '4-panel-hint');

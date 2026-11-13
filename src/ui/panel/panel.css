@@ -525,3 +525,82 @@ button.capture-option:not(:disabled):hover {
   background: color-mix(in srgb, var(--brand) 70%, #000);
   opacity: 1;
 }
+
+/* ---- choosing a window to record ---- */
+.source-tabs {
+  display: flex;
+  margin-bottom: 8px;
+}
+.source-tabs button {
+  flex: 1;
+}
+.window-list {
+  max-height: 232px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+.window-app {
+  margin: 8px 2px 2px;
+  font-size: var(--t-caption);
+  font-weight: 400;
+  color: var(--soft);
+}
+.window-app:first-child {
+  margin-top: 0;
+}
+.window-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font-size: var(--t-body);
+  text-align: left;
+}
+.window-row:hover {
+  background: var(--fill);
+}
+.window-row.selected {
+  background: var(--evbg);
+}
+.window-row small {
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+.window-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.window-tick {
+  display: grid;
+  place-items: center;
+  color: var(--ev);
+}
+.window-tick .ic {
+  width: 13px;
+  height: 13px;
+}
+.window-none {
+  margin: 4px 2px;
+  font-size: var(--t-label);
+  color: var(--soft);
+}
+.source-what {
+  margin: -2px 0 0;
+  font-size: var(--t-label);
+  color: var(--mid);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.source-what b {
+  color: var(--ink);
+  font-weight: 500;
+}

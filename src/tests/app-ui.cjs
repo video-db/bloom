@@ -149,7 +149,7 @@ fs.mkdirSync(evidence, { recursive: true });
         mics: [...base.mics, { id: 'mic:2', name: 'AirPods Pro' }],
         systemAudio: base.systemAudio,
       });
-      await fixture.command('checkConnection');
+      global.__bloom.showPanel();
     });
     await recorder.getByRole('button', { name: 'Choose a microphone' }).click();
     await recorder.getByRole('button', { name: 'AirPods Pro' }).waitFor();

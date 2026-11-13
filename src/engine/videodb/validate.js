@@ -9,6 +9,7 @@ const commandArgs = {
   refresh: none,
   checkPermission: none,
   prepareRecorder: none,
+  refreshSources: none,
   start: none,
   stop: none,
   pause: none,

@@ -1,38 +1,30 @@
-const { ServiceError, safeError } = require('./errors');
+const { ServiceError } = require('./errors');
+const { createSourceDiscovery } = require('./source-discovery');
 
 // Who is signed in, what macOS allows, and whether the recorder is ready. These are three
 // separate answers: a key that VideoDB accepted stays accepted even if the recorder or the
 // library then fails, so neither failure is ever reported as a bad key.
 function createAccess(ctx, { service, recorder, library, recover }) {
   let checking = false;
+  const discovery = createSourceDiscovery(ctx, recorder);
 
   // Starts the recorder and finds what it can capture. Runs only after sign-in.
   async function prepareRecorder() {
-    ctx.set({ recorder: { status: 'preparing', message: '' } });
-    let channels;
-    try {
-      channels = await recorder.channels();
-    } catch (error) {
-      ctx.set({
-        recorder: { status: 'failed', message: safeError(error).message },
-      });
-      return false;
+    return discovery.refresh({ preparing: true });
+  }
+
+  async function checkPermission() {
+    const previous = ctx.get().permissions;
+    const permissions = recorder.permissions();
+    ctx.set({ permissions });
+    if (
+      permissions.screen &&
+      (!previous.screen ||
+        !ctx.get().channels.displays.length ||
+        (permissions.mic && !previous.mic))
+    ) {
+      await discovery.refresh({ preparing: true, fresh: true });
     }
-    const sources = ctx.get().sources;
-    ctx.set({
-      recorder: { status: 'ready', message: '' },
-      channels,
-      sources: {
-        ...sources,
-        screen: channels.displays.some((c) => c.id === sources.screen)
-          ? sources.screen
-          : channels.displays[0]?.id || '',
-        microphone: channels.mics.some((c) => c.id === sources.microphone)
-          ? sources.microphone
-          : channels.mics[0]?.id || '',
-      },
-    });
-    return true;
   }
 
   async function connected(identity) {
@@ -77,6 +69,7 @@ function createAccess(ctx, { service, recorder, library, recover }) {
     }
   }
   const commands = {
+    refreshSources: () => discovery.refresh(),
     async signIn({ key }) {
       if (
         checking ||
@@ -141,18 +134,14 @@ function createAccess(ctx, { service, recorder, library, recover }) {
       if (pending.some((op) => op.kind === 'session'))
         await service.reconcileSession();
       await library.refresh();
-      ctx.set({
-        channels: await recorder.channels(),
-        permissions: recorder.permissions(),
-      });
+      ctx.set({ permissions: recorder.permissions() });
+      await discovery.refresh();
       await recover();
     },
-    async checkPermission() {
-      ctx.set({ permissions: recorder.permissions() });
-    },
+    checkPermission,
     async setPermission({ key, value }) {
       if (value) await recorder.requestPermission(key);
-      ctx.set({ permissions: recorder.permissions() });
+      await checkPermission();
     },
   };
   return { commands, bootstrap };

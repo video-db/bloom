@@ -175,7 +175,14 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await button('Continue').isDisabled(), true);
     await shot(page, '2-recorder-failed');
     await main(() => {
-      global.__bloom.getFixture().recorder.channels = global.__channels;
+      const fixture = global.__bloom.getFixture();
+      fixture.recorder.channels = async () => {
+        if (!fixture.recorder.permission.screen)
+          return { displays: [], mics: [], systemAudio: [] };
+        const channels = await global.__channels();
+        channels.displays.push({ id: 'display:2', name: 'Studio Display' });
+        return channels;
+      };
     });
     await alert.getByRole('button', { name: 'Try again' }).click();
     await page.getByText('While you record').waitFor();
@@ -247,6 +254,9 @@ fs.mkdirSync(evidence, { recursive: true });
     const panel = app.windows().find((p) => p.url().includes('surface=panel'));
     await panel.emulateMedia({ colorScheme: theme });
     await panel.getByText('Start your first recording here').waitFor();
+    await panel.getByRole('button', { name: 'Choose a display' }).click();
+    await panel.locator('[data-pick=screen][data-id="display:2"]').click();
+    assert.equal(await main(() => global.__bloom.getEngine().getState().sources.screen), 'display:2');
     await shot(panel, '4-panel-hint');
     await main(() => global.__bloom.getEngine().command('start'));
     await panel

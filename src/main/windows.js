@@ -126,6 +126,7 @@ function createWindows({
       return;
     }
     placePanel();
+    if (!state.sample) engine.command('refreshSources');
     reveal(panel);
   }
 

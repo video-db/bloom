@@ -478,3 +478,92 @@ test('reconciling a collection rename refreshes its open heading', async (t) => 
   await command('reconcileCollectionAction', { id: 'collection-2' });
   assert.equal(engine.getState().browsing.name, 'Confirmed name');
 });
+
+test('granting screen access refreshes channels discovered before permission', async (t) => {
+  const f = createFixture();
+  t.after(() => f.engine.dispose());
+  const readyChannels = await f.recorder.channels();
+  readyChannels.displays.push({ id: 'display:2', name: 'Studio Display' });
+  f.recorder.permission.screen = false;
+  f.recorder.channels = async () => f.recorder.permission.screen
+    ? readyChannels : { displays: [], mics: [], systemAudio: [] };
+  await f.command('signIn', { key: 'synthetic-key' });
+  assert.equal(f.engine.getState().sources.screen, '');
+  f.recorder.permission.screen = true;
+  await f.command('checkPermission');
+  assert.equal(f.engine.getState().channels.displays.length, 2);
+  assert.equal(f.engine.getState().sources.screen, 'display:1');
+  await f.command('setSource', { key: 'screen', value: 'display:2' });
+  await f.command('setSource', { key: 'systemAudio', value: true });
+  await f.command('start');
+  assert.equal(f.calls.find(([name]) => name === 'start')[1].channels[0].channelId, 'display:2');
+});
+
+test('permission requests refresh newly available microphone choices too', async (t) => {
+  const f = await setup(t);
+  f.recorder.permission.mic = false;
+  await f.command('checkPermission');
+  const channels = await f.recorder.channels();
+  f.recorder.channels = async () => ({ ...channels, mics: [{ id: 'mic:new', name: 'New microphone' }] });
+  f.recorder.requestPermission = async () => { f.recorder.permission.mic = true; };
+  await f.command('setPermission', { key: 'mic', value: true });
+  assert.equal(f.engine.getState().sources.microphone, 'mic:new');
+});
+
+test('device refresh preserves a valid choice, reconciles removal and never runs during capture', async (t) => {
+  const f = await setup(t);
+  const channels = await f.recorder.channels();
+  let reads = 0;
+  channels.displays.push({ id: 'display:2', name: 'Studio Display' });
+  f.recorder.channels = async () => { reads++; return structuredClone(channels); };
+  await f.command('refreshSources');
+  await f.command('setSource', { key: 'screen', value: 'display:2' });
+  await f.command('refreshSources');
+  assert.equal(f.engine.getState().sources.screen, 'display:2');
+  channels.displays.pop();
+  await f.command('checkConnection');
+  assert.equal(f.engine.getState().sources.screen, 'display:1');
+  await f.command('start');
+  const before = reads;
+  await f.command('refreshSources');
+  assert.equal(reads, before);
+});
+
+test('a delayed device list cannot replace sources after recording starts', async (t) => {
+  const f = await setup(t);
+  const waiting = deferred();
+  f.recorder.channels = () => waiting.promise;
+  const refresh = f.command('refreshSources');
+  await flush();
+  f.engine.command('start');
+  await flush();
+  waiting.resolve({ displays: [{ id: 'display:new', name: 'New display' }], mics: [], systemAudio: [] });
+  await refresh;
+  assert.equal(f.engine.getState().phase, 'recording');
+  assert.equal(f.engine.getState().sources.screen, 'display:1');
+});
+
+test('an empty permitted display list is a recorder failure, not ready setup', async (t) => {
+  const f = createFixture();
+  t.after(() => f.engine.dispose());
+  f.recorder.channels = async () => ({ displays: [], mics: [], systemAudio: [] });
+  await f.command('signIn', { key: 'synthetic-key' });
+  assert.equal(f.engine.getState().account.status, 'signed-in');
+  assert.equal(f.engine.getState().recorder.status, 'failed');
+  assert.match(f.engine.getState().recorder.message, /No displays/);
+});
+
+test('a delayed device list cannot restore devices after sign-out', async (t) => {
+  const f = await setup(t);
+  const waiting = deferred();
+  f.recorder.channels = () => waiting.promise;
+  const refresh = f.command('refreshSources');
+  await flush();
+  f.engine.command('signOut');
+  await flush();
+  const before = f.engine.getState().channels;
+  waiting.resolve({ displays: [{ id: 'foreign', name: 'Old account device' }], mics: [], systemAudio: [] });
+  await refresh;
+  assert.equal(f.engine.getState().account.status, 'signed-out');
+  assert.deepEqual(f.engine.getState().channels, before);
+});

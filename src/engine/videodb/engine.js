@@ -111,7 +111,7 @@ function createVideoDBEngine({
   });
   const explore = createExploreCommands(ctx, service);
   const understand = createUnderstandCommands(ctx, service);
-  const ownLibrary = createLibraryCommands(ctx, service);
+  const ownLibrary = createLibraryCommands(ctx, service, { beforeRename: understand.whenNamed });
   // Refreshing the library also refreshes what the sidebar shows about the account.
   const library = {
     ...ownLibrary,

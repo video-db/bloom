@@ -15,7 +15,7 @@ npm start
 
 The tray icon appears only after sign-in, required permissions and setup completion. Until then, the recording shortcut opens setup, and recording, library and Settings menu actions are unavailable. Signing out removes the tray, closes the main window and returns to setup. Active capture controls remain available to stop or recover an existing recording.
 
-Start recording only after choosing the intended screen and audio. Nothing captures automatically. Audio turned off in the tray is omitted from the recording. On Stop, wait through local finalising and upload, then verify playback and the copied link; transcript readiness is separate. Preparing a missing transcript is an explicit action that can spend credits. Downloads use a save dialog. Rename and delete reach VideoDB; delete asks first and has no Undo.
+Start recording only after choosing the intended screen and audio. Nothing captures automatically. Audio turned off in the tray is omitted from the recording. On Stop, wait through local finalising and upload, then verify playback and the copied link; transcript readiness is separate. New recordings are transcribed after upload when “Transcribe new recordings” is enabled (on by default); this can spend credits. The summary request also suggests a short content-based name for date-named Bloom recordings; custom names are kept. Recordings without usable transcript content keep their date names. Existing missing transcripts can be prepared with Add. After an accepted request, Try again reads its result without submitting another indexing request. Downloads use a save dialog. Rename and delete reach VideoDB; delete asks first and has no Undo.
 
 The native recorder owns local MP4s and upload receipts. Complete native jobs are rediscovered on connection and authorised against their original session before a fresh token is issued. The recorder deletes its media after confirmed ingestion, so use Download to keep a permanent copy. There is no server-recording fallback. A forced kill during unfinished MP4 writing is not guaranteed recoverable.
 
@@ -45,6 +45,10 @@ For a change that must not alter any screen, set `BLOOM_STYLE_SNAPSHOT=1` and a 
 7. Complete setup and permissions, then perform the checks below.
 
 Data from releases up to 2.3.0 is not migrated; sign in again after installing. No data deletion is needed to replace the application bundle.
+
+For an Apple Silicon internal-test installer only, run `npm run dist -- --mac dmg --arm64 --publish never`. Packaged builds select the production API and require a production account key; a development key will not work. This command creates a local installer and publishes nothing. The app is not Developer ID signed or notarised; the capture helper is ad-hoc signed. Record the source commit and `shasum -a 256 dist/bloom-<version>-arm64.dmg` with each test handoff, because local checkpoints can share a package version.
+
+For internal-test feedback, report issues in [the Bloom repository](https://github.com/video-db/bloom/issues) with the source commit, macOS version, Mac architecture, steps, expected result and actual result. Include redacted screenshots when useful; omit account keys, signed playback URLs and recordings. Record the result of each acceptance step below before treating the build as verified on a real account.
 
 ## Verify
 

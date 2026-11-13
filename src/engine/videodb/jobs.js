@@ -39,7 +39,6 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
         title: record.requestedTitle || video.title,
         duration: video.duration || record.duration,
       });
-      onReady(record.id);
       if (ctx.get().sessionId === payload.sessionId) {
         const ready = ctx.find(record.id);
         ctx.set({
@@ -74,6 +73,7 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
           }
         }
       }
+      onReady(record.id);
     } catch {
       if (scope !== ctx.scope()) return;
       ctx.update(record.id, { status: 'error', jobStage: 'playback' });

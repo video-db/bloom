@@ -1,7 +1,11 @@
 const { newRecord } = require('./model');
 const { paragraphs } = require('./paragraphs');
 
-function createLibraryCommands(ctx, service) {
+function createLibraryCommands(
+  ctx,
+  service,
+  { beforeRename = async () => {} } = {},
+) {
   async function refresh() {
     const scope = ctx.scope();
     const remote = await service.listRecordings();
@@ -73,13 +77,24 @@ function createLibraryCommands(ctx, service) {
     async renameRecording({ id, text }) {
       const record = ctx.find(id);
       if (!record || record.readOnly) return;
+      const scope = ctx.scope();
+      ctx.update(id, { titleOrigin: 'user', requestedTitle: text });
+      await beforeRename(id);
+      if (scope !== ctx.scope()) return;
       if (!record.videoId) {
         ctx.update(id, { title: text, requestedTitle: text });
         return;
       }
       ctx.update(id, { pendingOperation: 'rename' });
       const result = await service.rename(record.videoId, text);
-      ctx.update(id, { title: result.title, pendingOperation: null });
+      ctx.update(id, {
+        title: result.title,
+        titleOrigin: 'user',
+        requestedTitle: text,
+        pendingOperation: null,
+      });
+      if (ctx.get().result?.id === id)
+        ctx.set({ result: { ...ctx.get().result, title: result.title } });
     },
     async deleteRecording({ id }) {
       const record = ctx.find(id);

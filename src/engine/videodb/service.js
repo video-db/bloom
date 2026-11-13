@@ -3,6 +3,7 @@ const { ServiceError, request } = require('./errors');
 const { createOperationJournal } = require('./journal');
 const { createOperations } = require('./operations');
 const { createLibrary } = require('./library');
+const { createCollectionActions } = require('./collection-actions');
 const { createExplore } = require('./explore');
 const { createUnderstand } = require('./understand');
 const { createSessions } = require('./sessions');
@@ -76,6 +77,7 @@ function createVideoDBService({
     ...createLibrary({ account, read, assertCurrent, operations, journal }),
     ...createSessions({ account, read, mutate, operations }),
     ...createExplore({ account, read }),
+    ...createCollectionActions({ account, read, operations }),
     ...createUnderstand({ account, read }),
     async signIn(apiKey) {
       if (authenticating || operations.busy())

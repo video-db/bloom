@@ -21,20 +21,92 @@ function createExploreCommands(ctx, service) {
       service.usage(),
     ]);
     if (scope !== ctx.scope()) return;
+    // Keep an uncertain deletion reachable even when the server no longer lists it.
+    if (collections.status === 'fulfilled') {
+      for (const op of service
+        .pendingOperations()
+        .filter((op) => op.key.startsWith('collection:'))) {
+        const id = op.key.slice('collection:'.length);
+        if (!collections.value.some((c) => c.id === id))
+          collections.value.push(
+            ctx.get().collections.find((c) => c.id === id) || {
+              id,
+              name: op.title || 'Collection awaiting confirmation',
+              bloom: false,
+            },
+          );
+      }
+    }
     ctx.set({
       ...(collections.status === 'fulfilled'
         ? {
             // Bloom's own collection first, then by name.
-            collections: collections.value.sort(
-              (a, b) => b.bloom - a.bloom || a.name.localeCompare(b.name),
-            ),
+            collections: collections.value
+              .map((c) => ({
+                ...c,
+                pendingOperation:
+                  service
+                    .pendingOperations()
+                    .find((op) => op.key === `collection:${c.id}`) || null,
+              }))
+              .sort(
+                (a, b) => b.bloom - a.bloom || a.name.localeCompare(b.name),
+              ),
           }
         : {}),
       ...(usage.status === 'fulfilled' ? { credits: usage.value.credits } : {}),
     });
   }
   const browsing = (id) => ctx.get().browsing?.id === id;
+  const changing = new Set();
+  async function change(action, id, text) {
+    const scope = ctx.scope();
+    const target = ctx.get().collections.find((c) => c.id === id);
+    if (!target || target.bloom || changing.has(id)) return;
+    changing.add(id);
+    ctx.set({ problem: null, notice: '' });
+    try {
+      const result = await service[action](id, text);
+      if (scope !== ctx.scope()) return;
+      if (action === 'renameCollection' && browsing(id))
+        ctx.set({ browsing: { ...ctx.get().browsing, name: text.trim() } });
+      if (action === 'deleteCollection' && browsing(id))
+        ctx.set({ browsing: null });
+      if (result?.reconciliationNeeded)
+        ctx.set({
+          notice:
+            'The previous change is not confirmed yet. Check again before making another change.',
+        });
+      else
+        ctx.set({
+          notice:
+            action === 'renameCollection'
+              ? 'Collection renamed.'
+              : action === 'deleteCollection'
+                ? 'Collection deleted.'
+                : 'Previous change confirmed.',
+        });
+    } finally {
+      changing.delete(id);
+      if (scope === ctx.scope()) {
+        await overview();
+        const opened = ctx.get().browsing;
+        if (opened) {
+          const collection = ctx
+            .get()
+            .collections.find((c) => c.id === opened.id);
+          ctx.set({
+            browsing: collection ? { ...opened, name: collection.name } : null,
+          });
+        }
+      }
+    }
+  }
   const commands = {
+    renameCollection: ({ id, text }) => change('renameCollection', id, text),
+    deleteCollection: ({ id }) => change('deleteCollection', id),
+    reconcileCollectionAction: ({ id }) =>
+      change('reconcileCollectionAction', id),
     async openCollection({ id }) {
       const target = ctx.get().collections.find((c) => c.id === id);
       // Bloom's own collection is the Recordings place itself.

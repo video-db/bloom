@@ -580,3 +580,45 @@ test('an uncertain session creation is reconciled by its durable operation ident
   assert.equal((await service.reconcileSession()).reconciliationNeeded, false);
   assert.deepEqual(service.pendingOperations(), []);
 });
+
+
+test('collection mutations preserve descriptions, protect the destination and reconcile uncertain deletion', async () => {
+  const { service, conn, calls } = fixture({ timeoutMs: 30 });
+  await login(service);
+  let remote = { id: 'other', name: 'Other', description: 'Keep this description',
+    delete: async () => { calls.push(['deleteCollection']); remote = null; throw new Error('response lost'); } };
+  conn.getCollection = async () => {
+    if (!remote) throw { status: 404 };
+    return remote;
+  };
+  conn.updateCollection = async (id, name, description) => {
+    calls.push(['renameCollection', id, name, description]);
+    remote.name = name;
+    return remote;
+  };
+  await assert.rejects(service.renameCollection('bloom-collection', 'Other'), { code: 'protected' });
+  await assert.rejects(service.deleteCollection('bloom-collection'), { code: 'protected' });
+  await assert.rejects(service.renameCollection('other', 'Bloom Recordings'), { code: 'invalid-input' });
+  await service.renameCollection('other', 'Renamed');
+  assert.deepEqual(calls.at(-1), ['renameCollection', 'other', 'Renamed', 'Keep this description']);
+  await assert.rejects(service.deleteCollection('other'), { uncertain: true });
+  assert.equal(service.pendingOperations()[0].key, 'collection:other');
+  assert.deepEqual(await service.reconcileCollectionAction('other'), { reconciliationNeeded: false });
+  assert.deepEqual(service.pendingOperations(), []);
+  assert.equal(calls.filter(([name]) => name === 'deleteCollection').length, 1);
+});
+
+test('uncertain collection rename is not replayed until its result is confirmed', async () => {
+  const { service, conn } = fixture({ timeoutMs: 10 });
+  await login(service);
+  let name = 'Original';
+  let count = 0;
+  conn.getCollection = async () => ({ name });
+  conn.updateCollection = async () => { count++; throw new Error('offline'); };
+  await assert.rejects(service.renameCollection('other', 'New'), { uncertain: true });
+  assert.deepEqual(await service.reconcileCollectionAction('other'), { reconciliationNeeded: true });
+  await assert.rejects(service.renameCollection('other', 'New'), { code: 'reconciliation-needed' });
+  assert.equal(count, 1);
+  name = 'New';
+  assert.deepEqual(await service.reconcileCollectionAction('other'), { reconciliationNeeded: false });
+});

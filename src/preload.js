@@ -14,6 +14,11 @@ contextBridge.exposeInMainWorld('bloom', {
     ipcRenderer.on('bloom:view', handler);
     return () => ipcRenderer.removeListener('bloom:view', handler);
   },
+  onCollectionAction: (listener) => {
+    const handler = (_event, action) => listener(action);
+    ipcRenderer.on('bloom:collection-action', handler);
+    return () => ipcRenderer.removeListener('bloom:collection-action', handler);
+  },
   // The clipboard's text, for onboarding's Paste button.
   clipboardText: () => ipcRenderer.invoke('bloom:clipboard-text'),
   // A small still of the screen for onboarding's proof that recording is allowed.

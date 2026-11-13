@@ -7,7 +7,9 @@ const {
   clipboard,
   shell,
   dialog,
+  Menu,
 } = require('electron');
+const { collectionMenu } = require('./collection-menu');
 const { createDownloads } = require('./downloads');
 const { mediaUrl } = require('../engine/videodb/library');
 
@@ -73,6 +75,30 @@ function registerIpc({
       Array.isArray(args)
     )
       return;
+    if (
+      name === 'collection-menu' &&
+      role === 'main' &&
+      typeof args.id === 'string'
+    ) {
+      const collection = engine
+        .getState()
+        .collections.find((c) => c.id === args.id);
+      if (!collection) return;
+      Menu.buildFromTemplate(
+        collectionMenu(collection, (action) => {
+          if (event.sender.isDestroyed()) return;
+          if (action === 'copy-id') {
+            clipboard.writeText(collection.id);
+            engine.notice?.('Collection ID copied.');
+          } else
+            event.sender.send('bloom:collection-action', {
+              action,
+              id: collection.id,
+            });
+        }),
+      ).popup({ window: from });
+      return;
+    }
     if (name === 'main-ready' && role === 'main') {
       windows.mainRendererReady();
       return;

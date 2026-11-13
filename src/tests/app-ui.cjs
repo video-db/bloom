@@ -211,6 +211,8 @@ fs.mkdirSync(evidence, { recursive: true });
       .waitFor();
     await panel.screenshot({ path: path.join(evidence, `${theme}-panel.png`) });
     assert.equal(await panel.locator('input[type=password]').count(), 0);
+    await panel.getByRole('button', { name: 'Copy link', exact: true }).click();
+    await panel.getByRole('status').filter({ hasText: 'Link copied.' }).waitFor();
     await panel
       .getByRole('button', { name: 'Open recording', exact: true })
       .click();
@@ -285,6 +287,36 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await main.locator('.record-menu').count(), 0);
     assert.equal(await main.getByRole('button', { name: 'Copy link', exact: true }).count(), 1);
     assert.match(await main.locator('.crumb').innerText(), /Product reviews/);
+    await main.getByRole('button', { name: 'Copy link', exact: true }).click();
+    await main.getByRole('status').filter({ hasText: 'Link copied.' }).waitFor();
+    // Exercise the native menu callbacks without depending on OS menu automation.
+    await app.evaluate(({ Menu }) => {
+      global.__originalMenuBuilder = Menu.buildFromTemplate;
+      Menu.buildFromTemplate = (template) => ({ popup() { global.__collectionMenu = template; } });
+    });
+    const chooseCollectionAction = async (label) => {
+      await app.evaluate((_electron, label) => {
+        global.__collectionMenu.find((item) => item.label === label).click();
+      }, label);
+    };
+    await main.locator('[data-collection="collection-2"]').click({ button: 'right' });
+    await chooseCollectionAction('Rename…');
+    await main.getByRole('dialog').waitFor();
+    await main.getByLabel('Collection name').fill('Reviewed demos');
+    await main.screenshot({ path: path.join(evidence, `${theme}-rename-collection.png`) });
+    await main.getByRole('button', { name: 'Save', exact: true }).click();
+    await main.locator('.collection', { hasText: 'Reviewed demos' }).waitFor();
+    await main.locator('[data-collection="collection-2"]').click({ button: 'right' });
+    await chooseCollectionAction('Delete collection…');
+    await main.getByRole('dialog').waitFor();
+    await main.screenshot({ path: path.join(evidence, `${theme}-delete-collection.png`) });
+    await main.getByRole('button', { name: 'Cancel', exact: true }).click();
+    assert.equal(await main.locator('[data-collection="collection-2"]').count(), 1);
+    await main.locator('[data-collection="collection-2"]').click({ button: 'right' });
+    await chooseCollectionAction('Delete collection…');
+    await main.getByRole('button', { name: 'Delete collection', exact: true }).click();
+    await main.locator('[data-collection="collection-2"]').waitFor({ state: 'detached' });
+    await app.evaluate(({ Menu }) => { Menu.buildFromTemplate = global.__originalMenuBuilder; });
     // Search finds a moment and opens its recording there.
     await main.locator('.sidebar .place', { hasText: 'Search' }).click();
     await main.getByRole('heading', { name: 'Search', exact: true }).waitFor();

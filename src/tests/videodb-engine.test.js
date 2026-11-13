@@ -438,3 +438,43 @@ test('the account overview, a browsed collection and search are read-only views'
   assert.equal(typeof service.usage, 'function');
   engine.dispose();
 });
+
+
+test('collection actions update the sidebar and open collection, and protect the recording destination', async (t) => {
+  const { engine, command, calls } = await setup(t);
+  await command('openCollection', { id: 'collection-2' });
+  await command('renameCollection', { id: 'collection-2', text: 'Reviews' });
+  assert.equal(engine.getState().browsing.name, 'Reviews');
+  assert.equal(engine.getState().collections.find((c) => c.id === 'collection-2').name, 'Reviews');
+  await command('deleteCollection', { id: 'collection-2' });
+  assert.equal(engine.getState().browsing, null);
+  assert(!engine.getState().collections.some((c) => c.id === 'collection-2'));
+  await command('renameCollection', { id: 'collection-1', text: 'Wrong' });
+  await command('deleteCollection', { id: 'collection-1' });
+  assert.equal(calls.filter(([name]) => /^(rename|delete)Collection$/.test(name)).length, 2);
+});
+
+
+test('an uncertain deleted collection remains reachable for reconciliation', async (t) => {
+  const { engine, service, command } = await setup(t);
+  const list = service.listCollections;
+  service.pendingOperations = () => [{ key: 'collection:collection-2', kind: 'delete' }];
+  service.listCollections = async () => (await list()).filter((c) => c.id !== 'collection-2');
+  await command('refresh');
+  assert.equal(engine.getState().collections.find((c) => c.id === 'collection-2').pendingOperation.kind, 'delete');
+  service.reconcileCollectionAction = async () => {
+    service.pendingOperations = () => [];
+    return { reconciliationNeeded: false };
+  };
+  await command('reconcileCollectionAction', { id: 'collection-2' });
+  assert(!engine.getState().collections.some((c) => c.id === 'collection-2'));
+});
+
+
+test('reconciling a collection rename refreshes its open heading', async (t) => {
+  const { engine, service, command } = await setup(t);
+  await command('openCollection', { id: 'collection-2' });
+  await service.renameCollection('collection-2', 'Confirmed name');
+  await command('reconcileCollectionAction', { id: 'collection-2' });
+  assert.equal(engine.getState().browsing.name, 'Confirmed name');
+});

@@ -32,6 +32,15 @@ function createFixture({
     streamUrl: 'https://stream.example/shelf.m3u8',
     playerUrl: `https://player.example/shelf-${index + 1}`,
   }));
+  let collections = [
+    { id: 'collection-2', name: 'Product reviews', bloom: false },
+    { id: 'collection-1', name: 'Bloom Recordings', bloom: true },
+    ...Array.from({ length: 30 }, (_, index) => ({
+      id: `collection-x${index}`,
+      name: `Team archive ${String(index + 1).padStart(2, '0')}`,
+      bloom: false,
+    })),
+  ];
   const service = {
     apiUrl: 'https://api.dev.videodb.io',
     cachedIdentity: () => null,
@@ -58,16 +67,16 @@ function createFixture({
       };
     },
     usage: async () => ({ credits: 316.28 }),
-    // More collections than the sidebar can show at once, as a real account can have.
-    listCollections: async () => [
-      { id: 'collection-2', name: 'Product reviews', bloom: false },
-      { id: 'collection-1', name: 'Bloom Recordings', bloom: true },
-      ...Array.from({ length: 30 }, (_, index) => ({
-        id: `collection-x${index}`,
-        name: `Team archive ${String(index + 1).padStart(2, '0')}`,
-        bloom: false,
-      })),
-    ],
+    listCollections: async () => structuredClone(collections),
+    renameCollection: async (id, title) => {
+      calls.push(['renameCollection', id, title]);
+      collections.find((c) => c.id === id).name = title;
+    },
+    deleteCollection: async (id) => {
+      calls.push(['deleteCollection', id]);
+      collections = collections.filter((c) => c.id !== id);
+    },
+    reconcileCollectionAction: async () => ({ reconciliationNeeded: false }),
     listCollectionVideos: async (id) => {
       calls.push(['listCollectionVideos', id]);
       return shelf;

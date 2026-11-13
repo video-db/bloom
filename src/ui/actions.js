@@ -1,6 +1,7 @@
 // Every click, form, field and key in the tray panel and the main window, as one delegated
 // handler per event: markup names what it does (data-command, data-ui, data-view, …) and
 // this file turns that into a command for the engine or a change to what the window shows.
+import { bindCollectionActions } from './workspace/collection-actions.js';
 import { chooser } from './panel/sources.js';
 import { seek, startAt } from './workspace/player.js';
 import { confirmRecordingAction } from './workspace/dialogs.js';
@@ -8,6 +9,7 @@ import { confirmRecordingAction } from './workspace/dialogs.js';
 // state: () => latest app state. browse: how Recordings is looked at. go: change view.
 // render(force): redraw this window.
 export function bindActions(root, { state, browse, go, setTab, render }) {
+  bindCollectionActions(root, { state, go });
   root.addEventListener('click', async (event) => {
     const target = event.target.closest('button');
     if (!target || target.disabled) return;

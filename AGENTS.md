@@ -29,6 +29,10 @@ Write each Markdown prose paragraph on a single source line; let the reader wrap
 
 Keep each page's established structure; obtain the owner's approval before a structural redesign. Comments should briefly explain a non-obvious why; keep longer rationale in central decisions or learnings.
 
+## Interface changes
+
+The rebuilt app's interface follows the approved designs. Record every change to what a person sees in the [interface change log](https://github.com/Spext/architectures/blob/main/Products/Bloom/docs/trackers/ui-change-log.md) before making it, with what, why and who asked, then add the commit. Wiring a surface to real data keeps its approved layout, controls and wording; if real data needs something the design lacks, stop and ask the owner. One interface change per commit, with the surface named in the message. Only the owner approves a design.
+
 ## Branding
 
 Use Bloom in product text and `bloom` in package/artifact names. The app ID is `com.videodb.bloom`; the database is `bloom.db`. This cleanup intentionally has no legacy-data migration. SDK binary names and IPC identifiers are technical contracts, not product branding.

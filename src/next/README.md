@@ -58,6 +58,7 @@ src/next/
 - Styles live beside the part they style and use the tokens in `ui/shared/tokens.css`. No colour or size literals that a token already covers.
 - Comments say why, briefly. The what belongs in names.
 - A release build has no sample data, no "preview" wording and no control that does nothing. Features that are not built are hidden through the engine's capabilities, not left as dead buttons.
+- The interface follows the approved designs. Record a change to what a person sees in the [interface change log](https://github.com/Spext/architectures/blob/main/Products/Bloom/docs/trackers/ui-change-log.md) before making it, and never redesign a surface while wiring it to real data.
 - Behaviour changes come with a test. Run the state tests and the walkthrough in both themes, then look at the screens.
 
 The real integration uses the public Node SDK from GitHub branch release-0.3.3; the lockfile records its resolved revision. Read [the boundary reference](../../docs/reference/videodb-integration.md) before changing the SDK adapter or recovery state. Real capture is selected explicitly from source and by the packaged rebuilt entry; test fixtures never run in a packaged app.

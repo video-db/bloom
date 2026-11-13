@@ -140,24 +140,20 @@ fs.mkdirSync(evidence, { recursive: true });
     );
     await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-ready.png`) });
 
-    // A second microphone and display each add an arrow beside their icon.
+    // A second display adds an arrow beside its icon. The microphone has no chooser:
+    // recording uses the Mac's default microphone.
     await app.evaluate(async () => {
       const fixture = global.__bloom.getFixture();
       const base = await fixture.recorder.channels();
       fixture.recorder.channels = async () => ({
         displays: [...base.displays, { id: 'display:2', name: 'Studio Display' }],
-        mics: [...base.mics, { id: 'mic:2', name: 'AirPods Pro' }],
+        mics: base.mics,
         systemAudio: base.systemAudio,
       });
       global.__bloom.showPanel();
     });
-    await recorder.getByRole('button', { name: 'Choose a microphone' }).click();
-    await recorder.getByRole('button', { name: 'AirPods Pro' }).waitFor();
-    await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-microphones.png`) });
-    await recorder.getByRole('button', { name: 'AirPods Pro' }).click();
-    assert.equal((await sourcesNow()).microphone, 'mic:2');
-    assert.equal(await recorder.locator('.source-list').count(), 0, 'choosing closes the list');
-    assert.equal((await sourcesNow()).mic, true, 'choosing a microphone does not turn it off');
+    await recorder.getByRole('button', { name: 'Choose a display' }).waitFor();
+    assert.equal(await recorder.getByRole('button', { name: 'Choose a microphone' }).count(), 0);
     await recorder.getByRole('button', { name: 'Choose a display' }).click();
     await recorder.screenshot({ path: path.join(evidence, `${theme}-tray-displays.png`) });
     await recorder.locator('[data-pick=screen][data-id="display:2"]').click();

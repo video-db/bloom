@@ -409,48 +409,6 @@ button.capture-option:not(:disabled):hover {
   border-color: var(--ev);
   background: var(--paper);
 }
-.source-list {
-  margin: 6px 0;
-  padding: 6px;
-  border: 1px solid var(--line2);
-  border-radius: 10px;
-  background: var(--sub);
-}
-.source-list h4 {
-  margin: 4px 6px 6px;
-  font-size: var(--t-caption);
-  font-weight: 600;
-}
-.source-choice {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 7px 8px;
-  border: 0;
-  border-radius: 7px;
-  background: none;
-  text-align: left;
-  font-size: var(--t-body);
-}
-.source-choice:hover {
-  background: var(--fill);
-}
-.source-choice.selected {
-  background: var(--evbg);
-  color: var(--ev);
-  font-weight: 500;
-}
-.source-tick {
-  display: grid;
-  place-items: center;
-  width: 14px;
-  height: 14px;
-}
-.source-tick .ic {
-  width: 14px;
-  height: 14px;
-}
 /* Header and footer icon buttons, named on hover. */
 .panel-open,
 .panel-gear {

@@ -1,10 +1,10 @@
 // What a recording will capture, as one row of icons: display, microphone, system audio.
-// An icon turns its source on or off. Where there is a choice (more than one display or
-// microphone) a small arrow beside the icon opens it. The display is always on.
+// An icon turns its source on or off. Where there is a choice (more than one display) a
+// small arrow beside the icon opens it. The display is always on.
 import { esc } from '../shared/dom.js';
 import { icon } from '../shared/icons.js';
 
-// Which chooser is open in this window: 'display', 'microphone' or null.
+// Which chooser is open in this window: 'display' or null.
 let open = null;
 export const chooser = {
   toggle(name) {
@@ -68,19 +68,16 @@ function toggle({ key, glyph, label, on, detail = '', locked = false }) {
   </button>`;
 }
 
+// Recording uses the Mac's default microphone, so there is nothing to choose: on or off.
 function microphone(s, locked) {
-  const { mics } = s.channels;
-  const current = mics.find((m) => m.id === s.sources.microphone);
   return /* HTML */ `<span class="source ${s.sources.mic ? 'on' : ''}">
     ${toggle({
       key: 'mic',
       glyph: 'microphone',
       label: 'Microphone',
       on: s.sources.mic,
-      detail: current?.name,
       locked,
     })}
-    ${mics.length > 1 && !locked ? arrow('microphone', 'Choose a microphone') : ''}
   </span>`;
 }
 
@@ -112,35 +109,11 @@ function displayChoices(s) {
   </section>`;
 }
 
-function microphoneChoices(s) {
-  return /* HTML */ `<section
-    class="source-list"
-    id="source-chooser"
-    aria-label="Choose a microphone"
-  >
-    <h4>Microphone</h4>
-    ${s.channels.mics
-      .map((m) => {
-        const selected = m.id === s.sources.microphone;
-        return /* HTML */ `<button
-          class="source-choice ${selected ? 'selected' : ''}"
-          data-pick="microphone"
-          data-id="${esc(m.id)}"
-          aria-pressed="${selected}"
-        >
-          <span class="source-tick">${selected ? icon('check') : ''}</span
-          >${esc(m.name)}
-        </button>`;
-      })
-      .join('')}
-  </section>`;
-}
 // locked: a session is running, so the row shows what is being captured and cannot change.
 export function sources(s, { locked = false } = {}) {
   if (locked) open = null;
   // A chooser whose choice has gone (a display unplugged) closes itself.
   if (open === 'display' && s.channels.displays.length < 2) open = null;
-  if (open === 'microphone' && s.channels.mics.length < 2) open = null;
   const systemAudio = toggle({
     key: 'systemAudio',
     glyph: 'audio',
@@ -155,12 +128,6 @@ export function sources(s, { locked = false } = {}) {
         locked,
       )}${systemAudio}
     </div>
-    ${
-      open === 'display'
-        ? displayChoices(s)
-        : open === 'microphone'
-          ? microphoneChoices(s)
-          : ''
-    }
+    ${open === 'display' ? displayChoices(s) : ''}
   </div>`;
 }

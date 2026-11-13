@@ -25,6 +25,22 @@ function recordingQuitPrompt(state) {
 const restartsQuietly = (state) =>
   ['idle', 'finished', 'processing-error'].includes(state.phase);
 
+// How long quitting waits for the recorder when nothing is being captured. Its shutdown has
+// been seen not to return with only a failed upload retained; quitting must still happen.
+const QUIET_SHUTDOWN_MS = 4000;
+
+// Settles when `work` does, or after `ms`, whichever comes first. Never rejects.
+const settledWithin = (work, ms = QUIET_SHUTDOWN_MS) =>
+  new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    Promise.resolve(work)
+      .catch(() => {})
+      .then(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+  });
+
 // `ask` shows the question and returns the index of the chosen button.
 function createQuitGuard({ engine, ask }) {
   let confirmed = false;
@@ -56,4 +72,9 @@ function createQuitGuard({ engine, ask }) {
   };
 }
 
-module.exports = { createQuitGuard, recordingQuitPrompt, restartsQuietly };
+module.exports = {
+  createQuitGuard,
+  recordingQuitPrompt,
+  restartsQuietly,
+  settledWithin,
+};

@@ -15,6 +15,7 @@ const {
   createQuitGuard,
   recordingQuitPrompt,
   restartsQuietly,
+  settledWithin,
 } = require('./quit-guard');
 const { createScreenPreview } = require('./screen-preview');
 const { openFirstWindow } = require('./first-window');
@@ -133,13 +134,11 @@ function restartForPermission() {
   app.relaunch();
   if (!engine || !restartsQuietly(engine.getState())) return app.quit();
   shutdownPending = true;
-  engine
-    .shutdown({ suspend: true })
-    .catch(() => {}) // the recorder may not have started; the restart is what matters
-    .finally(() => {
-      quitting = true;
-      app.quit();
-    });
+  // The recorder gets a moment to suspend; the restart happens either way.
+  settledWithin(engine.shutdown({ suspend: true })).then(() => {
+    quitting = true;
+    app.quit();
+  });
 }
 
 app.on('before-quit', (event) => {
@@ -151,12 +150,17 @@ app.on('before-quit', (event) => {
     const suspend = !!prompt && dialog.showMessageBoxSync(prompt) === 1;
     if (prompt && !suspend) return;
     shutdownPending = true;
+    const finish = () => {
+      quitting = true;
+      app.quit();
+    };
+    // Nothing is being captured: give the recorder a moment, then quit regardless. Retained
+    // recordings stay on this Mac and are picked up on the next launch.
+    if (restartsQuietly(state))
+      return void settledWithin(engine.shutdown({ suspend })).then(finish);
     engine
       .shutdown({ suspend })
-      .then(() => {
-        quitting = true;
-        app.quit();
-      })
+      .then(finish)
       .catch(() => {
         shutdownPending = false;
         dialog.showMessageBox({

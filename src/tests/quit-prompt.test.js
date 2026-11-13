@@ -60,3 +60,14 @@ test('setup can reopen Bloom without asking unless capture or finalisation is un
   ])
     assert.equal(restartsQuietly({ phase, pending: [] }), false);
 });
+
+test('a recorder shutdown that never returns cannot hold up quitting', async () => {
+  const { settledWithin } = require('../main/quit-guard');
+  const started = Date.now();
+  await settledWithin(new Promise(() => {}), 40); // never settles
+  assert.ok(Date.now() - started < 1000);
+  await settledWithin(Promise.reject(new Error('recorder failed')), 40); // a failure is not thrown
+  const quick = Date.now();
+  await settledWithin(Promise.resolve(), 5000); // a prompt answer is not delayed
+  assert.ok(Date.now() - quick < 500);
+});

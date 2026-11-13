@@ -1,7 +1,13 @@
 // Entry point of the rebuilt Bloom app: lifecycle and wiring only.
 // Until cutover it keeps its own user data so it never touches the current app's.
 // Capture is supplied by src/next/engine.
-const { app, dialog, safeStorage, systemPreferences } = require('electron');
+const {
+  app,
+  desktopCapturer,
+  dialog,
+  safeStorage,
+  systemPreferences,
+} = require('electron');
 const { createEngine } = require('../engine');
 const flags = require('./flags');
 const { createPrefs } = require('./prefs');
@@ -14,6 +20,7 @@ const { createShortcuts } = require('./shortcuts');
 const { installMenu } = require('./menu');
 const { registerIpc } = require('./ipc');
 const { createQuitGuard } = require('./quit-guard');
+const { createScreenPreview } = require('./screen-preview');
 
 flags.separateUserData();
 const primaryInstance =
@@ -52,6 +59,13 @@ function start() {
     engine.dispose();
     engine = fixture.engine;
   }
+  // Test runs and the sample engine must never look at the real screen or microphone.
+  const real = !fixture && !engine.getState().sample;
+  const screenPreview = createScreenPreview({
+    capturer: desktopCapturer,
+    allowed: () =>
+      real && systemPreferences.getMediaAccessStatus('screen') === 'granted',
+  });
   quitGuard = createQuitGuard({
     engine,
     ask: (options) => dialog.showMessageBoxSync(options),
@@ -79,6 +93,7 @@ function start() {
     notifications,
     windows,
     loginSupported: !!app.isPackaged,
+    livePreviews: real,
   });
 
   appState.applyPrefs(); // before any window exists, so the first one opens in the right theme
@@ -87,7 +102,15 @@ function start() {
   windows.createPanel();
   engine.onState(appState.broadcast);
   appState.broadcast(engine.getState());
-  registerIpc({ engine, prefs, theme, tray, windows, appState });
+  registerIpc({
+    engine,
+    prefs,
+    theme,
+    tray,
+    windows,
+    appState,
+    screenPreview,
+  });
   shortcuts.register();
 }
 

@@ -1,6 +1,6 @@
 import { esc, clock } from './dom.js';
 import { panel } from './panel.js';
-import { onboarding } from './onboarding.js';
+import { createOnboarding } from './onboarding/index.js';
 import { workspace } from './workspace.js';
 import { releasePlayer, mountPlayer, seek } from './player.js';
 
@@ -12,8 +12,9 @@ let state = null,
   shape = '',
   view = location.hash.slice(1) || 'library',
   activeId = null,
-  step = 0,
   query = '';
+// Onboarding runs its own flow; the panel and workspace share the renderer below.
+const firstRun = surface === 'onboarding' ? createOnboarding(root) : null;
 
 function render(force = false) {
   if (!state) return;
@@ -22,7 +23,6 @@ function render(force = false) {
     elapsed: 0,
     view,
     activeId,
-    step,
     query,
   });
   if (force || next !== shape) {
@@ -40,9 +40,7 @@ function render(force = false) {
     root.innerHTML =
       surface === 'panel'
         ? panel(state)
-        : surface === 'onboarding'
-          ? onboarding(state, step)
-          : workspace(state, view, activeId, query);
+        : workspace(state, view, activeId, query);
     if (note !== undefined && root.querySelector('input[name="note"]'))
       root.querySelector('input[name="note"]').value = note;
     if (focusKey) {
@@ -91,18 +89,20 @@ function dialog(action, id) {
   const modal = document.createElement('dialog');
   modal.innerHTML = /* HTML */ `<form method="dialog">
     <h2>${action === 'delete' ? 'Delete recording?' : 'Rename recording'}</h2>
-    ${action === 'rename'
-      ? /* HTML */ `<label
-          >Recording name<input
-            class="field"
-            name="title"
-            maxlength="180"
-            value="${esc(record.title)}"
-            required
-        /></label>`
-      : /* HTML */ `<p>
-          Delete “${esc(record.title)}” from VideoDB? This cannot be undone.
-        </p>`}
+    ${
+      action === 'rename'
+        ? /* HTML */ `<label
+            >Recording name<input
+              class="field"
+              name="title"
+              maxlength="180"
+              value="${esc(record.title)}"
+              required
+          /></label>`
+        : /* HTML */ `<p>
+            Delete “${esc(record.title)}” from VideoDB? This cannot be undone.
+          </p>`
+    }
     <div class="dialog-actions">
       <button class="btn" value="cancel" formnovalidate>Cancel</button
       ><button
@@ -148,14 +148,11 @@ root.addEventListener('click', async (event) => {
   if (target.dataset.ui)
     window.bloom.ui(target.dataset.ui, {
       ...(target.dataset.id ? { id: target.dataset.id } : {}),
+      ...(target.dataset.key ? { key: target.dataset.key } : {}),
       ...(target.dataset.view ? { view: target.dataset.view } : {}),
     });
   if (target.dataset.record) go(`detail/${target.dataset.record}`);
   if (target.dataset.view && !target.dataset.ui) go(target.dataset.view);
-  if (target.dataset.step !== undefined) {
-    step = Number(target.dataset.step);
-    render(true);
-  }
   if (target.dataset.seek !== undefined) seek(Number(target.dataset.seek));
   if (target.dataset.dialog) dialog(target.dataset.dialog, target.dataset.id);
   if (target.dataset.copyTranscript) {
@@ -214,6 +211,7 @@ document.addEventListener('keydown', (event) => {
 window.bloom.onView(go);
 const receive = (next) => {
   if (!next) return;
+  if (firstRun) return firstRun.receive(next);
   state = next;
   render();
 };

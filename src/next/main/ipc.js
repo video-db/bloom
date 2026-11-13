@@ -14,8 +14,27 @@ const { mediaUrl } = require('../engine/videodb/library');
 const copyLink = () =>
   clipboard.writeText('https://example.invalid/sample-recording'); // sample data: there is no real link yet
 
-function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
+function registerIpc({
+  engine,
+  prefs,
+  theme,
+  tray,
+  windows,
+  appState,
+  screenPreview,
+}) {
   const download = createDownloads({ engine, dialog });
+  const fromOnboarding = (event) =>
+    windows.roleOf(BrowserWindow.fromWebContents(event.sender)) ===
+    'onboarding';
+  // Paste in onboarding: the web clipboard API can wait forever on a permission question
+  // nobody sees, so the main process answers, and only that window.
+  ipcMain.handle('next:clipboard-text', (event) =>
+    fromOnboarding(event) ? clipboard.readText().slice(0, 4096) : '',
+  );
+  ipcMain.handle('next:screen-preview', (event) =>
+    fromOnboarding(event) ? screenPreview.capture() : null,
+  );
   ipcMain.handle('next:get-state', (event) => {
     if (!windows.roleOf(BrowserWindow.fromWebContents(event.sender)))
       return null;
@@ -130,7 +149,9 @@ function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
     if (name === 'get-api-key' && ['onboarding', 'main'].includes(role)) {
       // The renderer selects an action, never an arbitrary external destination.
       shell.openExternal('https://console.videodb.io/').catch(() => {
-        appState.setPrefError('Could not open your browser. Visit console.videodb.io to get an API key.');
+        appState.setPrefError(
+          'Could not open your browser. Visit console.videodb.io to get an API key.',
+        );
       });
     }
     if (name === 'open-settings')
@@ -162,9 +183,18 @@ function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
         return;
       }
       appState.setPrefError('');
+      if (app.isPackaged && !engine.getState().sample)
+        app.setLoginItemSettings({ openAtLogin: prefs.all().openAtLogin });
+      appState.setHint('first-recording');
       appState.broadcast(engine.getState());
       windows.closeOnboarding();
       windows.showPanel();
+    }
+    // macOS can hold a new screen-recording permission until the app reopens. Setup resumes
+    // on the same step, because the account is saved and the step follows from state.
+    if (name === 'relaunch' && role === 'onboarding') {
+      app.relaunch();
+      app.quit();
     }
     if (name === 'show-panel') windows.showPanel();
     if (name === 'open-onboarding') {

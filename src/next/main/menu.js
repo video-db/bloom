@@ -33,6 +33,16 @@ function installMenu({ engine, windows, prefs }) {
             accelerator: 'CmdOrCtrl+,',
             click: () => windows.openMain('settings'),
           },
+          // Always reachable, so nobody is left signed in with no way out.
+          ...(sample
+            ? []
+            : [
+                {
+                  id: 'sign-out',
+                  label: 'Sign Out',
+                  click: () => engine.command('signOut'),
+                },
+              ]),
           { type: 'separator' },
           { role: 'hide' },
           { role: 'hideOthers' },
@@ -103,10 +113,17 @@ function installMenu({ engine, windows, prefs }) {
     for (const id of ['settings', 'recordings', 'recording-controls']) {
       const item = menu?.getMenuItemById(id);
       if (item)
-        item.enabled = id === 'recording-controls'
-          ? controlsAvailable(state, prefs.all())
-          : setupReady(state, prefs.all());
+        item.enabled =
+          id === 'recording-controls'
+            ? controlsAvailable(state, prefs.all())
+            : setupReady(state, prefs.all());
     }
+    const signOut = menu?.getMenuItemById('sign-out');
+    if (signOut)
+      signOut.enabled =
+        state.account?.status === 'signed-in' &&
+        ['idle', 'finished'].includes(state.phase) &&
+        !state.pending?.length;
   };
   updateAccess(engine.getState());
   return updateAccess;

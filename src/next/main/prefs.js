@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const DEFAULTS = {
   onboardingComplete: false,
   appearance: 'system', // system | light | dark
-  openAtLogin: false,
+  openAtLogin: true, // a menu-bar app that is gone after a restart is confusing; setup shows the switch
   defaultMic: true,
   defaultSystemAudio: false,
   defaultCamera: false,

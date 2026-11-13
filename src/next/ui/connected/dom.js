@@ -21,7 +21,7 @@ export const button = (command, label, args = '', disabled = false) =>
   </button>`;
 export const problems = (s) =>
   `${s.problem ? /* HTML */ `<div class="note" role="alert">${esc(s.problem.message)}</div>` : ''}${s.notice ? /* HTML */ `<div class="note" role="status">${esc(s.notice)}</div>` : ''}${s.prefError ? /* HTML */ `<div class="note" role="alert">${esc(s.prefError)}</div>` : ''}`;
-export function accountForm(s, { onboarding = false } = {}) {
+export function accountForm(s) {
   if (s.account.status === 'signed-in')
     return '<p class="soft">Connected to VideoDB.</p>';
   return /* HTML */ `<form data-form="sign-in" class="connected-form">
@@ -46,11 +46,11 @@ export function accountForm(s, { onboarding = false } = {}) {
           ? 'Connecting…'
           : 'Connect to VideoDB'}
       </button>
-      ${onboarding ? /* HTML */ `<p class="onboarding-key-note">Encrypted on this Mac.</p>` : /* HTML */ `<p class="soft">
+      <p class="soft">
         Your key is encrypted using this Mac’s secure storage. Selected screen
         and audio stream to VideoDB while recording; the final video is saved
         locally, then uploaded.
-      </p>`}
+      </p>
     </form>
     <button type="button" class="btn account-create" data-ui="get-api-key" aria-label="Create a VideoDB account (opens browser)">Create a VideoDB account</button>
     ${s.account.status === 'offline'

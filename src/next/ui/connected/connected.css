@@ -1,4 +1,4 @@
-@import url('onboarding.css');
+@import url('onboarding/onboarding.css');
 
 #root {
   height: 100%;
@@ -149,4 +149,14 @@
     outline: 2px solid Highlight;
     outline-offset: 2px;
   }
+}
+/* Shown once, after setup, until the first recording starts. */
+.panel-hint {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--evbg);
+  color: var(--ev);
+  font-size: 12px;
+  font-weight: 500;
 }

@@ -88,34 +88,32 @@ fs.mkdirSync(evidence, { recursive: true });
     await app.evaluate(({ shell }) => { shell.openExternal = global.__originalOpenExternal; });
     await onboarding.getByLabel('VideoDB API key').focus();
     await onboarding.screenshot({ path: path.join(evidence, `${theme}-key-focus.png`) });
-    await app.evaluate(() => {
-      global.__bloomNext.getFixture().recorder.permission = { screen: false, mic: false, camera: false };
-    });
+    // First run is covered in depth by onboarding-ui.cjs; here it only has to hand over.
     await onboarding.getByLabel('VideoDB API key').fill('synthetic-ui-key');
     await onboarding
       .getByRole('button', { name: 'Connect to VideoDB', exact: true })
       .click();
-    await onboarding.getByRole('button', { name: 'Next', exact: true }).click();
-    assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('recordings').enabled), false);
-    assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), false);
     await onboarding
       .getByRole('heading', { name: 'You’re in control.' })
       .waitFor();
-    assert.equal(await onboarding.getByRole('button', { name: 'Next', exact: true }).isDisabled(), true);
+    assert.equal(await onboarding.getByRole('button', { name: 'Next', exact: true }).count(), 0);
+    assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('recordings').enabled), false);
+    assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('sign-out').enabled), true);
     assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), false);
-    await app.evaluate(async () => {
-      const fixture = global.__bloomNext.getFixture();
-      fixture.recorder.permission = { screen: true, mic: true, camera: false };
-      await fixture.command('checkPermission');
-    });
     await onboarding.screenshot({
       path: path.join(evidence, `${theme}-onboarding.png`),
     });
-    await onboarding.getByRole('button', { name: 'Next', exact: true }).click();
-    await onboarding.locator('[data-command=start]').click();
-    await phase('recording');
-    assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), false);
     await onboarding
+      .getByRole('button', { name: 'Continue', exact: true })
+      .click();
+    await onboarding
+      .getByRole('button', { name: 'Open Bloom', exact: true })
+      .click();
+    assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), true);
+    const recorder = await windowFor('panel');
+    await recorder.locator('[data-command=start]').click();
+    await phase('recording');
+    await recorder
       .getByRole('button', { name: 'Stop recording', exact: true })
       .click();
     await phase('saving');
@@ -127,10 +125,6 @@ fs.mkdirSync(evidence, { recursive: true });
     );
     await app.evaluate(() => global.__bloomNext.getFixture().recorder.finish());
     await phase('finished');
-    await onboarding
-      .getByRole('button', { name: 'Continue', exact: true })
-      .click();
-    await onboarding.getByRole('button', { name: 'Done', exact: true }).click();
     assert.equal(await app.evaluate(() => global.__bloomNext.hasTray()), true);
     const panel = await windowFor('panel');
     await panel

@@ -209,6 +209,8 @@ export function panel(s) {
     <div class="pb">
       ${problems(s)}${s.account.status === 'signed-in'
         ? button('checkConnection', 'Refresh connection and sources')
+        : ''}${s.hint === 'first-recording' && s.phase === 'idle' && !needsSetup
+        ? '<p class="panel-hint" role="status">Start your first recording here. ⇧⌘R works from anywhere.</p>'
         : ''}${needsSetup ? setup : capture(s)}${s.result
         ? /* HTML */ `<div class="card">
             <b>${esc(s.result.title)}</b>

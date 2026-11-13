@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld('bloom', {
     ipcRenderer.on('next:view', handler);
     return () => ipcRenderer.removeListener('next:view', handler);
   },
+  // The clipboard's text, for onboarding's Paste button.
+  clipboardText: () => ipcRenderer.invoke('next:clipboard-text'),
+  // A small still of the screen for onboarding's proof that recording is allowed.
+  screenPreview: () => ipcRenderer.invoke('next:screen-preview'),
   // Window-level actions that are not capture commands.
   ui: (name, args) => ipcRenderer.send('next:ui', name, args || {}),
 });

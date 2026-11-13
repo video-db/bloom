@@ -3,10 +3,6 @@
 ## Unreleased
 
 - Distinguish retained uploads from active capture in the quit confirmation; preserve the same stop, finalization and file-retention safeguards.
-
-## [Unreleased]
-
-### Fixes
 - Setup: "Reopen Bloom" after granting screen recording restarts without the quit warning when nothing is being captured or finalised; a retained failed upload no longer blocks it.
 - Search: a search with no matches shows "No moments found" instead of a connection error.
 

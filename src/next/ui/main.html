@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'"
+    />
+    <title>Bloom</title>
+    <link rel="stylesheet" href="ui.css" />
+    <link rel="stylesheet" href="workspace.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="bar drag">
+        <button
+          class="icon-button nodrag"
+          id="toggle-browser"
+          aria-label="Hide recordings"
+          aria-expanded="true"
+          title="Show or hide recordings"
+        >
+          <span data-glyph="library"></span>
+        </button>
+        <span class="title">Bloom</span
+        ><span class="pill-sample">Sample workspace</span>
+        <span class="right nodrag" id="badge"></span>
+        <button class="btn nodrag" data-ui="show-panel">New recording</button>
+      </header>
+      <div class="body">
+        <aside class="browser" aria-label="Recording browser">
+          <div class="browser-heading">
+            <h1>Recordings</h1>
+            <span class="soft" id="record-count"></span>
+          </div>
+          <label class="search"
+            ><span data-glyph="search"></span
+            ><input
+              id="q"
+              aria-label="Search recordings and moments"
+              placeholder="Search words or moments"
+          /></label>
+          <div class="browser-filters">
+            <select id="filter" aria-label="Filter recordings">
+              <option value="all">All recordings</option>
+              <option value="ready">Ready</option>
+              <option value="edited">Edited</option>
+              <option value="processing">Processing</option>
+              <option value="error">Needs attention</option></select
+            ><select id="sort" aria-label="Sort recordings">
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="name">A–Z</option>
+              <option value="duration">Longest</option>
+            </select>
+          </div>
+          <div id="recording-list" class="recording-list"></div>
+          <footer class="browser-footer">
+            <span>On this preview · session only</span
+            ><button
+              class="icon-button"
+              data-view="settings"
+              aria-label="Settings"
+              title="Settings (⌘,)"
+            >
+              <span data-glyph="settings"></span>
+            </button>
+          </footer>
+        </aside>
+        <main class="view" id="view"></main>
+      </div>
+    </div>
+    <script src="glyphs.js"></script>
+    <script src="capture-icons.js"></script>
+    <script src="common.js"></script>
+    <script src="settings.js"></script>
+    <script src="main-window.js"></script>
+    <script src="version-tools.js"></script>
+    <script src="shell-icons.js"></script>
+  </body>
+</html>

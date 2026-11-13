@@ -1,0 +1,72 @@
+/* Bloom design tokens. Source: architectures Products/Bloom/design/assets/tokens/tokens.css */
+:root {
+  --control-height: 32px;
+  --font:
+    'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --page: #f6f6f8; /* app background */
+  --paper: #fff; /* surface */
+  --sub: #fafafb; /* subtle surface */
+  --fill: #f1f1f4; /* filled control */
+  --line: #e6e6ea; /* hairline */
+  --line2: #d3d3da; /* stronger border */
+  --ink: #17171c; /* primary text and primary button */
+  --ink2: #2e2e36; /* body text */
+  --mid: #5c5c69; /* secondary text */
+  --soft: #686875; /* tertiary text */
+  --on: #fff; /* text on ink */
+  --on-line: rgba(255, 255, 255, 0.18);
+  --ev: #c43400; /* selection, links, timestamps */
+  --evbg: #fff0e9; /* selection tint */
+  --brand: #ff4000; /* Bloom orange: the mark */
+  --rec: #ff4000; /* capturing right now (graphics) */
+  --rect: #d43a00; /* capturing right now (text) */
+  --recbg: #fff0e9; /* capturing tint */
+  --bad: #d13438; /* not available */
+  --badbg: #fdecec; /* not available tint */
+  --warn: #a35a00; /* not capturing when you might think you are */
+  --warnbg: #fff3d6; /* warning tint */
+  --warnline: #f0c27a; /* warning border */
+  --ok: #1f7a52; /* done / applied */
+  --okbg: #e4f5ec; /* done tint */
+  --okline: #a9dcc0; /* done border */
+  --s0: #fbfbfd;
+  --s1: #e3e3ea;
+  --s2: #ededf2;
+  --s3: #e9e9ef;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0c0c0e; /* app background */
+    --paper: #17171a; /* surface */
+    --sub: #1b1b1f; /* subtle surface */
+    --fill: #232328; /* filled control */
+    --line: #2b2b31; /* hairline */
+    --line2: #3d3d46; /* stronger border */
+    --ink: #eeeef0; /* primary text and primary button */
+    --ink2: #d5d5db; /* body text */
+    --mid: #a3a3ae; /* secondary text */
+    --soft: #a0a0ad; /* tertiary text */
+    --on: #111114; /* text on ink */
+    --on-line: rgba(0, 0, 0, 0.16);
+    --ev: #ff986b; /* selection, links, timestamps */
+    --evbg: #3a2117; /* selection tint */
+    --brand: #ff4000; /* Bloom orange: the mark */
+    --rec: #ff4000; /* capturing right now (graphics) */
+    --rect: #ff7a45; /* capturing right now (text) */
+    --recbg: #3a190b; /* capturing tint */
+    --bad: #ff6b6b; /* not available */
+    --badbg: #3a1719; /* not available tint */
+    --warn: #f5b041; /* not capturing when you might think you are */
+    --warnbg: #33260d; /* warning tint */
+    --warnline: #6b4d14; /* warning border */
+    --ok: #4cc38a; /* done / applied */
+    --okbg: #12291f; /* done tint */
+    --okline: #1f5a40; /* done border */
+    --s0: #1e1e22;
+    --s1: #303037;
+    --s2: #27272c;
+    --s3: #2b2b31;
+  }
+}

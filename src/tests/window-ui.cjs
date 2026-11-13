@@ -52,8 +52,43 @@ fs.mkdirSync(evidence, { recursive: true });
             ['switchWindow', 'setWindowEnabled'].includes(name),
           ),
       );
+    // The camera: a round picture that floats on screen, in three sizes.
+    await panel.getByRole('button', { name: 'Camera: Off' }).click();
+    await panel.getByRole('button', { name: 'Camera: On' }).waitFor();
+    let cam;
+    for (let i = 0; i < 100 && !cam; i++) {
+      cam = app.windows().find((p) => p.url().includes('surface=camera'));
+      if (!cam) await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    await cam.locator('.cam-note').waitFor();
+    assert.equal(
+      await app.evaluate(() => global.__bloom.floatingCameraShowing()),
+      true,
+    );
+    assert.match(
+      await panel.locator('.source-group').innerText(),
+      /The camera is not part of a window recording\./,
+    );
+    const camSize = () =>
+      cam.evaluate(() => [window.innerWidth, window.innerHeight]);
+    assert.deepEqual(await camSize(), [200, 200]);
+    await cam.getByRole('button', { name: 'Large' }).dispatchEvent('click');
+    for (let i = 0; i < 40 && (await camSize())[0] !== 280; i++)
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.deepEqual(await camSize(), [280, 280]);
+    await cam.screenshot({
+      path: path.join(evidence, `camera-${theme}.png`),
+      omitBackground: true,
+    });
     await panel.getByRole('button', { name: /Start recording/ }).click();
     await panel.locator('.ph .timer').waitFor();
+    // The camera can be turned off in the middle of a recording.
+    await panel.getByRole('button', { name: 'Camera: On' }).click();
+    await panel.getByRole('button', { name: 'Camera: Off' }).waitFor();
+    assert.equal(
+      await app.evaluate(() => global.__bloom.floatingCameraShowing()),
+      false,
+    );
     // The window is named, and can be switched or hidden without stopping.
     assert.match(
       await panel.locator('.source-what').innerText(),
@@ -62,16 +97,28 @@ fs.mkdirSync(evidence, { recursive: true });
     await panel.getByRole('button', { name: /Switch window/ }).click();
     await panel.locator('[data-switch-window]').first().waitFor();
     assert.equal(await panel.locator('[data-switch-window]').count(), 2);
-    await panel.screenshot({ path: path.join(evidence, `${theme}-switch.png`) });
+    await panel.screenshot({
+      path: path.join(evidence, `${theme}-switch.png`),
+    });
     await panel.locator('[data-switch-window="window:c"]').click();
     await panel.getByText('Figma · Checkout flow').waitFor();
     assert.equal(await panel.locator('[data-switch-window]').count(), 0);
-    await panel.getByRole('button', { name: 'Hide window', exact: true }).click();
-    await panel.getByRole('button', { name: 'Show window', exact: true }).waitFor();
+    await panel
+      .getByRole('button', { name: 'Hide window', exact: true })
+      .click();
+    await panel
+      .getByRole('button', { name: 'Show window', exact: true })
+      .waitFor();
     await panel.getByText('The recording shows a plain card').waitFor();
-    await panel.screenshot({ path: path.join(evidence, `${theme}-hidden.png`) });
-    await panel.getByRole('button', { name: 'Show window', exact: true }).click();
-    await panel.getByRole('button', { name: 'Hide window', exact: true }).waitFor();
+    await panel.screenshot({
+      path: path.join(evidence, `${theme}-hidden.png`),
+    });
+    await panel
+      .getByRole('button', { name: 'Show window', exact: true })
+      .click();
+    await panel
+      .getByRole('button', { name: 'Hide window', exact: true })
+      .waitFor();
     assert.deepEqual(await calls(), [
       ['switchWindow', 'window:c'],
       ['setWindowEnabled', false],
@@ -90,10 +137,16 @@ fs.mkdirSync(evidence, { recursive: true });
     await float.emulateMedia({ colorScheme: theme });
     await float.getByRole('button', { name: 'Stop recording' }).waitFor();
     assert.deepEqual(
-      await float.locator('.fb').evaluateAll((els) =>
-        els.map((el) => el.getAttribute('aria-label')),
-      ),
-      ['Stop recording', 'Pause', 'Mark this moment', 'Mute microphone', 'Hide window'],
+      await float
+        .locator('.fb')
+        .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label'))),
+      [
+        'Stop recording',
+        'Pause',
+        'Mark this moment',
+        'Mute microphone',
+        'Hide window',
+      ],
     );
     await float.getByRole('button', { name: 'Mute microphone' }).click();
     await float.getByRole('button', { name: 'Unmute microphone' }).waitFor();
@@ -115,7 +168,9 @@ fs.mkdirSync(evidence, { recursive: true });
     await panel.getByRole('button', { name: 'Pause', exact: true }).click();
     await panel.getByRole('button', { name: /Switch window/ }).waitFor();
     await panel.getByRole('button', { name: 'Resume', exact: true }).click();
-    await panel.getByRole('button', { name: 'Stop recording', exact: true }).click();
+    await panel
+      .getByRole('button', { name: 'Stop recording', exact: true })
+      .click();
     await panel.locator('.tray-card', { hasText: 'Processing' }).waitFor();
     assert.equal(
       await app.evaluate(() => global.__bloom.floatingControlShowing()),
@@ -123,7 +178,9 @@ fs.mkdirSync(evidence, { recursive: true });
       'the control goes when the recording stops',
     );
     assert.deepEqual(errors, []);
-    console.log(`Window ${theme} walkthrough passes: named, switched, hidden, shown, floating control, paused, stopped.`);
+    console.log(
+      `Window ${theme} walkthrough passes: camera, named, switched, hidden, shown, floating control, paused, stopped.`,
+    );
   } finally {
     await app
       .evaluate(() => global.__bloom.getEngine().dispose())

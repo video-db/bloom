@@ -39,7 +39,8 @@
       "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
         "NSScreenCaptureUsageDescription": "Bloom needs screen recording permission to capture your display and system audio.",
-        "NSMicrophoneUsageDescription": "Bloom needs microphone access to record your voice."
+        "NSMicrophoneUsageDescription": "Bloom needs microphone access to record your voice.",
+        "NSCameraUsageDescription": "Bloom shows your camera on screen while you record."
       },
       "target": [
         {

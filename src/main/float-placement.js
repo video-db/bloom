@@ -16,9 +16,23 @@ function safeDisplay(state, displays, primary) {
   return displays.find((d) => String(d.id) !== recorded) || null;
 }
 
+// The camera picture is meant to be seen in a display recording, so it goes on the display
+// being recorded when that can be told, and otherwise on the main one.
+function cameraDisplay(state, displays, primary) {
+  const recorded = String(state.sources.screen || '').split(':')[1];
+  return (
+    (!state.sources.window &&
+      displays.find((d) => String(d.id) === recorded)) ||
+    primary ||
+    displays[0] ||
+    null
+  );
+}
+
 // Top-left corner for a window of `size` on `display`: where it was last put if that is
-// still on this display, otherwise the left edge at mid-height, where Loom keeps its own.
-function placeOn(display, size, saved) {
+// still on this display; otherwise the left edge at mid-height for the control, or the
+// bottom-left corner for the camera, where Loom keeps its own.
+function placeOn(display, size, saved, corner = false) {
   const area = display.workArea;
   const inside =
     saved &&
@@ -27,11 +41,13 @@ function placeOn(display, size, saved) {
     saved.x + size.width <= area.x + area.width &&
     saved.y + size.height <= area.y + area.height;
   return inside
-    ? { x: saved.x, y: saved.y }
-    : {
-        x: area.x + 16,
-        y: Math.round(area.y + (area.height - size.height) / 2),
-      };
+    ? { x: Math.round(saved.x), y: Math.round(saved.y) }
+    : corner
+      ? { x: area.x + 24, y: area.y + area.height - size.height - 24 }
+      : {
+          x: area.x + 16,
+          y: Math.round(area.y + (area.height - size.height) / 2),
+        };
 }
 
-module.exports = { safeDisplay, placeOn };
+module.exports = { safeDisplay, cameraDisplay, placeOn };

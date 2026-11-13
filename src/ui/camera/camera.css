@@ -1,0 +1,84 @@
+/* The floating camera: a round picture, with its size choices under the pointer. */
+html:has(body.camera),
+body.camera,
+body.camera #root {
+  background: transparent;
+}
+body.camera {
+  overflow: hidden;
+}
+.cam {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #17171c;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.92);
+  cursor: grab;
+}
+.cam:active {
+  cursor: grabbing;
+}
+.cam video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* as in a mirror */
+  pointer-events: none;
+}
+.cam-note {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0 18%;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: var(--t-label);
+  text-align: center;
+  pointer-events: none;
+}
+.cam-sizes {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(22, 22, 26, 0.72);
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.cam:hover .cam-sizes {
+  opacity: 1;
+}
+.cam-sizes button {
+  padding: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  background: none;
+}
+.cam-sizes button.on {
+  background: #fff;
+}
+.cam-sizes button[data-size='s'] {
+  width: 8px;
+  height: 8px;
+}
+.cam-sizes button[data-size='m'] {
+  width: 11px;
+  height: 11px;
+}
+.cam-sizes button[data-size='l'] {
+  width: 14px;
+  height: 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cam-sizes {
+    transition: none;
+  }
+}

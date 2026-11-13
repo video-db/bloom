@@ -300,9 +300,9 @@ function createWindows({
     },
     roleOf,
     // Another window of the app, with the same isolation and navigation rules.
-    surface(name, options) {
+    surface(name, options, loadOptions = {}) {
       const window = new BrowserWindow({ ...options, webPreferences });
-      load(window, name);
+      load(window, name, loadOptions);
       return window;
     },
     outOfSight,

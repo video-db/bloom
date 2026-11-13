@@ -1,7 +1,12 @@
-// Where the floating control may sit so that it is not in the recording.
+// Where the floating control may sit so that it is not in the recording, and where the
+// camera picture goes so that it is.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { safeDisplay, placeOn } = require('../main/float-placement');
+const {
+  safeDisplay,
+  cameraDisplay,
+  placeOn,
+} = require('../main/float-placement');
 
 const display = (id, x = 0) => ({
   id,
@@ -56,5 +61,37 @@ test('it opens on the left edge at mid-height, or where it was last put on that 
     placeOn(two[1], size, { x: 700, y: 300 }),
     { x: 1456, y: 353 },
     'a saved spot on the other display is not used',
+  );
+});
+
+test('the camera picture goes on the display being recorded, bottom left', () => {
+  assert.equal(
+    cameraDisplay(recording({ screen: 'display:2' }), two, two[0]),
+    two[1],
+  );
+  assert.equal(
+    cameraDisplay(recording({ screen: 'display:77' }), two, two[0]),
+    two[0],
+    'an unknown display falls back to the main one',
+  );
+  assert.equal(
+    cameraDisplay(
+      recording({ screen: 'display:2', window: 'window:a' }),
+      two,
+      two[0],
+    ),
+    two[0],
+    'a window recording has no display of its own',
+  );
+  assert.equal(cameraDisplay(recording({}), [], null), null);
+  const size = { width: 200, height: 200 };
+  assert.deepEqual(placeOn(two[1], size, { x: -1, y: -1 }, true), {
+    x: 1464,
+    y: 676,
+  });
+  assert.deepEqual(
+    placeOn(two[0], size, { x: 300.4, y: 200.6 }, true),
+    { x: 300, y: 201 },
+    'where it was dragged to, in whole pixels',
   );
 });

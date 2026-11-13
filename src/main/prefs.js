@@ -5,6 +5,8 @@ const DEFAULTS = {
   onboardingComplete: false,
   appearance: 'system', // system | light | dark
   floatingControl: true, // show the recording control on screen while recording
+  camSize: 'm', // the floating camera's size: s | m | l
+  camAt: { x: -1, y: -1 }, // where the camera picture was last dragged to
   floatAt: { x: -1, y: -1 }, // where the control was last dragged to; -1 means not yet
   openAtLogin: true, // a menu-bar app that is gone after a restart is confusing; setup shows the switch
   defaultMic: true,
@@ -23,6 +25,7 @@ const DEFAULTS = {
 
 const CHOICES = {
   appearance: ['system', 'light', 'dark'],
+  camSize: ['s', 'm', 'l'],
   nudgeMinutes: [0, 30, 45, 60],
 };
 
@@ -42,7 +45,7 @@ function createPrefs(file) {
   function valid(key, value) {
     if (!Object.hasOwn(DEFAULTS, key)) return false;
     if (CHOICES[key]) return CHOICES[key].includes(value);
-    if (key === 'floatAt')
+    if (key === 'floatAt' || key === 'camAt')
       return !!value && Number.isFinite(value.x) && Number.isFinite(value.y);
     return typeof value === typeof DEFAULTS[key];
   }

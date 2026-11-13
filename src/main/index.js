@@ -100,6 +100,18 @@ function start() {
     surface: windows.surface,
     prefs,
     isQuitting: () => quitting,
+    still: !real,
+    // macOS asks the first time; after a refusal only System Settings can change it.
+    allowCamera: async () =>
+      !real ||
+      process.platform !== 'darwin' ||
+      systemPreferences.askForMediaAccess('camera'),
+    cameraRefused() {
+      engine.command('setCamera', { value: false });
+      engine.notice?.(
+        'Bloom cannot use the camera. Allow it in System Settings, under Privacy & Security, Camera.',
+      );
+    },
   });
   notifications = createNotifications({ engine, prefs, windows });
   shortcuts = createShortcuts({ engine, windows, notifications, prefs });
@@ -236,4 +248,5 @@ global.__bloom = {
   hasTray: () => tray.isAvailable(),
   getFixture: () => (!app.isPackaged ? fixture : undefined),
   floatingControlShowing: () => floating.isShowing(),
+  floatingCameraShowing: () => floating.cameraShowing(),
 };

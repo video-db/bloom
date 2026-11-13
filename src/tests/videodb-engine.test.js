@@ -749,6 +749,47 @@ test('a recorded window can be switched and hidden without stopping', async (t) 
   assert.equal(f.engine.getState().windowHidden, false);
 });
 
+test('the camera picture can be turned on and off at any time', async (t) => {
+  const f = await setup(t);
+  await f.command('setCamera', { value: true });
+  assert.equal(f.engine.getState().sources.camera, true);
+  await f.command('start');
+  assert.equal(f.engine.getState().sources.camera, true, 'kept by a start');
+  assert.ok(
+    !f.calls.some(
+      ([name, arg]) => name === 'start' && /camera/.test(JSON.stringify(arg)),
+    ),
+    'the camera is not a recorder source',
+  );
+  await f.command('setCamera', { value: false });
+  assert.equal(f.engine.getState().sources.camera, false, 'while recording');
+  await f.command('setCamera', { value: 'yes' });
+  assert.equal(f.engine.getState().sources.camera, false, 'only on or off');
+});
+
+test('a mute waits for a pause or resume that is on its way', async (t) => {
+  const f = await setup(t);
+  await f.command('start');
+  await f.command('setMuted', { key: 'mic', value: true });
+  // The whole pause leaves the muted microphone alone: it is paused already.
+  await f.command('pause');
+  assert.deepEqual(f.calls.at(-1), ['pause', ['screen']]);
+  // Resume and unmute pressed together: the unmute is not lost into a wrong state.
+  const resumed = f.command('resume');
+  const unmuted = f.command('setMuted', { key: 'mic', value: false });
+  await Promise.all([resumed, unmuted]);
+  const { muted, phase } = f.engine.getState();
+  assert.equal(phase, 'recording');
+  const resumedTracks = f.calls
+    .filter(([name]) => name === 'resume')
+    .flatMap(([, tracks]) => tracks);
+  assert.equal(
+    resumedTracks.includes('mic'),
+    !muted.mic,
+    'what is shown matches what the recorder was told',
+  );
+});
+
 test('one sound source can be muted while the recording carries on', async (t) => {
   const f = await setup(t);
   await f.command('setSource', { key: 'systemAudio', value: true });

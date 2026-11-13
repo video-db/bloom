@@ -38,6 +38,7 @@ const sources = (value) =>
 
 // Commands that are not listed here take no arguments.
 const valid = {
+  setCamera: (a) => typeof a.value === 'boolean',
   setSource: (a) =>
     (a.key === 'screen' &&
       ['Display 1', 'Display 2 (sample)'].includes(a.value)) ||

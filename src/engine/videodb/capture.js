@@ -241,7 +241,8 @@ function createCapture(
       if (transitioning || ctx.get().phase !== 'recording') return;
       transitioning = true;
       try {
-        await recorder.pause(tracks());
+        // A muted source is paused already; asking for it again could fail the whole pause.
+        await recorder.pause(audible());
         pausedFrom = sinceBegan();
         freeze();
         ctx.set({ phase: 'paused' });
@@ -281,14 +282,28 @@ function createCapture(
     // Silence one sound source while the recording carries on, or bring it back.
     async setMuted({ key, value }) {
       const state = ctx.get();
-      if (!['recording', 'paused'].includes(state.phase)) return;
+      // Not while a pause or resume is on its way: it decides which sources run from the
+      // mute state, and a change in the middle would leave the two disagreeing.
+      if (transitioning || !['recording', 'paused'].includes(state.phase))
+        return;
       if (!state.sources[key] || !!state.muted[key] === value) return;
-      // While everything is paused the source is already silent; resume will respect this.
-      if (state.phase === 'recording')
-        await (value
-          ? recorder.pause([TRACK[key]])
-          : recorder.resume([TRACK[key]]));
-      ctx.set({ muted: { ...ctx.get().muted, [key]: value } });
+      transitioning = true;
+      try {
+        // While everything is paused the source is already silent; resume will respect this.
+        if (state.phase === 'recording')
+          await (value
+            ? recorder.pause([TRACK[key]])
+            : recorder.resume([TRACK[key]]));
+        ctx.set({ muted: { ...ctx.get().muted, [key]: value } });
+      } catch {
+        ctx.set({
+          notice: value
+            ? 'That source could not be muted. It is still being recorded.'
+            : 'That source could not be unmuted.',
+        });
+      } finally {
+        transitioning = false;
+      }
     },
     mark({ text = '' }) {
       if (ctx.get().phase !== 'recording') return;

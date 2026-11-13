@@ -196,7 +196,6 @@ function createVideoDBEngine({
                 .filter((key) => !sourceOverrides.has(key))
                 .map((key) => [key, defaults[key]]),
             ),
-            camera: false,
           },
         });
     },
@@ -224,6 +223,11 @@ function createVideoDBEngine({
           },
         });
       }
+    },
+    // The camera is Bloom's own picture on screen, not a recorder source, so it can be
+    // turned on or off at any time, recording or not.
+    setCamera({ value }) {
+      ctx.set({ sources: { ...state.sources, camera: value } });
     },
     retryRecording: ({ id }) => jobs.retry(id),
     resumeUpload: ({ id }) => jobs.retry(id),

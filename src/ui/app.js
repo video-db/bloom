@@ -4,6 +4,7 @@ import { panel } from './panel/panel.js';
 import { createOnboarding } from './onboarding/index.js';
 import { workspace } from './workspace/workspace.js';
 import { control } from './control/control.js';
+import { mountCamera } from './camera/bubble.js';
 import { releasePlayer, mountPlayer } from './workspace/player.js';
 import { bindActions } from './actions.js';
 
@@ -22,6 +23,8 @@ let state = null,
   tab = 'summary'; // the open recording's tab
 // Onboarding runs its own flow; the panel and workspace share the renderer below.
 const firstRun = surface === 'onboarding' ? createOnboarding(root) : null;
+// The camera picture is put up once and never redrawn, so the camera stays open.
+const cameraView = surface === 'camera' ? mountCamera(root) : null;
 
 function render(force = false) {
   if (!state) return;
@@ -126,6 +129,7 @@ window.bloom.onView(go);
 const receive = (next) => {
   if (!next) return;
   if (firstRun) return firstRun.receive(next);
+  if (cameraView) return cameraView.receive(next);
   state = next;
   render();
 };

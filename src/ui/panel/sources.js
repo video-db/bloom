@@ -1,4 +1,5 @@
-// What a recording will capture, as one row of icons: display, microphone, system audio.
+// What a recording will capture, as one row of icons: display, microphone, system audio,
+// and the camera picture.
 // An icon turns its source on or off. Where there is a choice (more than one display) a
 // small arrow beside the icon opens it. The display is always on.
 import { esc } from '../shared/dom.js';
@@ -93,6 +94,23 @@ function microphone(s, locked) {
       locked,
     })}
   </span>`;
+}
+
+// The camera is Bloom's own round picture on screen rather than a recorder source, so it
+// can be turned on or off at any time, during a recording too.
+function camera(s) {
+  const on = s.sources.camera;
+  const state = on ? 'On' : 'Off';
+  return /* HTML */ `<button
+    class="capture-option ${on ? 'on' : ''}"
+    data-command="setCamera"
+    data-flag="${!on}"
+    aria-pressed="${on}"
+    aria-label="Camera: ${state}"
+    title="Camera: ${state}"
+  >
+    ${icon('camera')}${on ? '' : '<span class="source-slash"></span>'}
+  </button>`;
 }
 
 const displayTiles = (s) =>
@@ -252,11 +270,16 @@ export function sources(s, { locked = false } = {}) {
       ${display(s, locked)}<span class="source-divider"></span>${microphone(
         s,
         locked,
-      )}${systemAudio}
+      )}${systemAudio}${camera(s)}
     </div>
     ${
       chosenWindow(s)
         ? `<p class="source-what">Window · <b>${esc(chosenWindow(s).app)} · ${esc(chosenWindow(s).title)}</b></p>`
+        : ''
+    }
+    ${
+      s.sources.camera && s.sources.window
+        ? '<p class="soft tray-small" role="status">The camera is not part of a window recording.</p>'
         : ''
     }
     ${open === 'display' ? displayChoices(s) : ''}

@@ -31,6 +31,10 @@ function createSources(ctx) {
       overrides.add(key);
       set({ sources: { ...get().sources, [key]: value } });
     },
+    // The camera picture can be turned on or off at any time.
+    setCamera({ value }) {
+      set({ sources: { ...get().sources, camera: value } });
+    },
     checkPermission() {
       set({ permissions: permit('screen', true), problem: null });
     },

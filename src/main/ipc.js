@@ -54,7 +54,7 @@ function registerIpc({
   ipcMain.on('bloom:command', (event, name, args) => {
     const from = BrowserWindow.fromWebContents(event.sender);
     const role = roleOf(from);
-    if (!role) return;
+    if (!role || role === 'camera') return; // the camera window only shows a picture
     const previousSession = engine.getState().sessionId;
     engine.command(name, args);
     if (
@@ -108,6 +108,12 @@ function registerIpc({
     }
     if (name === 'float-size' && role === 'control')
       floating.resize(args.height);
+    if (role === 'camera') {
+      if (name === 'camera-drag') floating.dragCamera(args.dx, args.dy);
+      if (name === 'camera-drop') floating.dropCamera();
+      if (name === 'camera-size') floating.resizeCamera(args.size);
+      return;
+    }
     if (
       name === 'panel-height' &&
       role === 'panel' &&

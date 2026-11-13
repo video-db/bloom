@@ -36,9 +36,17 @@ function createLocalRecorder({
       fs.copyFileSync(journalFile, `${journalFile}.unreadable-${Date.now()}`);
     }
   }
+  // A capture that was under way when Bloom last closed has no finished file to send.
+  for (const [id, entry] of Object.entries(entries))
+    if (!entry.path && entry.stage !== 'failed')
+      entries[id] = { ...entry, stage: 'failed' };
   const save = () => {
-    if (journalFile)
+    if (!journalFile) return;
+    try {
       atomicWrite(journalFile, JSON.stringify({ version: 1, entries }));
+    } catch {
+      // The list still holds in memory for this run; the recording itself is not at risk.
+    }
   };
   const update = (recordingId, patch) => {
     entries = {
@@ -72,13 +80,18 @@ function createLocalRecorder({
   // Send a finished file to VideoDB. One attempt at a time per recording.
   function send(recordingId) {
     const entry = entries[recordingId];
-    if (!entry?.path)
+    if (!entry?.path) {
+      if (entry) {
+        update(recordingId, { stage: 'failed' });
+        events.emit('event', 'recording-relay-failed', identity(recordingId));
+      }
       return Promise.reject(
         new ServiceError(
           'not-found',
-          'This recording’s file is not on this Mac any more.',
+          'This recording’s file is not on this Mac, so it cannot be recovered.',
         ),
       );
+    }
     if (entry.stage === 'complete')
       return Promise.resolve(completion(recordingId));
     if (sending.has(recordingId)) return sending.get(recordingId);
@@ -161,6 +174,11 @@ function createLocalRecorder({
         }));
     },
     async start({ sessionId, channels, title }) {
+      if (!scope())
+        throw new ServiceError(
+          'signed-out',
+          'Connect your VideoDB account first.',
+        );
       const started = await request(
         () =>
           ensure().startLocalRecording({
@@ -180,21 +198,45 @@ function createLocalRecorder({
         createdAt: Date.now(),
       });
     },
-    // Finalises the file, says so, and starts sending it. Resolves once the file is safe.
+    // Finalises the file, says so, and starts sending it. Resolves once capture has ended:
+    // with the file safe, or with the recording marked failed if it could not be finished.
+    // Throws only while capture may still be running, so Stop can be tried again.
     async stop() {
-      const result = await request(() => ensure().stopLocalRecording(), {
-        timeoutMs: 160000,
-        mutation: true,
-      });
-      const recordingId = active?.recordingId || result.recordingId;
+      const recordingId = active?.recordingId;
+      let result;
+      let ended = false; // read from the SDK's own error, before it is made safe to show
+      try {
+        result = await request(
+          async () => {
+            try {
+              return await ensure().stopLocalRecording();
+            } catch (error) {
+              ended =
+                error?.code === 'FINALIZE_FAILED' ||
+                /no standalone recording is active/i.test(
+                  String(error?.message),
+                );
+              throw error;
+            }
+          },
+          { timeoutMs: 160000, mutation: true },
+        );
+      } catch (error) {
+        if (!ended || !recordingId) throw error;
+        // The engine learns of it when it waits for this recording, once Stop has returned.
+        active = null;
+        update(recordingId, { stage: 'failed' });
+        return;
+      }
+      const id = recordingId || result.recordingId;
       active = null;
-      update(recordingId, { path: result.path, stage: 'ready' });
+      update(id, { path: result.path, stage: 'ready' });
       events.emit('event', 'local-recording-ready', {
-        ...identity(recordingId),
+        ...identity(id),
         stage: 'processing',
         metadata: { duration_seconds: result.durationSeconds },
       });
-      send(recordingId).catch(() => {}); // the outcome arrives as an event
+      send(id).catch(() => {}); // the outcome arrives as an event
     },
     pause: (tracks) =>
       request(() => ensure().pauseTracks(tracks), { mutation: true }),
@@ -207,7 +249,7 @@ function createLocalRecorder({
           'not-found',
           'This recording was made by an earlier version of Bloom and cannot be recovered here.',
         );
-      update(recordingId, { stage: 'ready' });
+      if (entries[recordingId].path) update(recordingId, { stage: 'ready' });
       send(recordingId).catch(() => {});
     },
     // Resolves when the recording is in VideoDB; starts sending it if nothing is.
@@ -221,12 +263,18 @@ function createLocalRecorder({
       if (entries[recordingId].stage === 'failed')
         throw new ServiceError('unavailable', 'Processing did not finish.');
       // Still capturing or being finalised: its turn comes when Stop has the file.
+      if (!entries[recordingId].path && active?.recordingId !== recordingId)
+        throw new ServiceError('unavailable', 'Processing did not finish.');
       if (!entries[recordingId].path)
         return new Promise((resolve, reject) => {
           const off = this.onEvent((name, payload) => {
             if (payload?.recordingId !== recordingId) return;
             if (name === 'processing-complete') resolve(payload);
-            else if (name === 'recording-relay-failed')
+            else if (
+              ['recording-relay-failed', 'local-recording-failed'].includes(
+                name,
+              )
+            )
               reject(
                 new ServiceError('unavailable', 'Processing did not finish.'),
               );
@@ -237,9 +285,14 @@ function createLocalRecorder({
       return send(recordingId);
     },
     async shutdown() {
-      if (client) await client.shutdown();
-      client = null;
-      active = null;
+      try {
+        // A capture still running is finished first, so its file is on the list.
+        if (active) await this.stop().catch(() => {});
+        if (client) await client.shutdown();
+      } finally {
+        client = null;
+        active = null;
+      }
     },
     // Quitting with a recorder that has not answered its shutdown: end its process so it
     // cannot keep running without Bloom. The SDK has no public call for this, so this is the

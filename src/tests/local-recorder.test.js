@@ -14,6 +14,7 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
   const calls = [];
   const uploads = []; // one deferred per upload attempt
   let serial = 0;
+  let stopError = null;
   class Client extends EventEmitter {
     constructor(options) {
       super();
@@ -40,6 +41,11 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
     }
     async stopLocalRecording() {
       calls.push(['stop']);
+      if (stopError) {
+        const error = stopError;
+        stopError = null;
+        throw error;
+      }
       return {
         recordingId: `rec-${serial}`,
         path: `/private/media/rec-${serial}.mp4`,
@@ -71,7 +77,16 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
   });
   const events = [];
   recorder.onEvent((name, payload) => events.push([name, payload]));
-  return { recorder, service, calls, uploads, events };
+  return {
+    recorder,
+    service,
+    calls,
+    uploads,
+    events,
+    failStop(error) {
+      stopError = error;
+    },
+  };
 }
 const tempJournal = (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bloom-local-recorder-'));
@@ -213,4 +228,65 @@ test('a recording still being captured waits for its file, and pause reaches the
   await f.recorder.stop();
   f.uploads[0].resolve({ id: 'm-3' });
   assert.equal((await waiting).result.videoId, 'm-3');
+});
+
+// Found in review on 14 Nov: states a recording could be stuck in.
+test('a capture that ended but could not be finished is a failed recording, not a stuck Stop', async () => {
+  const f = fixture();
+  await f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
+  f.failStop(
+    Object.assign(new Error('Finalization failed; output retained'), {
+      code: 'FINALIZE_FAILED',
+    }),
+  );
+  await f.recorder.stop(); // does not throw: capture is over
+  assert.equal((await f.recorder.recover())[0].stage, 'failed');
+  await assert.rejects(f.recorder.wait({ sessionId: 'rec-a' }));
+  await assert.rejects(
+    f.recorder
+      .relay('rec-1')
+      .then(() => f.recorder.wait({ recordingId: 'rec-1' })),
+  );
+  assert.equal(f.uploads.length, 0, 'there is no file to send');
+});
+
+test('a Stop that may not have reached the recorder still throws, so it can be tried again', async () => {
+  const f = fixture();
+  await f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
+  f.failStop(new Error('Command timeout'));
+  await assert.rejects(f.recorder.stop());
+  await f.recorder.stop(); // the second try reaches the recorder
+  assert.equal(f.events.at(-1)[0], 'local-recording-ready');
+});
+
+test('a capture cut short by a crash is failed at the next launch, not processing forever', async (t) => {
+  const journalFile = tempJournal(t);
+  const first = fixture({ journalFile });
+  await first.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
+  // Bloom dies here: no Stop, no file.
+  const second = fixture({ journalFile });
+  assert.equal((await second.recorder.recover())[0].stage, 'failed');
+  await assert.rejects(second.recorder.wait({ recordingId: 'rec-1' }));
+});
+
+test('quitting while capturing finishes the file first, and no account means no recording', async (t) => {
+  const journalFile = tempJournal(t);
+  const f = fixture({ journalFile });
+  await f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
+  await f.recorder.shutdown();
+  assert.deepEqual(
+    f.calls.slice(-2).map(([name]) => name),
+    ['stop', 'shutdown'],
+  );
+  assert.match(
+    fs.readFileSync(journalFile, 'utf8'),
+    /"path":"\/private\/media\/rec-1\.mp4"/,
+  );
+
+  const signedOut = fixture();
+  signedOut.service.scopeId = null;
+  await assert.rejects(
+    signedOut.recorder.start({ sessionId: 'rec-b', channels, title: 'Demo' }),
+    { code: 'signed-out' },
+  );
 });

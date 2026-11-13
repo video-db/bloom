@@ -2,8 +2,8 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { createMockEngine } = require('../engine/mock');
-const { createPrefs } = require('../prefs');
+const { createSampleEngine } = require('../engine/sample');
+const { createPrefs } = require('../main/prefs');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 test('preferences persist, reject invalid values, and do not claim a failed save', () => {
   const dir = fs.mkdtempSync(
@@ -25,7 +25,7 @@ test('preferences persist, reject invalid values, and do not claim a failed save
   }
 });
 test('permission gate, next-session defaults, reversible trim and processing retry', async () => {
-  const e = createMockEngine();
+  const e = createSampleEngine();
   try {
     e.command('setPermission', { key: 'screen', value: false });
     e.command('start');
@@ -61,7 +61,7 @@ test('permission gate, next-session defaults, reversible trim and processing ret
 });
 
 test('processing completion updates deleted recordings before undo', async () => {
-  const engine = createMockEngine();
+  const engine = createSampleEngine();
   try {
     engine.command('retryRecording', { id: 'r4' });
     engine.command('deleteRecording', { id: 'r4' });
@@ -77,7 +77,7 @@ test('processing completion updates deleted recordings before undo', async () =>
 });
 
 test('failed processing retries the original trim and recording snapshot', async () => {
-  const engine = createMockEngine();
+  const engine = createSampleEngine();
   try {
     engine.command('setPurpose', { text: 'Retain my title' });
     engine.command('start');
@@ -98,7 +98,7 @@ test('failed processing retries the original trim and recording snapshot', async
 });
 
 test('source defaults do not overwrite per-session source choices', () => {
-  const engine = createMockEngine();
+  const engine = createSampleEngine();
   try {
     engine.command('setSource', { key: 'mic', value: false });
     engine.command('configure', {
@@ -117,7 +117,7 @@ test('source defaults do not overwrite per-session source choices', () => {
 });
 
 test('malformed engine commands are rejected without changing state', () => {
-  const engine = createMockEngine();
+  const engine = createSampleEngine();
   try {
     const before = JSON.stringify(engine.getState());
     for (const [command, args] of [
@@ -248,7 +248,7 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
   ipcMain.handle = () => {};
   const nativeTheme = new EventEmitter();
   nativeTheme.shouldUseDarkColors = false;
-  const values = { ...require('../prefs').DEFAULTS, ...prefOverrides };
+  const values = { ...require('../main/prefs').DEFAULTS, ...prefOverrides };
   const electron = {
     app,
     BrowserWindow: Window,
@@ -271,12 +271,13 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
     Menu: { buildFromTemplate: (x) => x, setApplicationMenu() {} },
     dialog: { showMessageBox: () => Promise.resolve({ response: 0 }) },
   };
+  const mainDir = path.resolve(__dirname, '../main');
   const context = {
     require: (name) =>
       name === 'electron'
         ? electron
-        : name === './engine'
-          ? { createEngine: createMockEngine }
+        : name === '../engine'
+          ? { createEngine: createSampleEngine }
           : name === './prefs'
             ? {
                 createPrefs: () => ({
@@ -289,10 +290,12 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
                   },
                 }),
               }
-            : require(name),
-    __dirname: path.resolve(__dirname, '..'),
+            : name.startsWith('./')
+              ? loadMain(name)
+              : require(name),
+    __dirname: mainDir,
     process: {
-      argv: ['node', 'main.js', '--fresh', '--skip-onboarding'],
+      argv: ['node', 'main/index.js', '--fresh', '--skip-onboarding'],
       env: {},
       platform: 'darwin',
     },
@@ -301,10 +304,24 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
     console,
   };
   context.global = context;
-  vm.runInNewContext(
-    fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8'),
-    context,
-  );
+  vm.createContext(context);
+  // The main process is several modules. Each runs in this one context with its own module object,
+  // so they all see the stubbed Electron and process, and every harness gets fresh copies.
+  const loaded = new Map();
+  function loadMain(name) {
+    const file = path.join(mainDir, `${name}.js`);
+    if (!loaded.has(file)) {
+      const module = { exports: {} };
+      loaded.set(file, module);
+      vm.runInContext(
+        `(function (module, exports) {${fs.readFileSync(file, 'utf8')}\n})`,
+        context,
+        { filename: file },
+      )(module, module.exports);
+    }
+    return loaded.get(file).exports;
+  }
+  loadMain('./index');
   await new Promise((resolve) => setImmediate(resolve));
   return {
     api: context.__bloomNext,
@@ -500,7 +517,7 @@ test('versions are immutable engine snapshots and survive closing and reopening 
 });
 
 test('version recipes store validated configuration without changing the recording status', () => {
-  const engine = createMockEngine();
+  const engine = createSampleEngine();
   try {
     const value = {
       text: 'Original words',
@@ -596,7 +613,7 @@ test('main navigation can reopen while an earlier native window is still closing
 });
 
 test('renaming and deleting versions preserve the original, draft and other versions', () => {
-  const engine = createMockEngine();
+  const engine = createSampleEngine();
   try {
     const value = {
       text: 'Editable cut',
@@ -673,7 +690,7 @@ test('renaming and deleting versions preserve the original, draft and other vers
 });
 
 test('search-cut provenance is a bounded immutable snapshot', () => {
-  const engine = createMockEngine();
+  const engine = createSampleEngine();
   try {
     const value = {
       text: 'Search cut',

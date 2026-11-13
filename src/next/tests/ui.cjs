@@ -16,7 +16,7 @@ fs.mkdirSync(evidence, { recursive: true });
   const app = await _electron.launch({
     executablePath: electronPath,
     args: [
-      path.join(workspace, 'src/next/main.js'),
+      path.join(workspace, 'src/next/main/index.js'),
       '--fresh',
       '--skip-onboarding',
       '--open-main',

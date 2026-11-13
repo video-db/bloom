@@ -1,3 +1,5 @@
+// Sample content only: the recordings and searchable moments the library starts with,
+// and the lines a sample session "hears". None of it comes from a real capture.
 const recordings = [
   {
     id: 'r1',
@@ -112,4 +114,17 @@ recordings.push({
   trim: 0,
   chips: [],
 });
-module.exports = { recordings, moments };
+
+// Fed into the live transcript one line at a time while a sample session records.
+const script = [
+  'So I’m going to invite Priya to the workspace.',
+  'I’m in Team settings, on Members.',
+  'You can see we’ve got twelve of twelve seats used.',
+  'I click Invite member, type her email,',
+  'and when I press Send invite the dialog just closes.',
+  'Nothing happened. No error, no email.',
+  'Pending invites still says two.',
+  'I think it’s because we’re out of seats, and it should say so.',
+];
+
+module.exports = { recordings, moments, script };

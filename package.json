@@ -5,7 +5,7 @@
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
-    "next": "electron src/next/main.js",
+    "next": "electron src/next/main/index.js",
     "dist": "electron-builder",
     "pack": "electron-builder --dir"
   },

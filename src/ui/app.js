@@ -15,7 +15,8 @@ let state = null,
   previous = 'home', // where Settings goes back to
   drawn = '', // the view the page was last drawn for
   activeId = null,
-  browse = { filter: 'all', order: 'newest' }; // how Recordings is being looked at
+  browse = { filter: 'all', order: 'newest' }, // how Recordings is being looked at
+  tab = 'summary'; // the open recording's tab
 // Onboarding runs its own flow; the panel and workspace share the renderer below.
 const firstRun = surface === 'onboarding' ? createOnboarding(root) : null;
 
@@ -27,6 +28,7 @@ function render(force = false) {
     view,
     activeId,
     browse,
+    tab,
   });
   if (force || next !== shape) {
     const focused = root.contains(document.activeElement)
@@ -44,7 +46,9 @@ function render(force = false) {
       drawn === view ? root.querySelector('.view')?.scrollTop : 0;
     releasePlayer();
     root.innerHTML =
-      surface === 'panel' ? panel(state) : workspace(state, route(), browse);
+      surface === 'panel'
+        ? panel(state)
+        : workspace(state, route(), browse, tab);
     if (note !== undefined && root.querySelector('input[name="note"]'))
       root.querySelector('input[name="note"]').value = note;
     if (focusKey) {
@@ -102,6 +106,10 @@ bindActions(root, {
   state: () => state,
   browse,
   go,
+  setTab(name) {
+    tab = name;
+    render(true);
+  },
   render,
 });
 window.bloom.onView(go);

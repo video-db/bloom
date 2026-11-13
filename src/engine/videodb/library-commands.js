@@ -1,4 +1,5 @@
 const { newRecord } = require('./model');
+const { paragraphs } = require('./paragraphs');
 
 function createLibraryCommands(ctx, service) {
   async function refresh() {
@@ -55,7 +56,7 @@ function createLibraryCommands(ctx, service) {
         ctx.update(id, {
           transcript: transcript.text,
           transcriptStatus: transcript.status,
-          words: transcript.words,
+          paragraphs: paragraphs(transcript.words),
         });
     } catch (error) {
       if (scope === ctx.scope()) ctx.update(id, { transcriptStatus: 'error' });

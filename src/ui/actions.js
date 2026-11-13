@@ -7,7 +7,7 @@ import { confirmRecordingAction } from './workspace/dialogs.js';
 
 // state: () => latest app state. browse: how Recordings is looked at. go: change view.
 // render(force): redraw this window.
-export function bindActions(root, { state, browse, go, render }) {
+export function bindActions(root, { state, browse, go, setTab, render }) {
   root.addEventListener('click', async (event) => {
     const target = event.target.closest('button');
     if (!target || target.disabled) return;
@@ -56,6 +56,7 @@ export function bindActions(root, { state, browse, go, render }) {
         startAt(target.dataset.record, Number(target.dataset.at));
       go(`recording/${target.dataset.record}`);
     }
+    if (target.dataset.tab) setTab(target.dataset.tab);
     if (target.dataset.place) {
       // Recordings is Bloom's own collection; leave any other one being browsed.
       if (target.dataset.place === 'recordings')

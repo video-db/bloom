@@ -8,6 +8,7 @@
 - The API key is validated before saving and encrypted with the system keychain; sign-out is available from the menu and Settings.
 - Bundled HLS playback, confirmed rename, delete and download, a single-instance guard and a quit prompt while a recording is saving.
 - The main window is an app with a sidebar: Home, Recordings and Search, the account's VideoDB collections (others open read-only), and the credit balance. One recording opens alone, with its transcript as paragraphs with times.
+- A recording opens on its Summary: a few sentences, key points and action items, each with the time it comes from. New recordings are transcribed once uploaded (a setting, on by default).
 - `npm start` runs the app; `npm test` runs the automated tests.
 
 ### Removed

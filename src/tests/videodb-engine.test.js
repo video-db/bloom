@@ -101,10 +101,32 @@ test('Stop and relay acceptance do not imply playback; completion makes the same
   assert.equal(f.engine.getState().phase, 'finished');
   assert.equal(f.engine.getState().recordings.length, 1);
   assert.equal(f.engine.getState().result.id, id);
-  assert.equal(
-    f.engine.getState().recordings[0].transcriptStatus,
-    'not-requested',
-  );
+  // With the setting on (the default) a new recording is transcribed, then summarised.
+  await f.engine.whenIdle();
+  await flush();
+  const ready = f.engine.getState().recordings[0];
+  assert.equal(ready.transcriptStatus, 'ready');
+  assert.equal(ready.paragraphs.length, 2);
+  assert.equal(ready.summary.keyPoints[0].at, 0);
+  assert.equal(ready.summaryStatus, 'ready');
+});
+
+test('with automatic transcription off, a new recording is left untranscribed', async (t) => {
+  const f = await setup(t);
+  await f.command('configure', { sources: {}, autoTranscribe: false });
+  await f.command('start');
+  await f.command('stop');
+  f.recorder.finish();
+  await flush();
+  await f.engine.whenIdle();
+  const record = f.engine.getState().recordings[0];
+  assert.equal(record.status, 'ready');
+  assert.equal(record.transcriptStatus, 'not-requested');
+  assert.equal(record.summary, undefined);
+  assert.equal(f.calls.some(([name]) => name === 'summarise'), false);
+  // Asking for the transcript by hand still brings the summary with it.
+  await f.command('requestTranscript', { id: record.id });
+  assert.equal(f.engine.getState().recordings[0].summaryStatus, 'ready');
 });
 
 test('completion before the Stop response is not overwritten by a saving spinner', async (t) => {

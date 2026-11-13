@@ -215,11 +215,18 @@ fs.mkdirSync(evidence, { recursive: true });
       .getByRole('button', { name: 'Open recording', exact: true })
       .click();
     const main = await windowFor('workspace');
+    // A recording opens on its summary: a few sentences, key points and action items with times.
+    await main.locator('#summary .points').first().waitFor();
+    assert.deepEqual(await main.locator('.tab').allInnerTexts(), ['Summary', 'Transcript']);
+    assert.match(await main.locator('#summary').innerText(), /A short walk through two thoughts\./);
+    assert.deepEqual(await main.locator('#summary .ts').allInnerTexts(), ['0:00', '0:04']);
+    await main.screenshot({ path: path.join(evidence, `${theme}-summary.png`) });
+    await main.getByRole('tab', { name: 'Transcript' }).click();
     await main.locator('.para').first().waitFor();
     // The transcript reads as paragraphs, each starting with its time.
-    assert.equal(await main.locator('.para').count(), 2);
-    assert.deepEqual(await main.locator('.para .ts').allInnerTexts(), ['0:00', '0:04']);
-    assert.match(await main.locator('.para').first().innerText(), /Recorded words here\.$/);
+    assert.equal(await main.locator('#transcript .para').count(), 2);
+    assert.deepEqual(await main.locator('#transcript .ts').allInnerTexts(), ['0:00', '0:04']);
+    assert.match(await main.locator('#transcript .para').first().innerText(), /Recorded words here\.$/);
     assert.equal(
       await main.getByRole('button', { name: 'Edit', exact: true }).count(),
       0,

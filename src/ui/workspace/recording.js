@@ -4,6 +4,20 @@ import { esc, clock, button } from '../shared/dom.js';
 import { icon } from '../shared/icons.js';
 import { meta, status } from './format.js';
 import { transcript } from './transcript.js';
+import { summary } from './summary.js';
+
+// What can be done with a recording, as tabs. Adding one is an entry here and its view.
+export const TABS = [
+  { id: 'summary', label: 'Summary', view: summary },
+  { id: 'transcript', label: 'Transcript', view: transcript },
+];
+const tabs = (current) =>
+  /* HTML */ `<div class="tabs" role="tablist">
+    ${TABS.map(
+      (t) =>
+        `<button role="tab" class="tab ${t.id === current ? 'on' : ''}" aria-selected="${t.id === current}" data-tab="${t.id}">${t.label}</button>`,
+    ).join('')}
+  </div>`;
 
 const head = (r) =>
   /* HTML */ `<header class="page-head">
@@ -147,7 +161,8 @@ const back = (s) =>
     >
   </button>`;
 
-export function recording(s, id) {
+// tab: which of TABS is showing.
+export function recording(s, id, tab) {
   const r =
     s.recordings.find((item) => item.id === id) ||
     s.browsing?.recordings.find((item) => item.id === id);
@@ -159,10 +174,11 @@ export function recording(s, id) {
         <p>It may have been deleted. Choose another from Recordings.</p>
       </div>
     </section>`;
+  const current = TABS.find((t) => t.id === tab) || TABS[0];
   return /* HTML */ `<section class="page recording">
-    ${back(s)}${head(r)}${notices(r)}
+    ${back(s)}${head(r)}${notices(r)}${tabs(current.id)}
     <div class="recording-columns">
-      ${transcript(r)}
+      ${current.view(r)}
       <aside class="recording-side" aria-label="Playback and marks">
         ${player(r)}${knowledge(r, s.account.status === 'signed-in')}${marks(r)}
       </aside>

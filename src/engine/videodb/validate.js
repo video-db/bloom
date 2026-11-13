@@ -28,7 +28,8 @@ const commandArgs = {
       ([key, value]) =>
         ['mic', 'systemAudio', 'camera'].includes(key) &&
         typeof value === 'boolean',
-    ),
+    ) &&
+    (a.autoTranscribe === undefined || typeof a.autoTranscribe === 'boolean'),
   setPurpose: (a) => text(a.text, 180),
   mark: (a) => a.text === undefined || text(a.text, 500),
   openRecording: (a) => id(a.id),
@@ -39,6 +40,7 @@ const commandArgs = {
   deleteRecording: (a) => id(a.id),
   reconcileRecording: (a) => id(a.id),
   requestTranscript: (a) => id(a.id),
+  summarise: (a) => id(a.id),
   retryRecording: (a) => id(a.id),
   resumeUpload: (a) => id(a.id),
 };

@@ -51,6 +51,11 @@ const recording = (s) =>
         toggle(s, 'defaultSystemAudio', 'Include system audio by default'),
       )}
       ${row(
+        'Transcribe new recordings',
+        'Once a recording has uploaded, so it can be read, summarised and searched. Uses VideoDB credits.',
+        toggle(s, 'autoTranscribe', 'Transcribe new recordings'),
+      )}
+      ${row(
         'Shortcuts',
         'Start or stop <kbd>⇧⌘R</kbd> · Mark a moment <kbd>⇧⌘M</kbd>',
         '<span class="soft">Fixed for now</span>',

@@ -39,7 +39,11 @@ function fixture(options = {}) {
       calls.push(['transcript']);
       return {
         text: 'Hello',
-        wordTimestamps: [{ word: 'Hello', start: 0, end: 1 }],
+        // The shape VideoDB returns: the word is `text`, and "-" marks a silence.
+        wordTimestamps: [
+          { text: '-', start: 0, end: 0.3 },
+          { text: 'Hello', start: 0.3, end: 1, speaker: 'A' },
+        ],
       };
     },
     async indexSpokenWords() {
@@ -290,7 +294,11 @@ test('transcript fetch is read-only, preserves word timing, and rejects service 
   const { service, item, calls } = fixture();
   await login(service);
   const result = await service.transcript('video-1');
-  assert.deepEqual(result.words, [{ word: 'Hello', start: 0, end: 1 }]);
+  assert.deepEqual(
+    result.words,
+    [{ word: 'Hello', start: 0.3, end: 1 }],
+    'the silence marker is dropped',
+  );
   assert.equal(
     calls.some(([name]) => name === 'index'),
     false,

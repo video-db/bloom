@@ -6,6 +6,7 @@ const { createJobs } = require('./jobs');
 const { createAccess } = require('./access');
 const { createLibraryCommands } = require('./library-commands');
 const { createExploreCommands } = require('./explore-commands');
+const { createUnderstandCommands } = require('./understand-commands');
 const { validCommand } = require('./validate');
 
 // One owner for app state. SDK, disk and UI code never share mutable state objects.
@@ -25,6 +26,7 @@ function createVideoDBEngine({
   let scopeId = null;
   let disposed = false;
   let defaults = { mic: true, systemAudio: false };
+  let autoTranscribe = true; // transcribe a new recording once it has uploaded
   const sourceOverrides = new Set();
   const ctx = {
     get: () => state,
@@ -99,8 +101,16 @@ function createVideoDBEngine({
       }
     },
   };
-  const jobs = createJobs(ctx, { service, recorder });
+  const jobs = createJobs(ctx, {
+    service,
+    recorder,
+    // A new recording is ready to play: transcribe and summarise it if the person wants that.
+    onReady: (id) => {
+      if (autoTranscribe) ctx.run(() => commands.requestTranscript({ id }));
+    },
+  });
   const explore = createExploreCommands(ctx, service);
+  const understand = createUnderstandCommands(ctx, service);
   const ownLibrary = createLibraryCommands(ctx, service);
   // Refreshing the library also refreshes what the sidebar shows about the account.
   const library = {
@@ -123,6 +133,16 @@ function createVideoDBEngine({
     ...library.commands,
     refresh: library.refresh,
     ...explore.commands,
+    ...understand.commands,
+    // Opening a recording, or getting its transcript, also makes its summary when it can.
+    async openRecording({ id }) {
+      await ownLibrary.open(id);
+      await understand.ensure(id);
+    },
+    async requestTranscript({ id }) {
+      await ownLibrary.commands.requestTranscript({ id });
+      await understand.ensure(id);
+    },
     ...capture.commands,
     setPurpose({ text }) {
       if (between()) ctx.set({ purpose: text });
@@ -142,7 +162,8 @@ function createVideoDBEngine({
       sourceOverrides.add(key);
       ctx.set({ sources: { ...state.sources, [key]: value } });
     },
-    configure({ sources }) {
+    configure({ sources, autoTranscribe: auto }) {
+      if (auto !== undefined) autoTranscribe = auto;
       defaults = { ...defaults, ...sources };
       if (between())
         ctx.set({

@@ -2,7 +2,7 @@ const { randomUUID } = require('node:crypto');
 const { newRecord } = require('./model');
 const { ServiceError } = require('./errors');
 
-function createJobs(ctx, { service, recorder }) {
+function createJobs(ctx, { service, recorder, onReady = () => {} }) {
   const waiting = new Set();
   const completing = new Set();
   let poll = null;
@@ -39,6 +39,7 @@ function createJobs(ctx, { service, recorder }) {
         title: record.requestedTitle || video.title,
         duration: video.duration || record.duration,
       });
+      onReady(record.id);
       if (ctx.get().sessionId === payload.sessionId) {
         const ready = ctx.find(record.id);
         ctx.set({

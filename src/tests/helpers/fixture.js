@@ -49,6 +49,14 @@ function createFixture({
     getPlayback: async (id, collectionId) =>
       collectionId ? shelf.find((video) => video.id === id) : remote.get(id),
     // A second collection with two videos, to browse read-only.
+    summarise: async (paragraphs) => {
+      calls.push(['summarise', paragraphs.length]);
+      return {
+        text: 'A short walk through two thoughts.',
+        keyPoints: [{ text: 'The first thought is recorded.', at: 0 }],
+        actionItems: [{ text: 'Follow up on the second thought.', at: 4 }],
+      };
+    },
     usage: async () => ({ credits: 316.28 }),
     listCollections: async () => [
       { id: 'collection-2', name: 'Product reviews', bloom: false },

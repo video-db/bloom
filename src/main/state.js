@@ -26,6 +26,7 @@ function createAppState({
         systemAudio: p.defaultSystemAudio,
         camera: p.defaultCamera,
       },
+      autoTranscribe: p.autoTranscribe,
     });
   }
 

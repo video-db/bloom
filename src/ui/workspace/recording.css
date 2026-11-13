@@ -188,3 +188,55 @@
 .mark-row:hover {
   background: var(--sub);
 }
+
+/* ---- tabs: what can be done with the recording ---- */
+.tabs {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.tab {
+  margin-bottom: -1px;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--mid);
+  font-weight: 500;
+}
+.tab:hover {
+  color: var(--ink);
+}
+.tab.on {
+  border-bottom-color: color-mix(in srgb, var(--brand) 78%, #000);
+  color: var(--ink);
+}
+
+/* ---- summary ---- */
+#summary {
+  max-width: 68ch;
+  font-size: var(--t-read);
+  line-height: 1.65;
+  color: var(--ink2);
+  user-select: text;
+}
+#summary .label {
+  margin: 14px 0 6px;
+}
+.points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.points li {
+  margin: 0 0 6px;
+}
+.points .ts {
+  margin-right: 8px;
+  border: 0;
+  vertical-align: 2px;
+  user-select: none;
+}
+.summary-foot {
+  margin: 14px 0 0;
+}

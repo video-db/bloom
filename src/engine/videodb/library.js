@@ -149,16 +149,19 @@ function createLibrary({ account, read, assertCurrent, operations, journal }) {
       return {
         status: result.text.trim() ? 'ready' : 'empty',
         text: result.text,
+        // VideoDB times each word as { text, start, end } and marks silence with "-".
         words: result.wordTimestamps
           .filter(
             (word) =>
-              typeof word?.word === 'string' &&
+              typeof word?.text === 'string' &&
+              word.text.trim() &&
+              word.text !== '-' &&
               Number.isFinite(word.start) &&
               Number.isFinite(word.end) &&
               word.start >= 0 &&
               word.end >= word.start,
           )
-          .map(({ word, start, end }) => ({ word, start, end })),
+          .map(({ text, start, end }) => ({ word: text.trim(), start, end })),
       };
     },
     async requestTranscript(id) {

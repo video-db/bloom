@@ -275,11 +275,18 @@ fs.mkdirSync(evidence, { recursive: true });
     await main.getByText('Nothing here', { exact: true }).waitFor();
     await main.getByRole('button', { name: 'All', exact: true }).click();
     await main.screenshot({ path: path.join(evidence, `${theme}-recordings.png`) });
+    await main.route('https://images.example/shelf-1.svg', (route) => route.fulfill({
+      contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="160" height="90" fill="#557080"/></svg>',
+    }));
     // Another collection opens read-only: its videos can be played and read, not changed.
     await main.locator('.collection', { hasText: 'Product reviews' }).click();
     await main.getByRole('heading', { name: 'Product reviews', exact: true }).waitFor();
     await main.locator('.tile').nth(1).waitFor();
     assert.equal(await main.locator('.tile').count(), 2);
+    await main.waitForFunction(() => document.querySelector('.tile .shot img')?.naturalWidth > 0);
+    await main.waitForFunction(() => !document.querySelector('.tile:nth-child(2) .shot img'));
+    assert.equal(await main.locator('.tile .shot').count(), 2);
     assert.equal(await main.locator('.sidebar .place.on').count(), 0, 'no place is lit while a collection is browsed');
     await main.screenshot({ path: path.join(evidence, `${theme}-collection.png`) });
     await main.locator('.tile', { hasText: 'Design critique' }).click();

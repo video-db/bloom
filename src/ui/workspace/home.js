@@ -1,4 +1,5 @@
 // Home: what you have recorded and what is still being prepared.
+import { thumbnail } from '../shared/thumbnail.js';
 import { esc } from '../shared/dom.js';
 import { meta, status, total, newestFirst } from './format.js';
 
@@ -9,8 +10,7 @@ const stat = (value, label) =>
 
 const row = (r) =>
   /* HTML */ `<button class="recent-row" data-record="${esc(r.id)}">
-    <span class="shot"></span
-    ><span class="recent-copy"
+    ${thumbnail(r)}<span class="recent-copy"
       ><b>${esc(r.title)}</b><small>${esc(meta(r))}</small></span
     >${
       status(r)

@@ -1,3 +1,4 @@
+import { thumbnail } from '../shared/thumbnail.js';
 // Recordings: everything you have recorded, as tiles, with a filter and a sort.
 import { esc } from '../shared/dom.js';
 import { meta, status, newestFirst } from './format.js';
@@ -25,7 +26,7 @@ const tile = (r) =>
     data-record="${esc(r.id)}"
     title="${esc(r.title)}"
   >
-    <span class="shot"></span><b>${esc(r.title)}</b
+    ${thumbnail(r)}<b>${esc(r.title)}</b
     ><small>${esc([meta(r), status(r)].filter(Boolean).join(' · '))}</small>
   </button>`;
 

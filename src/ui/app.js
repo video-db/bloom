@@ -1,3 +1,4 @@
+import { bindThumbnails } from './shared/thumbnail.js';
 import { clock } from './shared/dom.js';
 import { panel } from './panel/panel.js';
 import { createOnboarding } from './onboarding/index.js';
@@ -6,6 +7,7 @@ import { releasePlayer, mountPlayer } from './workspace/player.js';
 import { bindActions } from './actions.js';
 
 const root = document.querySelector('#root');
+bindThumbnails(root);
 const surface =
   new URLSearchParams(location.search).get('surface') || 'workspace';
 document.body.className = surface;

@@ -31,6 +31,7 @@ function createFixture({
     duration: 300 + index * 60,
     streamUrl: 'https://stream.example/shelf.m3u8',
     playerUrl: `https://player.example/shelf-${index + 1}`,
+    thumbnailUrl: `https://images.example/shelf-${index + 1}.svg`,
   }));
   let collections = [
     { id: 'collection-2', name: 'Product reviews', bloom: false },

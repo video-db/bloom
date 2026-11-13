@@ -37,6 +37,7 @@ function recording(video) {
     duration: Number.isFinite(duration) && duration >= 0 ? duration : 0,
     streamUrl: mediaUrl(video.streamUrl),
     playerUrl: mediaUrl(video.playerUrl),
+    thumbnailUrl: mediaUrl(video.thumbnail),
   };
 }
 

@@ -16,7 +16,7 @@ const { createAppState } = require('./state');
 const { createShortcuts } = require('./shortcuts');
 const { installMenu } = require('./menu');
 const { registerIpc } = require('./ipc');
-const { createQuitGuard } = require('./quit-guard');
+const { createQuitGuard, recordingQuitPrompt } = require('./quit-guard');
 const { createScreenPreview } = require('./screen-preview');
 const { openFirstWindow } = require('./first-window');
 
@@ -130,20 +130,9 @@ app.on('before-quit', (event) => {
     event.preventDefault();
     if (shutdownPending) return;
     const state = engine.getState();
-    const busy =
-      !['idle', 'finished'].includes(state.phase) || state.pending.length;
-    const suspend =
-      busy &&
-      dialog.showMessageBoxSync({
-        type: 'warning',
-        buttons: ['Keep Bloom Open', 'Stop and Quit'],
-        defaultId: 0,
-        cancelId: 0,
-        message: 'A recording is still active or being saved',
-        detail:
-          'Bloom must confirm capture has stopped and finalize media before quitting. Complete pending files can upload after you reopen Bloom. Incomplete media is not guaranteed recoverable.',
-      }) === 1;
-    if (busy && !suspend) return;
+    const prompt = recordingQuitPrompt(state);
+    const suspend = !!prompt && dialog.showMessageBoxSync(prompt) === 1;
+    if (prompt && !suspend) return;
     shutdownPending = true;
     engine
       .shutdown({ suspend })

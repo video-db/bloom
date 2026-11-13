@@ -1,11 +1,15 @@
 # Changelog
 
-## [2.3.4] - Unreleased
+## Unreleased
+
+- Distinguish retained uploads from active capture in the quit confirmation; preserve the same stop, finalization and file-retention safeguards.
+
+## [2.3.4] - 2026-11-13
 
 ### Rebuilt app
 - Bloom is rebuilt: a menu-bar recorder with one tray panel for every recording state, a three-step setup, and a main window with a recording browser, transcript and player. The previous app's code is removed.
 - Recording is local, with marks, pause and resume; each recording is finalised, uploaded and processed with durable recovery after a quit or lost connection.
-- The API key is validated before saving and encrypted with the system keychain; sign-out is available from the menu and Settings.
+- The API key is validated before saving locally; sign-out is available from the menu and Settings.
 - Bundled HLS playback, confirmed rename, delete and download, a single-instance guard and a quit prompt while a recording is saving.
 - The main window is an app with a sidebar: Home, Recordings and Search, the account's VideoDB collections (others open read-only), and the credit balance. One recording opens alone, with its transcript as paragraphs with times.
 - A recording opens on its Summary: a few sentences, key points and action items, each with the time it comes from. New recordings are transcribed once uploaded (a setting, on by default).

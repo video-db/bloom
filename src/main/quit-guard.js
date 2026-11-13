@@ -1,5 +1,23 @@
 // Asks before quitting while a recording is still being saved or uploaded. Quitting then
 // leaves it on this Mac until the next launch, so it must be a choice, not an accident.
+function recordingQuitPrompt(state) {
+  if (['idle', 'finished'].includes(state.phase) && !state.pending.length)
+    return null;
+  const retained = ['idle', 'finished', 'processing-error'].includes(state.phase);
+  return {
+    type: 'warning',
+    buttons: ['Keep Bloom Open', retained ? 'Quit Bloom' : 'Stop and Quit'],
+    defaultId: 0,
+    cancelId: 0,
+    message: retained
+      ? 'A recording still needs attention'
+      : 'A recording is still active or being saved',
+    detail: retained
+      ? 'Bloom will keep any retained recording files on this Mac. Reopen Bloom to check the recording status and retry failed uploads.'
+      : 'Bloom must confirm capture has stopped and finalize media before quitting. Complete pending files can upload after you reopen Bloom. Incomplete media is not guaranteed recoverable.',
+  };
+}
+
 // `ask` shows the question and returns the index of the chosen button.
 function createQuitGuard({ engine, ask }) {
   let confirmed = false;
@@ -31,4 +49,4 @@ function createQuitGuard({ engine, ask }) {
   };
 }
 
-module.exports = { createQuitGuard };
+module.exports = { createQuitGuard, recordingQuitPrompt };

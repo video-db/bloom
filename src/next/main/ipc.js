@@ -127,6 +127,12 @@ function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
       typeof args.id === 'string'
     )
       void download(from, args.id);
+    if (name === 'get-api-key' && ['onboarding', 'main'].includes(role)) {
+      // The renderer selects an action, never an arbitrary external destination.
+      shell.openExternal('https://console.videodb.io/').catch(() => {
+        appState.setPrefError('Could not open your browser. Visit console.videodb.io to get an API key.');
+      });
+    }
     if (name === 'open-settings')
       shell.openExternal(
         args.key === 'mic'

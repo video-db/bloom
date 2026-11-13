@@ -62,7 +62,16 @@ fs.mkdirSync(evidence, { recursive: true });
     await onboarding.getByLabel('VideoDB API key').waitFor();
     assert.equal(await onboarding.getByRole('button', { name: 'Next', exact: true }).count(), 0);
     await onboarding.evaluate(() => document.fonts.ready);
+    // Let the native window finish its first paint before collecting visual evidence.
+    await onboarding.waitForTimeout(1000);
     await onboarding.screenshot({ path: path.join(evidence, `${theme}-connect.png`) });
+    await app.evaluate(({ shell }) => {
+      global.__originalOpenExternal = shell.openExternal;
+      shell.openExternal = async (url) => { global.__openedKeyUrl = url; };
+    });
+    await onboarding.getByRole('button', { name: 'Create a VideoDB account (opens browser)', exact: true }).click();
+    assert.equal(await app.evaluate(() => global.__openedKeyUrl), 'https://console.videodb.io/');
+    await app.evaluate(({ shell }) => { shell.openExternal = global.__originalOpenExternal; });
     await onboarding.getByLabel('VideoDB API key').fill('synthetic-ui-key');
     await onboarding
       .getByRole('button', { name: 'Connect to VideoDB', exact: true })

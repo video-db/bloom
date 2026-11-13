@@ -5,6 +5,10 @@
   padding: 52px 32px 28px;
   gap: 0;
   text-align: left;
+  background:
+    radial-gradient(ellipse at 100% 100%, color-mix(in srgb, var(--brand) 13%, transparent), transparent 62%),
+    radial-gradient(ellipse at 0% 100%, color-mix(in srgb, var(--warn) 7%, transparent), transparent 52%),
+    var(--paper);
 }
 .onboarding-header {
   display: flex;
@@ -17,14 +21,34 @@
   font-weight: 600;
 }
 .onboarding-progress {
-  font-size: 12px;
-  color: var(--soft);
-  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--sub);
+  box-shadow: inset 0 1px 2px var(--line);
+}
+.onboarding-segment {
+  width: 10px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line2);
+}
+.onboarding-segment.complete {
+  background: color-mix(in srgb, var(--brand) 45%, var(--paper));
+}
+.onboarding-segment.current {
+  width: 24px;
+  background: var(--brand);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%), 0 1px 3px color-mix(in srgb, var(--brand) 25%, transparent);
 }
 .onboarding-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  flex-shrink: 0;
 }
 .onboarding-content h1 {
   font-size: 25px;
@@ -56,18 +80,12 @@
   text-align: center;
 }
 .onboarding-privacy {
-  margin-top: 22px;
+  margin-top: 0;
   padding-top: 16px;
   border-top: 1px solid var(--line);
   font-size: 12px;
   color: var(--mid);
   line-height: 1.6;
-}
-.onboarding-privacy strong {
-  display: block;
-  color: var(--ink);
-  margin-bottom: 4px;
-  font-weight: 500;
 }
 .connected-onboarding .foot {
   margin-top: 24px;
@@ -78,4 +96,49 @@
 }
 .connected-onboarding .foot .btn {
   height: 36px;
+}
+
+.onboarding-credit {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 36px;
+  flex-shrink: 0;
+  color: var(--mid);
+  font-size: 10px;
+}
+.onboarding-credit .videodb-wordmark {
+  width: 77px;
+  height: auto;
+  align-self: center;
+}
+@media (prefers-color-scheme: dark) {
+  .onboarding-credit .videodb-wordmark {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+  }
+}
+.onboarding-titlebar {
+  position: fixed;
+  top: 0;
+  left: 80px;
+  right: 0;
+  height: 36px;
+}
+.connected-onboarding .account-key-help {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+}
+
+.connected-onboarding .btn.pri {
+  background: color-mix(in srgb, var(--brand) 78%, #000);
+  border-color: transparent;
+  color: #fff;
+}
+.connected-onboarding .btn.pri:hover {
+  background: color-mix(in srgb, var(--brand) 70%, #000);
+  opacity: 1;
 }

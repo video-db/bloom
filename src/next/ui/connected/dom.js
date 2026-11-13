@@ -37,7 +37,8 @@ export function accountForm(s, { onboarding = false } = {}) {
           required
           aria-label="VideoDB API key"
           ${s.account.status === 'checking' ? 'disabled' : ''} /></label
-      ><button
+      >
+      <button
         class="btn pri"
         ${s.account.status === 'checking' ? 'disabled' : ''}
       >
@@ -45,16 +46,13 @@ export function accountForm(s, { onboarding = false } = {}) {
           ? 'Connecting…'
           : 'Connect to VideoDB'}
       </button>
-      ${onboarding ? /* HTML */ `<p class="onboarding-key-note">Encrypted on this Mac.</p>
-      <aside class="onboarding-privacy">
-        <strong>When you record</strong>
-        <p>Selected screen and audio stream to VideoDB live. The video is saved locally, then uploaded.</p>
-      </aside>` : /* HTML */ `<p class="soft">
+      ${onboarding ? /* HTML */ `<p class="onboarding-key-note">Encrypted on this Mac.</p>` : /* HTML */ `<p class="soft">
         Your key is encrypted using this Mac’s secure storage. Selected screen
         and audio stream to VideoDB while recording; the final video is saved
         locally, then uploaded.
       </p>`}
     </form>
+    <p class="account-key-help">New to VideoDB? <button type="button" class="link" data-ui="get-api-key" aria-label="Create a VideoDB account (opens browser)">Create an account ↗</button></p>
     ${s.account.status === 'offline'
       ? button('checkConnection', 'Retry saved connection')
       : ''}`;

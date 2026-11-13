@@ -127,3 +127,8 @@
   background: var(--paper);
   padding: 6px 0;
 }
+
+.account-key-help {
+  font-size: 12px;
+  color: var(--mid);
+}

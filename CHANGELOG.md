@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.3.5] - 2026-11-13
 
 - An earlier recording never blocks the next one: Start is available as soon as a recording's file is on this Mac, including after a failed recording or a failed recovery. A recording still being processed is set aside while you record and continues afterwards.
 - Bloom asks before quitting only while it is recording or still writing the file; otherwise it quits at once and continues processing on the next launch. Launch no longer waits for earlier recordings.

@@ -13,14 +13,16 @@ export function settings(s) {
     <h1>Settings</h1>
     <h2>Account</h2>
     <div class="card">
-      ${accountForm(s)}${s.account.status === 'signed-in'
-        ? button(
-            'signOut',
-            'Sign out',
-            '',
-            !['idle', 'finished'].includes(s.phase) || s.pending.length > 0,
-          )
-        : ''}
+      ${accountForm(s)}${
+        s.account.status === 'signed-in'
+          ? button(
+              'signOut',
+              'Sign out',
+              '',
+              !['idle', 'finished'].includes(s.phase) || s.pending.length > 0,
+            )
+          : ''
+      }
       <p class="soft">
         ${esc(s.environment || 'VideoDB development')} · Recordings stream
         during capture and upload after Stop. Complete local media is removed by
@@ -70,9 +72,11 @@ export function settings(s) {
             )
             .join('')}
         </select></label
-      >${s.loginSupported
-        ? toggle('openAtLogin', 'Open Bloom when I log in')
-        : '<p class="soft">Login startup can be enabled in the installed app.</p>'}
+      >${
+        s.loginSupported
+          ? toggle('openAtLogin', 'Open Bloom when I log in')
+          : '<p class="soft">Login startup can be enabled in the installed app.</p>'
+      }
     </div>
     <h2>Permissions</h2>
     <div class="card">

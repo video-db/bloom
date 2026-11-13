@@ -8,8 +8,7 @@ function details(s, id) {
     return /* HTML */ `<div class="workspace-empty">
       <h1>Your workspace is ready</h1>
       <p>Select a recording or start one from the menu bar.</p>
-      <button class="btn pri" data-ui="show-panel">New recording</button
-      >
+      <button class="btn pri" data-ui="show-panel">New recording</button>
     </div>`;
   const transcriptLabel = {
     'not-requested': 'A transcript has not been requested.',
@@ -59,56 +58,68 @@ function details(s, id) {
         </button>
       </div>
     </header>
-    ${r.pendingOperation
-      ? /* HTML */ `<div class="note" role="status">
-          Checking the ${esc(r.pendingOperation)} operation…
-          ${button(
-            'reconcileRecording',
-            'Check result',
-            `data-id="${esc(r.id)}"`,
-          )}
-        </div>`
-      : ''}${r.status === 'error'
-      ? /* HTML */ `<div class="note" role="alert">
-          The recording needs attention.
-          ${button(
-            'retryRecording',
-            'Check and retry',
-            `data-id="${esc(r.id)}"`,
-          )}
-        </div>`
-      : ''}
+    ${
+      r.pendingOperation
+        ? /* HTML */ `<div class="note" role="status">
+            Checking the ${esc(r.pendingOperation)} operation…
+            ${button(
+              'reconcileRecording',
+              'Check result',
+              `data-id="${esc(r.id)}"`,
+            )}
+          </div>`
+        : ''
+    }${
+      r.status === 'error'
+        ? /* HTML */ `<div class="note" role="alert">
+            The recording needs attention.
+            ${button(
+              'retryRecording',
+              'Check and retry',
+              `data-id="${esc(r.id)}"`,
+            )}
+          </div>`
+        : ''
+    }
     <div class="workspace-columns">
       <article class="transcript-pane connected-transcript">
         <h2>Transcript</h2>
-        ${r.transcript
-          ? /* HTML */ `<div class="connected-prose">${esc(r.transcript)}</div>`
-          : /* HTML */ `<p class="soft">
-              ${esc(transcriptLabel || 'The transcript is not ready.')}
-            </p>`}
+        ${
+          r.transcript
+            ? /* HTML */ `<div class="connected-prose">
+                ${esc(r.transcript)}
+              </div>`
+            : /* HTML */ `<p class="soft">
+                ${esc(transcriptLabel || 'The transcript is not ready.')}
+              </p>`
+        }
         <div class="connected-actions">
           ${button(
             'openRecording',
             'Refresh playback and transcript',
             `data-id="${esc(r.id)}"`,
             !r.videoId || s.account.status !== 'signed-in',
-          )}${r.transcriptStatus !== 'ready'
-            ? button(
-                'requestTranscript',
-                'Prepare transcript',
-                `data-id="${esc(r.id)}"`,
-                !r.videoId ||
-                  r.transcriptStatus === 'processing' ||
-                  s.account.status !== 'signed-in',
-              )
-            : ''}${r.transcript
-            ? /* HTML */ `<button
-                class="btn"
-                data-copy-transcript="${esc(r.id)}"
-              >
-                Copy transcript
-              </button>`
-            : ''}
+          )}${
+            r.transcriptStatus !== 'ready'
+              ? button(
+                  'requestTranscript',
+                  'Prepare transcript',
+                  `data-id="${esc(r.id)}"`,
+                  !r.videoId ||
+                    r.transcriptStatus === 'processing' ||
+                    s.account.status !== 'signed-in',
+                )
+              : ''
+          }${
+            r.transcript
+              ? /* HTML */ `<button
+                  class="btn"
+                  data-copy-transcript="${esc(r.id)}"
+                >
+                  Copy transcript
+                </button>`
+              : ''
+          }
         </div>
         <p class="soft">
           Preparing a transcript may use VideoDB credits. Opening a recording
@@ -116,19 +127,23 @@ function details(s, id) {
         </p>
       </article>
       <aside class="connected-player-pane">
-        ${r.streamUrl
-          ? '<video controls preload="metadata" data-player aria-label="Recorded video"></video><p class="soft" data-player-error role="status"></p>'
-          : '<div class="connected-video-empty">Playback is not ready. Use Refresh after processing completes.</div>'}
+        ${
+          r.streamUrl
+            ? '<video controls preload="metadata" data-player aria-label="Recorded video"></video><p class="soft" data-player-error role="status"></p>'
+            : '<div class="connected-video-empty">Playback is not ready. Use Refresh after processing completes.</div>'
+        }
         <h2>Your marks</h2>
-        ${r.marks
-          .map(
-            (m) =>
-              /* HTML */ `<button class="moment-result" data-seek="${m.at}">
-                <span class="mono">${clock(m.at)}</span
-                ><span>${esc(m.text)}</span>
-              </button>`,
-          )
-          .join('') || '<p class="soft">No marks in this recording.</p>'}
+        ${
+          r.marks
+            .map(
+              (m) =>
+                /* HTML */ `<button class="moment-result" data-seek="${m.at}">
+                  <span class="mono">${clock(m.at)}</span
+                  ><span>${esc(m.text)}</span>
+                </button>`,
+            )
+            .join('') || '<p class="soft">No marks in this recording.</p>'
+        }
       </aside>
     </div>
   </section>`;
@@ -144,9 +159,11 @@ export function workspace(s, view, activeId, query = '') {
     <header class="bar drag">
       <span class="brandname">${logo} Bloom</span
       ><span class="right nodrag"
-        >${phases[s.phase]}${['recording', 'paused'].includes(s.phase)
-          ? ` · <b data-clock>${clock(s.elapsed)}</b> ${button('stop', 'Stop')}`
-          : ''}</span
+        >${phases[s.phase]}${
+          ['recording', 'paused'].includes(s.phase)
+            ? ` · <b data-clock>${clock(s.elapsed)}</b> ${button('stop', 'Stop')}`
+            : ''
+        }</span
       ><button class="btn nodrag" data-ui="show-panel">
         Recording controls
       </button>
@@ -166,30 +183,32 @@ export function workspace(s, view, activeId, query = '') {
             value="${esc(query)}"
         /></label>
         <div class="recording-list">
-          ${records
-            .map(
-              (r) =>
-                /* HTML */ `<button
-                  class="record-row ${r.id === activeId ? 'selected' : ''}"
-                  data-record="${esc(r.id)}"
-                >
-                  <span class="shot"></span
-                  ><span class="record-copy"
-                    ><b>${esc(r.title)}</b
-                    ><small
-                      >${clock(r.duration)} ·
-                      ${r.status === 'ready' ? 'Ready' : esc(r.jobStage)}</small
-                    ></span
+          ${
+            records
+              .map(
+                (r) =>
+                  /* HTML */ `<button
+                    class="record-row ${r.id === activeId ? 'selected' : ''}"
+                    data-record="${esc(r.id)}"
                   >
-                </button>`,
-            )
-            .join('') || '<p class="browser-empty">No recordings match.</p>'}
+                    <span class="shot"></span
+                    ><span class="record-copy"
+                      ><b>${esc(r.title)}</b
+                      ><small
+                        >${clock(r.duration)} ·
+                        ${r.status === 'ready' ? 'Ready' : esc(r.jobStage)}</small
+                      ></span
+                    >
+                  </button>`,
+              )
+              .join('') || '<p class="browser-empty">No recordings match.</p>'
+          }
         </div>
         <footer class="browser-footer">
           <span
-            >${s.account.status === 'signed-in'
-              ? 'VideoDB'
-              : 'Cached library'}${s.online ? '' : ' · offline'}</span
+            >${
+              s.account.status === 'signed-in' ? 'VideoDB' : 'Cached library'
+            }${s.online ? '' : ' · offline'}</span
           ><button class="link" data-view="settings">Settings</button>${button(
             'refresh',
             'Refresh',
@@ -199,9 +218,9 @@ export function workspace(s, view, activeId, query = '') {
         </footer>
       </aside>
       <main class="view">
-        ${problems(s)}${view === 'settings'
-          ? settings(s)
-          : details(s, activeId)}
+        ${problems(s)}${
+          view === 'settings' ? settings(s) : details(s, activeId)
+        }
       </main>
     </div>
   </div>`;

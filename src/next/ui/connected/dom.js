@@ -36,15 +36,15 @@ export function accountForm(s) {
           maxlength="4096"
           required
           aria-label="VideoDB API key"
-          ${s.account.status === 'checking' ? 'disabled' : ''} /></label
-      >
+          ${s.account.status === 'checking' ? 'disabled' : ''}
+      /></label>
       <button
         class="btn pri"
         ${s.account.status === 'checking' ? 'disabled' : ''}
       >
-        ${s.account.status === 'checking'
-          ? 'Connecting…'
-          : 'Connect to VideoDB'}
+        ${
+          s.account.status === 'checking' ? 'Connecting…' : 'Connect to VideoDB'
+        }
       </button>
       <p class="soft">
         Your key is encrypted using this Mac’s secure storage. Selected screen
@@ -52,8 +52,17 @@ export function accountForm(s) {
         locally, then uploaded.
       </p>
     </form>
-    <button type="button" class="btn account-create" data-ui="get-api-key" aria-label="Create a VideoDB account (opens browser)">Create a VideoDB account</button>
-    ${s.account.status === 'offline'
-      ? button('checkConnection', 'Retry saved connection')
-      : ''}`;
+    <button
+      type="button"
+      class="btn account-create"
+      data-ui="get-api-key"
+      aria-label="Create a VideoDB account (opens browser)"
+    >
+      Create a VideoDB account
+    </button>
+    ${
+      s.account.status === 'offline'
+        ? button('checkConnection', 'Retry saved connection')
+        : ''
+    }`;
 }

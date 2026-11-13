@@ -37,6 +37,15 @@ function createWindows({
     present(window);
     if (!background) window.focus();
   };
+  // A window left on another desktop would pull the person over to it when shown. Putting
+  // it on every desktop for the moment it appears brings it to them instead.
+  const summon = (window) => {
+    if (background) return present(window);
+    const quietly = { skipTransformProcessType: true }; // no Dock flicker
+    window.setVisibleOnAllWorkspaces(true, quietly);
+    reveal(window);
+    window.setVisibleOnAllWorkspaces(false, quietly);
+  };
 
   function load(window, surface, options = {}) {
     if (engine.getState().sample)
@@ -161,7 +170,7 @@ function createWindows({
     }
     if (typeof view === 'string') pendingMainView = view;
     if (alive(mainWindow)) {
-      reveal(mainWindow);
+      summon(mainWindow);
       deliverPendingView();
       return;
     }
@@ -183,7 +192,7 @@ function createWindows({
     });
     load(window, 'workspace', { hash: view || 'library' });
     window.once('ready-to-show', () => {
-      if (alive(window) && ready()) present(window);
+      if (alive(window) && ready()) summon(window);
     });
     // Native close is asynchronous; a new request must not target the window being closed.
     const release = () => {
@@ -211,7 +220,7 @@ function createWindows({
       return;
     }
     if (alive(onboarding)) {
-      reveal(onboarding);
+      summon(onboarding);
       return;
     }
     onboardingSession = null;
@@ -226,7 +235,7 @@ function createWindows({
       webPreferences,
     });
     load(onboarding, 'onboarding');
-    onboarding.once('ready-to-show', () => present(onboarding));
+    onboarding.once('ready-to-show', () => summon(onboarding));
     // Closing onboarding ends only the capture it started itself.
     onboarding.on('closed', () => {
       onboarding = null;

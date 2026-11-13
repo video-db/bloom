@@ -7,6 +7,7 @@ function createAppState({
   tray,
   notifications,
   windows,
+  loginSupported = false,
 }) {
   let prefError = ''; // why the last preference save failed; windows show it until one succeeds
 
@@ -23,7 +24,12 @@ function createAppState({
     });
   }
 
-  const withPrefs = (state) => ({ ...state, prefs: prefs.all(), prefError });
+  const withPrefs = (state) => ({
+    ...state,
+    prefs: prefs.all(),
+    prefError,
+    loginSupported,
+  });
 
   function broadcast(state) {
     tray.paint(state);

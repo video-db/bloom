@@ -75,7 +75,11 @@ function createNotifications({ engine, prefs, windows }) {
         resultNotification = null;
         if (windows.outOfSight() && prefs.all().notifyLinkReady)
           resultNotification = notify({
-            title: ready ? 'Ready to edit' : 'Link ready (sample)',
+            title: !state.sample
+              ? 'Recording ready to play'
+              : ready
+                ? 'Ready to edit'
+                : 'Link ready (sample)',
             body: state.result.title,
             actions: ['Open recording'],
             onAction: () => openResult(state.result.id),

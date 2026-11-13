@@ -1,6 +1,6 @@
 # The rebuilt Bloom app
 
-This folder is the rebuilt Bloom desktop recorder. It replaces the app in `src/main`, `src/renderer` and `src/preload` at cutover. Run it with `npm run next`; see `docs/runbook.md` for flags and checks.
+This folder is the rebuilt Bloom desktop recorder. It replaces the app in `src/main`, `src/renderer` and `src/preload` at cutover. Run the real integration with `npm run next:connected`, or the sample design with `npm run next`; see `docs/runbook.md` for flags and checks.
 
 ## How it works
 
@@ -36,8 +36,10 @@ src/next/
     clock.js          mm:ss formatting shared by the tray and notifications
   engine/
     index.js          the engine surface and factory
+    videodb/          real state engine, SDK adapter, credentials, receipts and recording cache
     sample/           sample engine: records nothing; used by tests and for design work
   ui/
+    connected/        connected onboarding, capture, library, playback and settings views
     shared/           tokens, base styles, controls, the Bloom mark and icons, DOM helpers
     panel/            the tray panel
     workspace/        the main window: recording browser, editor, player, versions, settings
@@ -57,3 +59,5 @@ src/next/
 - Comments say why, briefly. The what belongs in names.
 - A release build has no sample data, no "preview" wording and no control that does nothing. Features that are not built are hidden through the engine's capabilities, not left as dead buttons.
 - Behaviour changes come with a test. Run the state tests and the walkthrough in both themes, then look at the screens.
+
+The real integration uses the public Node SDK from GitHub branch release-0.3.3; the lockfile records its resolved revision. Read [the boundary reference](../../docs/reference/videodb-integration.md) before changing the SDK adapter or recovery state. Real capture is selected explicitly from source and by the packaged rebuilt entry; test fixtures never run in a packaged app.

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Rebuilt app integration
+- Added the connected entry with secure API-key storage, real capture orchestration, durable recovery state, library/playback/transcript actions and settings behind the public Node SDK lifecycle.
+- Added bundled HLS playback, confirmed remote mutations and downloads, a single-instance guard and completion-aware quit handling.
+- Kept the sample design entry separate; production cutover is not performed by these changes.
+
 ### Documentation
 - Centralised architecture, decisions and work tracking in architectures under Products/Bloom.
 - Added configuration, local-install and verification instructions.

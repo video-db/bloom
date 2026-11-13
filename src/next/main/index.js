@@ -1,7 +1,7 @@
 // Entry point of the rebuilt Bloom app: lifecycle and wiring only.
 // Until cutover it keeps its own user data so it never touches the current app's.
 // Capture is supplied by src/next/engine.
-const { app } = require('electron');
+const { app, dialog, safeStorage, systemPreferences } = require('electron');
 const { createEngine } = require('../engine');
 const flags = require('./flags');
 const { createPrefs } = require('./prefs');
@@ -13,17 +13,49 @@ const { createAppState } = require('./state');
 const { createShortcuts } = require('./shortcuts');
 const { installMenu } = require('./menu');
 const { registerIpc } = require('./ipc');
+const { createQuitGuard } = require('./quit-guard');
 
 flags.separateUserData();
+const primaryInstance =
+  !app.requestSingleInstanceLock || app.requestSingleInstanceLock();
+if (!primaryInstance) app.quit();
 const theme = createTheme({ forced: flags.forcedTheme() });
 
 // Everything else needs a ready app, so it is built in start() and kept here for quit and the test hook.
-let engine, prefs, tray, windows, notifications, shortcuts;
-let quitting = false;
+let engine, prefs, tray, windows, notifications, shortcuts, quitGuard, fixture;
+let quitting = false,
+  shutdownPending = false;
 
 function start() {
-  engine = createEngine();
   prefs = createPrefs(flags.prefsFile());
+  engine = createEngine({
+    mode:
+      flags.flag('connected-fixture') && !app.isPackaged
+        ? 'sample'
+        : flags.flag('connected') || app.isPackaged
+          ? 'videodb'
+          : 'sample',
+    dataDir: app.getPath('userData'),
+    apiUrl:
+      flags.flag('production') || app.isPackaged
+        ? 'https://api.videodb.io'
+        : 'https://api.dev.videodb.io',
+    safeStorage,
+    permissionStatus: (kind) =>
+      systemPreferences.getMediaAccessStatus(kind) === 'granted',
+    scope: flags.flag('v1') ? 'v1' : 'full',
+    // Someone who has been through onboarding already has an account.
+    signedIn: flags.flag('skip-onboarding') || prefs.all().onboardingComplete,
+  });
+  if (flags.flag('connected-fixture') && !app.isPackaged) {
+    fixture = require('../tests/helpers/connected').connectedFixture();
+    engine.dispose();
+    engine = fixture.engine;
+  }
+  quitGuard = createQuitGuard({
+    engine,
+    ask: (options) => dialog.showMessageBoxSync(options),
+  });
   tray = createTray({ assets: flags.ASSETS });
   windows = createWindows({
     ui: flags.UI,
@@ -43,6 +75,7 @@ function start() {
     tray,
     notifications,
     windows,
+    loginSupported: !!app.isPackaged,
   });
 
   appState.applyPrefs(); // before any window exists, so the first one opens in the right theme
@@ -60,22 +93,73 @@ function openFirstWindow() {
   if (flags.flag('skip-onboarding') || prefs.all().onboardingComplete)
     windows.showPanel();
   else {
-    engine.command('setPermission', { key: 'screen', value: false });
-    engine.command('setPermission', { key: 'mic', value: false });
+    if (engine.getState().sample) {
+      engine.command('setPermission', { key: 'screen', value: false });
+      engine.command('setPermission', { key: 'mic', value: false });
+    }
     windows.openOnboarding();
   }
   if (flags.flag('open-preferences')) windows.openMain('settings');
   else if (flags.flag('open-main')) windows.openMain('library');
 }
 
-app.whenReady().then(() => {
-  start();
-  openFirstWindow();
-});
+app
+  .whenReady()
+  .then(() => {
+    if (!primaryInstance) return;
+    start();
+    openFirstWindow();
+  })
+  .catch(() => {
+    dialog.showErrorBox(
+      'Bloom could not open',
+      'Local state could not be opened safely. Existing files have been retained. Check available disk space and restart Bloom; do not delete pending recording data.',
+    );
+    quitting = true;
+    app.quit();
+  });
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
+  if (engine && !engine.getState().sample && !quitting) {
+    event.preventDefault();
+    if (shutdownPending) return;
+    const state = engine.getState();
+    const busy =
+      !['idle', 'finished'].includes(state.phase) || state.pending.length;
+    const suspend =
+      busy &&
+      dialog.showMessageBoxSync({
+        type: 'warning',
+        buttons: ['Keep Bloom Open', 'Stop and Quit'],
+        defaultId: 0,
+        cancelId: 0,
+        message: 'A recording is still active or being saved',
+        detail:
+          'Bloom must confirm capture has stopped and finalize media before quitting. Complete pending files can upload after you reopen Bloom. Incomplete media is not guaranteed recoverable.',
+      }) === 1;
+    if (busy && !suspend) return;
+    shutdownPending = true;
+    engine
+      .shutdown({ suspend })
+      .then(() => {
+        quitting = true;
+        app.quit();
+      })
+      .catch(() => {
+        shutdownPending = false;
+        dialog.showMessageBox({
+          type: 'error',
+          message: 'Bloom could not finish stopping safely',
+          detail:
+            'Keep Bloom open and check the recording status. Try Stop again before quitting.',
+        });
+      });
+    return;
+  }
+  if (quitGuard && !quitGuard.allows()) return event.preventDefault();
   quitting = true;
 });
+app.on('second-instance', () => windows?.showPanel());
 app.on('window-all-closed', () => {}); // a tray app keeps running with no windows
 app.on('will-quit', () => {
   shortcuts?.unregister();
@@ -91,4 +175,5 @@ global.__bloomNext = {
   toggleCapture: () => shortcuts.toggleCapture(),
   getEngine: () => engine,
   getPrefs: () => prefs.all(),
+  getFixture: () => (!app.isPackaged ? fixture : undefined),
 };

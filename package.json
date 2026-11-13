@@ -1,13 +1,14 @@
 {
   "name": "bloom",
   "version": "2.3.0",
-  "description": "Bloom — Screen recorder powered by VideoDB",
+  "description": "Bloom \u2014 Screen recorder powered by VideoDB",
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
     "next": "electron src/next/main/index.js",
     "dist": "electron-builder",
-    "pack": "electron-builder --dir"
+    "pack": "electron-builder --dir",
+    "next:connected": "electron src/next/main/index.js --connected"
   },
   "keywords": [],
   "author": "VideoDB",
@@ -26,7 +27,8 @@
     ],
     "asar": true,
     "asarUnpack": [
-      "node_modules/videodb/bin/**"
+      "node_modules/videodb/bin/**",
+      "node_modules/videodb-capture/bin/**"
     ],
     "mac": {
       "identity": null,
@@ -58,12 +60,23 @@
         "height": 380
       },
       "contents": [
-        { "x": 140, "y": 200, "type": "file" },
-        { "x": 400, "y": 200, "type": "link", "path": "/Applications" }
+        {
+          "x": 140,
+          "y": 200,
+          "type": "file"
+        },
+        {
+          "x": 400,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "build/icon.ico",
       "artifactName": "bloom-${version}-${arch}.${ext}"
     },
@@ -75,7 +88,9 @@
   },
   "dependencies": {
     "dotenv": "^17.2.3",
+    "hls.js": "^1.7.4",
     "sql.js": "^1.11.0",
-    "videodb": "video-db/videodb-node#release-0.2.6"
+    "videodb": "video-db/videodb-node#release-0.2.6",
+    "videodb-capture": "github:video-db/videodb-node#release-0.3.3"
   }
 }

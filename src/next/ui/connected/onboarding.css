@@ -1,0 +1,81 @@
+/* First-run layout is scoped so account forms in Settings keep their layout. */
+.ob.connected-onboarding {
+  height: 100%;
+  overflow-y: auto;
+  padding: 52px 32px 28px;
+  gap: 0;
+  text-align: left;
+}
+.onboarding-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 54px;
+}
+.onboarding-header .brandname {
+  font-size: 15px;
+  font-weight: 600;
+}
+.onboarding-progress {
+  font-size: 12px;
+  color: var(--soft);
+  font-variant-numeric: tabular-nums;
+}
+.onboarding-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.onboarding-content h1 {
+  font-size: 25px;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+.onboarding-content > p {
+  margin: -10px 0 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--mid);
+}
+.connected-onboarding .connected-form {
+  gap: 10px;
+}
+.connected-onboarding .connected-form label {
+  font-size: 12px;
+  font-weight: 500;
+  gap: 8px;
+}
+.connected-onboarding .connected-form .field,
+.connected-onboarding .connected-form .btn {
+  height: 40px;
+  flex-shrink: 0;
+}
+.connected-onboarding .onboarding-key-note {
+  font-size: 11px;
+  color: var(--mid);
+  text-align: center;
+}
+.onboarding-privacy {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--mid);
+  line-height: 1.6;
+}
+.onboarding-privacy strong {
+  display: block;
+  color: var(--ink);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.connected-onboarding .foot {
+  margin-top: 24px;
+  flex-shrink: 0;
+}
+.connected-onboarding .foot:empty {
+  display: none;
+}
+.connected-onboarding .foot .btn {
+  height: 36px;
+}

@@ -11,16 +11,45 @@
 //   capture    start | cancel | stop | pause | resume | mark | setPurpose | retry | keep |
 //              answerAsk | trimEnding | newRecording | discard | retryProcessing | simulate
 //   sources    setSource | configure | setPermission | checkPermission
+//   access     signIn | signOut | checkConnection
+//   uploads    resumeUpload | discardUpload
 //   library    rename | renameRecording | deleteRecording | restoreRecording | saveDraft |
 //              retryRecording
 //   versions   saveVersion | renameVersion | deleteVersion
 //
-// Today only the sample engine exists. The VideoDB-backed engine will implement the same
-// surface. Real permission, processing and recovery states must be verified during integration.
+// The real VideoDB engine and the sample design engine implement the same surface.
+// The main process selects the real engine for the connected entry and packaged rebuild.
+//
+// State also carries `capabilities` (see capabilities.js): windows hide what a build cannot do.
 const { createSampleEngine } = require('./sample');
 
-function createEngine() {
-  return createSampleEngine();
+function createEngine(options = {}) {
+  if (options.mode === 'videodb') {
+    const path = require('node:path');
+    const { createVideoDBBoundary } = require('./videodb');
+    const { createVideoDBEngine } = require('./videodb/engine');
+    const { createSDKRecorder } = require('./videodb/recorder');
+    const { createRecordingCache } = require('./videodb/cache');
+    const { CaptureClient } = require('videodb-capture/capture');
+    const service = createVideoDBBoundary(options);
+    const recorder = createSDKRecorder({
+      CaptureClient,
+      service,
+      permissionStatus: options.permissionStatus,
+    });
+    return createVideoDBEngine({
+      service,
+      recorder,
+      cache: createRecordingCache(
+        path.join(
+          options.dataDir,
+          service.apiUrl.includes('.dev.') ? 'videodb-dev' : 'videodb-prod',
+          'library.json',
+        ),
+      ),
+    });
+  }
+  return createSampleEngine(options);
 }
 
 module.exports = { createEngine };

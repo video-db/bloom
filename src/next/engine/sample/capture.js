@@ -4,8 +4,8 @@
 const { script } = require('./data');
 
 // `initial` builds the state of a session that has not started; `sources` owns what
-// that session captures (see sources.js).
-function createCapture(ctx, { sources, initial }) {
+// that session captures (see sources.js); `access` says whether a session may start.
+function createCapture(ctx, { sources, access, initial }) {
   const { get, set, setQuietly, recordings, inBackground } = ctx;
   // Session timers: Pause, Stop and every reset cancel them, unlike ctx.inBackground.
   const timers = new Set();
@@ -56,7 +56,21 @@ function createCapture(ctx, { sources, initial }) {
     };
     const finishing = pendingFinish;
     clearAll();
-    set({ phase: 'saving', elapsed: duration, ask: null, problem: null });
+    set({
+      phase: 'saving',
+      elapsed: duration,
+      ask: null,
+      problem: null,
+      upload: { stage: 'finalizing', progress: 0 },
+    });
+    // A local recording is saved in three steps. Their timings add up to the 1.8 s
+    // that saving takes here.
+    const steps = 5;
+    for (let step = 0; step <= steps; step++)
+      later(400 + step * 200, () =>
+        set({ upload: { stage: 'uploading', progress: step / steps } }),
+      );
+    later(1500, () => set({ upload: { stage: 'processing', progress: 1 } }));
     later(1800, () => {
       const title =
         finishing.title ||
@@ -78,6 +92,7 @@ function createCapture(ctx, { sources, initial }) {
       });
       set({
         phase: 'finished',
+        upload: null,
         ...recordings.view(),
         result: {
           id,
@@ -125,6 +140,8 @@ function createCapture(ctx, { sources, initial }) {
     start() {
       const state = get();
       if (state.phase !== 'idle' && state.phase !== 'finished') return;
+      if (!access.signedIn()) return; // the panel offers sign-in instead of Start
+      if (!access.online()) return set({ problem: { kind: 'offline' } });
       if (!sources.permissions().screen)
         return set({ problem: { kind: 'permission' } });
       clearAll();
@@ -214,39 +231,40 @@ function createCapture(ctx, { sources, initial }) {
       if (get().phase === 'processing-error' && pendingFinish)
         finish(pendingFinish.duration, pendingFinish.trim, pendingFinish);
     },
-    // Preview-only: jump to states that are hard to reach by hand.
-    simulate({ kind }) {
-      if (kind === 'processing-error' && get().phase === 'saving') {
-        clearAll();
-        set({ phase: 'processing-error' });
-      }
-      if (
-        ['stop-failed', 'upload-slow'].includes(kind) &&
-        get().phase === 'recording'
-      )
-        set({ problem: { kind } });
-      if (kind === 'connection' && get().phase === 'recording') {
-        clearAll();
-        set({
-          phase: 'stopped',
-          problem: { kind: 'connection', at: get().elapsed },
-        });
-      }
-      if (
-        kind === 'meeting-ended' &&
-        get().phase === 'recording' &&
-        !get().askSilenced
-      )
-        set({ ask: 'meeting-ended', elapsed: Math.max(get().elapsed, 1930) });
-      if (kind === 'permission' && get().phase === 'idle')
-        set({
-          permissions: sources.permit('screen', false),
-          problem: { kind: 'permission' },
-        });
-    },
   };
 
-  return { commands, dispose: clearAll };
+  // Preview-only: jump to states that are hard to reach by hand.
+  function simulate(kind) {
+    if (kind === 'processing-error' && get().phase === 'saving') {
+      clearAll();
+      set({ phase: 'processing-error', upload: null });
+    }
+    if (
+      ['stop-failed', 'upload-slow'].includes(kind) &&
+      get().phase === 'recording'
+    )
+      set({ problem: { kind } });
+    if (kind === 'connection' && get().phase === 'recording') {
+      clearAll();
+      set({
+        phase: 'stopped',
+        problem: { kind: 'connection', at: get().elapsed },
+      });
+    }
+    if (
+      kind === 'meeting-ended' &&
+      get().phase === 'recording' &&
+      !get().askSilenced
+    )
+      set({ ask: 'meeting-ended', elapsed: Math.max(get().elapsed, 1930) });
+    if (kind === 'permission' && get().phase === 'idle')
+      set({
+        permissions: sources.permit('screen', false),
+        problem: { kind: 'permission' },
+      });
+  }
+
+  return { commands, simulate, dispose: clearAll };
 }
 
 module.exports = { createCapture };

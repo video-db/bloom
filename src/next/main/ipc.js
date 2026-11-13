@@ -8,12 +8,19 @@ const {
   shell,
   dialog,
 } = require('electron');
+const { createDownloads } = require('./downloads');
+const { mediaUrl } = require('../engine/videodb/library');
 
 const copyLink = () =>
   clipboard.writeText('https://example.invalid/sample-recording'); // sample data: there is no real link yet
 
 function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
-  ipcMain.handle('next:get-state', () => appState.withPrefs(engine.getState()));
+  const download = createDownloads({ engine, dialog });
+  ipcMain.handle('next:get-state', (event) => {
+    if (!windows.roleOf(BrowserWindow.fromWebContents(event.sender)))
+      return null;
+    return appState.withPrefs(engine.getState());
+  });
 
   ipcMain.on('next:command', (event, name, args) => {
     const from = BrowserWindow.fromWebContents(event.sender);
@@ -26,7 +33,9 @@ function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
       name === 'start' &&
       engine.getState().sessionId !== previousSession
     )
-      windows.ownOnboardingSession(engine.getState().sessionId);
+      windows.ownOnboardingSession(
+        engine.getState().operationId || engine.getState().sessionId,
+      );
   });
 
   ipcMain.on('next:ui', (event, name, args = {}) => {
@@ -68,6 +77,12 @@ function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
           : 'Could not save this preference. Check available disk space and try again.',
       );
       if (ok) {
+        if (
+          args.key === 'openAtLogin' &&
+          app.isPackaged &&
+          !engine.getState().sample
+        )
+          app.setLoginItemSettings({ openAtLogin: !!args.value });
         if (args.key === 'appearance') theme.releaseForced();
         appState.applyPrefs();
       }
@@ -83,12 +98,48 @@ function registerIpc({ engine, prefs, theme, tray, windows, appState }) {
         args.id ? `${args.view || 'detail'}/${args.id}` : args.view,
       );
     }
-    if (name === 'copy-link') copyLink();
+    if (name === 'copy-link') {
+      if (engine.getState().sample) copyLink();
+      else {
+        const state = engine.getState();
+        const record = state.recordings.find(
+          (r) => r.id === (args.id || state.result?.id),
+        );
+        const url = mediaUrl(record?.playerUrl);
+        if (url && record.status === 'ready') {
+          clipboard.writeText(url);
+          engine.notice?.(
+            'Link copied. Access follows your VideoDB collection settings.',
+          );
+        } else engine.notice?.('The playback link is not ready yet.');
+      }
+    }
+    if (name === 'copy-transcript' && typeof args.id === 'string') {
+      const record = engine.getState().recordings.find((r) => r.id === args.id);
+      if (record?.transcript) {
+        clipboard.writeText(record.transcript);
+        engine.notice?.('Transcript copied.');
+      }
+    }
+    if (
+      name === 'download' &&
+      !engine.getState().sample &&
+      typeof args.id === 'string'
+    )
+      void download(from, args.id);
     if (name === 'open-settings')
       shell.openExternal(
-        'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
+        args.key === 'mic'
+          ? 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'
+          : 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
       );
     if (name === 'onboarding-done') {
+      if (
+        !engine.getState().sample &&
+        (engine.getState().account.status !== 'signed-in' ||
+          !engine.getState().permissions.screen)
+      )
+        return;
       if (!prefs.set('onboardingComplete', true)) {
         const detail =
           'Could not save setup completion. Check available disk space and try again.';

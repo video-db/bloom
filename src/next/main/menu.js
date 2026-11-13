@@ -11,11 +11,13 @@ const PREVIEW_SCENARIOS = [
 ];
 
 function installMenu({ engine, windows }) {
+  const sample = engine.getState().sample;
   app.setAboutPanelOptions({
-    applicationName: 'Bloom Preview',
-    applicationVersion: 'UI preview',
-    copyright:
-      'Sample data only. No recording or upload. VideoDB integration is not connected.',
+    applicationName: sample ? 'Bloom Preview' : 'Bloom',
+    applicationVersion: sample ? 'UI preview' : app.getVersion?.(),
+    copyright: sample
+      ? 'Sample data only. No recording or upload.'
+      : 'Screen recorder powered by VideoDB',
   });
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
@@ -69,17 +71,24 @@ function installMenu({ engine, windows }) {
       {
         role: 'help',
         submenu: [
+          ...(sample
+            ? [
+                {
+                  label: 'Preview Scenarios',
+                  submenu: PREVIEW_SCENARIOS.map(([kind, label]) => ({
+                    label,
+                    click: () => {
+                      engine.command('simulate', { kind });
+                      windows.showPanel();
+                    },
+                  })),
+                },
+              ]
+            : []),
           {
-            label: 'Preview Scenarios',
-            submenu: PREVIEW_SCENARIOS.map(([kind, label]) => ({
-              label,
-              click: () => {
-                engine.command('simulate', { kind });
-                windows.showPanel();
-              },
-            })),
+            label: sample ? 'About Bloom Preview' : 'About Bloom',
+            click: () => app.showAboutPanel(),
           },
-          { label: 'About Bloom Preview', click: () => app.showAboutPanel() },
           { label: 'Replay Onboarding', click: windows.openOnboarding },
         ],
       },

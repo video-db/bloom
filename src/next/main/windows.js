@@ -24,6 +24,23 @@ function createWindows({
     nodeIntegration: false,
     sandbox: true,
   };
+  function load(window, surface, options = {}) {
+    if (engine.getState().sample)
+      window.loadFile(
+        path.join(ui, `${surface === 'workspace' ? 'main' : surface}.html`),
+        options,
+      );
+    else
+      window.loadFile(path.join(ui, 'connected.html'), {
+        ...options,
+        query: { surface },
+      });
+    window.webContents.setWindowOpenHandler?.(() => ({ action: 'deny' }));
+    window.webContents.on('will-navigate', (event, url) => {
+      if (url.split('#')[0] !== window.webContents.getURL().split('#')[0])
+        event.preventDefault();
+    });
+  }
 
   // ---- panel: hangs from the tray icon, closes back into it -------------------------------
   function createPanel() {
@@ -42,7 +59,7 @@ function createWindows({
       webPreferences,
     });
     panel.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    panel.loadFile(path.join(ui, 'panel.html'));
+    load(panel, 'panel');
     panel.on('close', (event) => {
       if (!isQuitting()) {
         event.preventDefault();
@@ -142,7 +159,7 @@ function createWindows({
     window.webContents.on('did-start-loading', () => {
       if (mainWindow === window) mainReady = false;
     });
-    window.loadFile(path.join(ui, 'main.html'), { hash: view || 'library' });
+    load(window, 'workspace', { hash: view || 'library' });
     window.once('ready-to-show', () => {
       if (alive(window)) window.show();
     });
@@ -188,13 +205,16 @@ function createWindows({
       backgroundColor: theme.paper(),
       webPreferences,
     });
-    onboarding.loadFile(path.join(ui, 'onboarding.html'));
+    load(onboarding, 'onboarding');
     onboarding.once('ready-to-show', () => onboarding.show());
     // Closing onboarding ends only the capture it started itself.
     onboarding.on('closed', () => {
       onboarding = null;
       const state = engine.getState();
-      if (onboardingSession && state.sessionId === onboardingSession) {
+      if (
+        onboardingSession &&
+        (state.operationId || state.sessionId) === onboardingSession
+      ) {
         if (state.phase === 'starting') engine.command('cancel');
         else if (['recording', 'paused'].includes(state.phase))
           engine.command('stop');

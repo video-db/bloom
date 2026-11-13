@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src https:; media-src https: blob:; worker-src blob:"
+    />
+    <title>Bloom</title>
+    <link rel="stylesheet" href="ui.css" />
+    <link rel="stylesheet" href="panel.css" />
+    <link rel="stylesheet" href="workspace.css" />
+    <link rel="stylesheet" href="connected/connected.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="../../../node_modules/hls.js/dist/hls.min.js"></script>
+    <script type="module" src="connected/index.js"></script>
+  </body>
+</html>

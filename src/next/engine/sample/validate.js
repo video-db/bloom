@@ -42,6 +42,9 @@ const valid = {
     (a.key === 'screen' &&
       ['Display 1', 'Display 2 (sample)'].includes(a.value)) ||
     (booleanSources.includes(a.key) && typeof a.value === 'boolean'),
+  signIn: (a) => text(a.key) && a.key.length <= 200,
+  resumeUpload: (a) => id(a.id),
+  discardUpload: (a) => id(a.id),
   setPurpose: (a) => text(a.text),
   mark: (a) => a.text === undefined || text(a.text),
   answerAsk: (a) => typeof a.stop === 'boolean',
@@ -88,6 +91,8 @@ const valid = {
       'connection',
       'meeting-ended',
       'permission',
+      'offline',
+      'pending-upload',
     ].includes(a.kind),
 };
 

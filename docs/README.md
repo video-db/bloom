@@ -1,6 +1,7 @@
 # Bloom documentation
 
 - [Configuration reference](reference/configuration.md)
+- [Rebuilt-app VideoDB boundary](reference/videodb-integration.md)
 - [Build, install, verify and rollback](runbook.md)
 - [Architecture, decisions, gaps and trackers](https://github.com/Spext/architectures/tree/main/Products/Bloom/docs)
 

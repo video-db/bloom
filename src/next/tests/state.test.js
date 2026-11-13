@@ -269,7 +269,10 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
     },
     shell: { openExternal: () => Promise.resolve() },
     Menu: { buildFromTemplate: (x) => x, setApplicationMenu() {} },
-    dialog: { showMessageBox: () => Promise.resolve({ response: 0 }) },
+    dialog: {
+      showMessageBox: () => Promise.resolve({ response: 0 }),
+      showMessageBoxSync: () => 0,
+    },
   };
   const mainDir = path.resolve(__dirname, '../main');
   const context = {
@@ -334,7 +337,7 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
     ui: (window, name, args = {}) =>
       ipcMain.emit('next:ui', { sender: window.webContents }, name, args),
     dispose: () => {
-      app.emit('before-quit');
+      app.emit('before-quit', { preventDefault() {} });
       app.emit('will-quit');
     },
   };

@@ -1,0 +1,129 @@
+@import url('onboarding.css');
+
+#root {
+  height: 100%;
+}
+.connected-logo {
+  height: 24px;
+  width: 24px;
+  vertical-align: middle;
+}
+.brandname {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel #root {
+  height: auto;
+}
+.panel section.panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  background: var(--paper);
+}
+.connected-capture,
+.connected-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.connected-capture label,
+.connected-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.connected-capture .field,
+.connected-form .field {
+  width: 100%;
+}
+.connected-status,
+.connected-actions,
+.connected-toggles,
+.connected-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.connected-toggles label {
+  flex-direction: row;
+  align-items: center;
+}
+.connected-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.connected-setting {
+  padding: 12px 0;
+}
+.connected-capture p,
+.connected-form p {
+  margin: 0;
+}
+.capture-start {
+  color: var(--on) !important;
+  background: var(--rect) !important;
+  min-height: var(--control-height);
+}
+.capture-start .connected-logo {
+  filter: brightness(0) invert(1);
+  height: 20px;
+  width: 20px;
+}
+.connected-detail {
+  min-height: 100%;
+}
+.connected-detail .workspace-columns {
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 1fr);
+}
+.connected-transcript {
+  padding: 20px;
+}
+.connected-prose {
+  white-space: pre-wrap;
+  user-select: text;
+  font-size: 16px;
+  line-height: 1.8;
+  margin-bottom: 20px;
+  overflow-wrap: anywhere;
+}
+.connected-player-pane {
+  padding: 20px;
+  overflow-y: auto;
+}
+.connected-player-pane video {
+  width: 100%;
+  max-height: 320px;
+  background: var(--fill);
+  border-radius: 10px;
+}
+.connected-video-empty {
+  min-height: 150px;
+  padding: 20px;
+  background: var(--sub);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.view > .note {
+  margin: 12px;
+}
+.connected-permissions .btn {
+  margin: 4px;
+}
+.panel .pf {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+.connected-capture .row2,
+.connected-capture .capture-start {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+.connected-capture .row2 {
+  background: var(--paper);
+  padding: 6px 0;
+}

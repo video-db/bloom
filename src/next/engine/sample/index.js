@@ -3,15 +3,20 @@
 // This file owns the state object and composes the parts that change it. The real
 // engine must expose the same surface (see ../index.js).
 const { EventEmitter } = require('node:events');
+const { capabilitiesFor } = require('../capabilities');
 const { recordings: samples, moments } = require('./data');
 const { createRecordings } = require('./recordings');
 const { createSources } = require('./sources');
+const { createAccess } = require('./access');
+const { createUploads } = require('./uploads');
 const { createCapture } = require('./capture');
 const { createLibrary } = require('./library');
 const { createVersions } = require('./versions');
 const { validArgs } = require('./validate');
 
-function createSampleEngine() {
+// scope: which capabilities to report (see ../capabilities.js).
+// signedIn: whether the app opens with an account, as it does after onboarding.
+function createSampleEngine({ scope = 'full', signedIn = true } = {}) {
   const bus = new EventEmitter();
   const backgroundTimers = new Set();
   let state;
@@ -39,10 +44,16 @@ function createSampleEngine() {
   };
 
   const sources = createSources(ctx);
+  const access = createAccess(ctx, { signedIn });
+  const uploads = createUploads(ctx);
+  const capabilities = capabilitiesFor(scope);
 
-  // The state before a session starts, over the current sources and recordings.
+  // The state before a session starts, over everything that outlives a session.
   const initial = () => ({
     sample: true,
+    capabilities,
+    ...access.view(),
+    ...uploads.view(),
     sessionId: null,
     phase: 'idle', // idle | starting | recording | paused | stopped | saving | finished | processing-error
     elapsed: 0,
@@ -54,19 +65,25 @@ function createSampleEngine() {
     purpose: '',
     live: [],
     marks: [],
-    problem: null, // { kind: 'connection' | 'permission' | 'stop-failed' | 'upload-slow', at }
+    problem: null, // { kind: 'connection' | 'permission' | 'offline' | 'stop-failed' | 'upload-slow', at }
     ask: null, // 'meeting-ended'
     askSilenced: false,
+    upload: null, // while saving: { stage: 'finalizing' | 'uploading' | 'processing', progress: 0..1 }
     result: null, // { id, title, duration, trim, stage: 0 link | 1 summary | 2 editor, summary, renamed }
     recent: ctx.recordings.recent(),
   });
 
-  const capture = createCapture(ctx, { sources, initial });
+  const capture = createCapture(ctx, { sources, access, initial });
   const commands = {
     ...sources.commands,
+    ...access.commands,
     ...capture.commands,
+    ...uploads.commands,
     ...createLibrary(ctx).commands,
     ...createVersions(ctx).commands,
+    // Preview-only. Each part knows which hard-to-reach states it can jump to.
+    simulate: ({ kind }) =>
+      [capture, access, uploads].forEach((part) => part.simulate(kind)),
   };
   state = initial();
 

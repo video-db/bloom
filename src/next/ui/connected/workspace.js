@@ -37,11 +37,16 @@ const capture = {
     '<span class="badge warn">Saving needs attention · <button data-ui="show-panel">Review</button></span>',
 };
 
+// No brand beside the window buttons: the one branded thing here is the action.
 const titleBar = (s) =>
   /* HTML */ `<header class="bar drag">
-    <span class="brandname">${logo} Bloom</span>
     <span class="right nodrag">${capture[s.phase]?.(s) || ''}</span>
-    <button class="btn nodrag" data-ui="show-panel">New recording</button>
+    <button
+      class="btn pri capture-start bar-record nodrag"
+      data-ui="show-panel"
+    >
+      ${logo}<span>New recording</span>
+    </button>
   </header>`;
 
 // ---- recording browser ----
@@ -114,7 +119,14 @@ function browser(s, activeId, list) {
     </div>
     <div class="recording-list">${rows || empty}</div>
     <footer class="browser-footer">
-      <span>${s.online ? 'VideoDB' : 'Offline · showing saved recordings'}</span
+      <span class="browser-credit"
+        ><img
+          class="videodb-wordmark"
+          src="../assets/videodb-wordmark.png"
+          alt="VideoDB"
+          width="62"
+          height="10"
+        />${s.online ? '' : '<span>Offline</span>'}</span
       ><button
         class="icon-button"
         data-view="settings"

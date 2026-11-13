@@ -170,7 +170,7 @@ Run `npm test` for the automated tests; the [runbook](docs/runbook.md#automated-
 | `src/engine/` | Capture and VideoDB; the only code that talks to either |
 | `src/preload.js` | Context-isolated renderer bridge |
 | `src/ui/` | Onboarding, tray panel, main window and settings |
-| `src/tests/` | State and engine tests, Electron walkthroughs |
+| `src/tests/` | State, engine and notification tests, Electron walkthroughs |
 | `build/` | App icons, macOS entitlements and afterPack signing hook |
 | `docs/` | Configuration reference and operating runbook |
 

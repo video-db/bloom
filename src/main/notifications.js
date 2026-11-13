@@ -2,6 +2,12 @@
 const { Notification } = require('electron');
 const { clock } = require('./clock');
 
+// The display being recorded, by name. The real engine keeps its id; the sample keeps a name.
+const screenName = (state) =>
+  state.channels?.displays?.find((d) => d.id === state.sources.screen)?.name ||
+  (state.sample && state.sources.screen) ||
+  'Your screen';
+
 function createNotifications({ engine, prefs, windows }) {
   const sessionNotifications = new Map();
   let nudged = false,
@@ -98,13 +104,26 @@ function createNotifications({ engine, prefs, windows }) {
       state.phase === 'stopped' &&
       windows.outOfSight()
     )
-      sessionNotify('stopped', state, (s) => s.phase === 'stopped', {
-        title: 'Recording stopped (sample)',
-        body: `Connection lost at ${clock(state.problem.at)}. Review recovery options.`,
-        actions: ['Try again', 'Keep recording so far'],
-        sticky: true,
-        onAction: (i) => engine.command(i === 0 ? 'retry' : 'keep'),
-      });
+      sessionNotify(
+        'stopped',
+        state,
+        (s) => s.phase === 'stopped',
+        state.sample
+          ? {
+              title: 'Recording stopped (sample)',
+              body: `Connection lost at ${clock(state.problem.at)}. Review recovery options.`,
+              actions: ['Try again', 'Keep recording so far'],
+              sticky: true,
+              onAction: (i) => engine.command(i === 0 ? 'retry' : 'keep'),
+            }
+          : {
+              title: 'Recording needs attention',
+              body: 'Bloom couldn’t confirm the recording stopped. It may still be capturing.',
+              actions: ['Review'],
+              sticky: true,
+              onAction: windows.showPanel,
+            },
+      );
     if (
       state.ask &&
       state.ask !== lastAsk &&
@@ -117,7 +136,7 @@ function createNotifications({ engine, prefs, windows }) {
         (s) => s.phase === 'recording' && !!s.ask,
         {
           title: 'Meeting ended?',
-          body: `Still recording ${state.sources.screen} · ${clock(state.elapsed)}`,
+          body: `Still recording ${screenName(state)} · ${clock(state.elapsed)}`,
           actions: ['Review', 'Keep recording'],
           sticky: true,
           onAction: (i) =>
@@ -148,7 +167,7 @@ function createNotifications({ engine, prefs, windows }) {
     nudged = true;
     sessionNotify('long-recording', state, (s) => s.phase === 'recording', {
       title: `Still recording · ${clock(state.elapsed)}`,
-      body: `${state.sources.screen} · Review capture sources in Bloom.`,
+      body: `${screenName(state)} is being captured.`,
       actions: ['Keep going', 'Stop'],
       onAction: (i) => i === 1 && engine.command('stop'),
     });
@@ -184,8 +203,8 @@ function createNotifications({ engine, prefs, windows }) {
     },
     screenPermissionNeeded() {
       notify({
-        title: 'Screen permission needed',
-        body: 'Review permissions in Bloom. This preview simulates permission grants.',
+        title: 'Bloom can’t see your screen',
+        body: 'Turn on Screen Recording for Bloom to record.',
         actions: ['Review'],
         onAction: windows.showPanel,
       });

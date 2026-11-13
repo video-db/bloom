@@ -21,6 +21,7 @@ const { installMenu } = require('./menu');
 const { registerIpc } = require('./ipc');
 const { createQuitGuard } = require('./quit-guard');
 const { createScreenPreview } = require('./screen-preview');
+const { openFirstWindow } = require('./first-window');
 
 flags.separateUserData();
 // Automated runs stay out of the Dock and never become the active app, so opening their
@@ -118,26 +119,12 @@ function start() {
   shortcuts.register();
 }
 
-function openFirstWindow() {
-  if (flags.flag('skip-onboarding') || prefs.all().onboardingComplete)
-    windows.showPanel();
-  else {
-    if (engine.getState().sample) {
-      engine.command('setPermission', { key: 'screen', value: false });
-      engine.command('setPermission', { key: 'mic', value: false });
-    }
-    windows.openOnboarding();
-  }
-  if (flags.flag('open-preferences')) windows.openMain('settings');
-  else if (flags.flag('open-main')) windows.openMain('library');
-}
-
 app
   .whenReady()
   .then(() => {
     if (!primaryInstance) return;
     start();
-    openFirstWindow();
+    return openFirstWindow({ engine, prefs, windows, flag: flags.flag });
   })
   .catch(() => {
     dialog.showErrorBox(

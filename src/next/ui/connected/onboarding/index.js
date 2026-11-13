@@ -134,6 +134,9 @@ export function createOnboarding(root) {
       // Recording without a microphone is a choice, so the default follows it.
       if (!state.permissions.mic && state.prefs.defaultMic)
         window.bloom.ui('set-pref', { key: 'defaultMic', value: false });
+      // Someone who has been through setup before does not need the tour again.
+      if (state.prefs.onboardingComplete)
+        return window.bloom.ui('onboarding-done');
       goTo(2);
     },
     back: () => goTo(1),

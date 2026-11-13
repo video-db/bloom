@@ -53,9 +53,16 @@ function createExplore({ account, read }) {
         throw new ServiceError('invalid-input', 'Type what to look for.');
       const scope = account();
       if (!scope.collection) return [];
-      const result = await read(scope, () =>
-        scope.collection.legacySearch(query.trim()),
-      );
+      let result;
+      try {
+        result = await read(scope, () =>
+          scope.collection.legacySearch(query.trim()),
+        );
+      } catch (error) {
+        // VideoDB reports an empty answer as an error; it is no moments, not a failure.
+        if (/no results found/i.test(String(error?.message))) return [];
+        throw error;
+      }
       if (!Array.isArray(result?.shots))
         throw unreadable('an unreadable search result');
       const shots = result.shots;

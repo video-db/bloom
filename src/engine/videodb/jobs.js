@@ -194,12 +194,7 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
       if (scope !== ctx.scope() || disposed) return;
       let record = forSession(job.sessionId);
       if (!record) {
-        try {
-          await service.ownsSession(job.sessionId);
-        } catch {
-          continue;
-        }
-        if (scope !== ctx.scope()) return;
+        // The recorder lists only this account's files; one with no record is recovered.
         record = newRecord({
           id: `local-${randomUUID()}`,
           sessionId: job.sessionId,

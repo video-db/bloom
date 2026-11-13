@@ -123,7 +123,10 @@ test('with automatic transcription off, a new recording is left untranscribed', 
   assert.equal(record.status, 'ready');
   assert.equal(record.transcriptStatus, 'not-requested');
   assert.equal(record.summary, undefined);
-  assert.equal(f.calls.some(([name]) => name === 'summarise'), false);
+  assert.equal(
+    f.calls.some(([name]) => name === 'summarise'),
+    false,
+  );
   // Asking for the transcript by hand still brings the summary with it.
   await f.command('requestTranscript', { id: record.id });
   assert.equal(f.engine.getState().recordings[0].summaryStatus, 'ready');
@@ -186,25 +189,6 @@ test('sign-out during pending upload is refused and cached work stays visible', 
   await f.command('signOut');
   assert.equal(f.engine.getState().account.status, 'signed-in');
   assert.equal(f.engine.getState().recordings.length, 1);
-});
-
-test('native jobs owned by another account are not surfaced or relayed', async (t) => {
-  const f = createFixture();
-  t.after(() => f.engine.dispose());
-  f.recorder.jobs = [
-    {
-      recordingId: 'foreign-job',
-      sessionId: 'foreign-session',
-      stage: 'awaiting_token',
-      path: '/private/media.mp4',
-    },
-  ];
-  f.service.ownsSession = async () => {
-    throw new Error('forbidden');
-  };
-  await f.command('signIn', { key: 'synthetic-key' });
-  assert.equal(f.engine.getState().recordings.length, 0);
-  assert.equal(f.engine.getState().pending.length, 0);
 });
 
 test('restart discovers the retained job with no media path in renderer state', async (t) => {
@@ -438,29 +422,40 @@ test('the account overview, a browsed collection and search are read-only views'
   engine.dispose();
 });
 
-
 test('collection actions update the sidebar and open collection, and protect the recording destination', async (t) => {
   const { engine, command, calls } = await setup(t);
   await command('openCollection', { id: 'collection-2' });
   await command('renameCollection', { id: 'collection-2', text: 'Reviews' });
   assert.equal(engine.getState().browsing.name, 'Reviews');
-  assert.equal(engine.getState().collections.find((c) => c.id === 'collection-2').name, 'Reviews');
+  assert.equal(
+    engine.getState().collections.find((c) => c.id === 'collection-2').name,
+    'Reviews',
+  );
   await command('deleteCollection', { id: 'collection-2' });
   assert.equal(engine.getState().browsing, null);
   assert(!engine.getState().collections.some((c) => c.id === 'collection-2'));
   await command('renameCollection', { id: 'collection-1', text: 'Wrong' });
   await command('deleteCollection', { id: 'collection-1' });
-  assert.equal(calls.filter(([name]) => /^(rename|delete)Collection$/.test(name)).length, 2);
+  assert.equal(
+    calls.filter(([name]) => /^(rename|delete)Collection$/.test(name)).length,
+    2,
+  );
 });
-
 
 test('an uncertain deleted collection remains reachable for reconciliation', async (t) => {
   const { engine, service, command } = await setup(t);
   const list = service.listCollections;
-  service.pendingOperations = () => [{ key: 'collection:collection-2', kind: 'delete' }];
-  service.listCollections = async () => (await list()).filter((c) => c.id !== 'collection-2');
+  service.pendingOperations = () => [
+    { key: 'collection:collection-2', kind: 'delete' },
+  ];
+  service.listCollections = async () =>
+    (await list()).filter((c) => c.id !== 'collection-2');
   await command('refresh');
-  assert.equal(engine.getState().collections.find((c) => c.id === 'collection-2').pendingOperation.kind, 'delete');
+  assert.equal(
+    engine.getState().collections.find((c) => c.id === 'collection-2')
+      .pendingOperation.kind,
+    'delete',
+  );
   service.reconcileCollectionAction = async () => {
     service.pendingOperations = () => [];
     return { reconciliationNeeded: false };
@@ -468,7 +463,6 @@ test('an uncertain deleted collection remains reachable for reconciliation', asy
   await command('reconcileCollectionAction', { id: 'collection-2' });
   assert(!engine.getState().collections.some((c) => c.id === 'collection-2'));
 });
-
 
 test('reconciling a collection rename refreshes its open heading', async (t) => {
   const { engine, service, command } = await setup(t);
@@ -484,8 +478,10 @@ test('granting screen access refreshes channels discovered before permission', a
   const readyChannels = await f.recorder.channels();
   readyChannels.displays.push({ id: 'display:2', name: 'Studio Display' });
   f.recorder.permission.screen = false;
-  f.recorder.channels = async () => f.recorder.permission.screen
-    ? readyChannels : { displays: [], mics: [], systemAudio: [] };
+  f.recorder.channels = async () =>
+    f.recorder.permission.screen
+      ? readyChannels
+      : { displays: [], mics: [], systemAudio: [] };
   await f.command('signIn', { key: 'synthetic-key' });
   assert.equal(f.engine.getState().sources.screen, '');
   f.recorder.permission.screen = true;
@@ -495,7 +491,10 @@ test('granting screen access refreshes channels discovered before permission', a
   await f.command('setSource', { key: 'screen', value: 'display:2' });
   await f.command('setSource', { key: 'systemAudio', value: true });
   await f.command('start');
-  assert.equal(f.calls.find(([name]) => name === 'start')[1].channels[0].channelId, 'display:2');
+  assert.equal(
+    f.calls.find(([name]) => name === 'start')[1].channels[0].channelId,
+    'display:2',
+  );
 });
 
 test('permission requests refresh newly available microphone choices too', async (t) => {
@@ -503,8 +502,13 @@ test('permission requests refresh newly available microphone choices too', async
   f.recorder.permission.mic = false;
   await f.command('checkPermission');
   const channels = await f.recorder.channels();
-  f.recorder.channels = async () => ({ ...channels, mics: [{ id: 'mic:new', name: 'New microphone' }] });
-  f.recorder.requestPermission = async () => { f.recorder.permission.mic = true; };
+  f.recorder.channels = async () => ({
+    ...channels,
+    mics: [{ id: 'mic:new', name: 'New microphone' }],
+  });
+  f.recorder.requestPermission = async () => {
+    f.recorder.permission.mic = true;
+  };
   await f.command('setPermission', { key: 'mic', value: true });
   assert.equal(f.engine.getState().sources.microphone, 'mic:new');
 });
@@ -514,7 +518,10 @@ test('device refresh preserves a valid choice, reconciles removal and never runs
   const channels = await f.recorder.channels();
   let reads = 0;
   channels.displays.push({ id: 'display:2', name: 'Studio Display' });
-  f.recorder.channels = async () => { reads++; return structuredClone(channels); };
+  f.recorder.channels = async () => {
+    reads++;
+    return structuredClone(channels);
+  };
   await f.command('refreshSources');
   await f.command('setSource', { key: 'screen', value: 'display:2' });
   await f.command('refreshSources');
@@ -536,7 +543,11 @@ test('a delayed device list cannot replace sources after recording starts', asyn
   await flush();
   f.engine.command('start');
   await flush();
-  waiting.resolve({ displays: [{ id: 'display:new', name: 'New display' }], mics: [], systemAudio: [] });
+  waiting.resolve({
+    displays: [{ id: 'display:new', name: 'New display' }],
+    mics: [],
+    systemAudio: [],
+  });
   await refresh;
   assert.equal(f.engine.getState().phase, 'recording');
   assert.equal(f.engine.getState().sources.screen, 'display:1');
@@ -545,7 +556,11 @@ test('a delayed device list cannot replace sources after recording starts', asyn
 test('an empty permitted display list is a recorder failure, not ready setup', async (t) => {
   const f = createFixture();
   t.after(() => f.engine.dispose());
-  f.recorder.channels = async () => ({ displays: [], mics: [], systemAudio: [] });
+  f.recorder.channels = async () => ({
+    displays: [],
+    mics: [],
+    systemAudio: [],
+  });
   await f.command('signIn', { key: 'synthetic-key' });
   assert.equal(f.engine.getState().account.status, 'signed-in');
   assert.equal(f.engine.getState().recorder.status, 'failed');
@@ -561,7 +576,11 @@ test('a delayed device list cannot restore devices after sign-out', async (t) =>
   f.engine.command('signOut');
   await flush();
   const before = f.engine.getState().channels;
-  waiting.resolve({ displays: [{ id: 'foreign', name: 'Old account device' }], mics: [], systemAudio: [] });
+  waiting.resolve({
+    displays: [{ id: 'foreign', name: 'Old account device' }],
+    mics: [],
+    systemAudio: [],
+  });
   await refresh;
   assert.equal(f.engine.getState().account.status, 'signed-out');
   assert.deepEqual(f.engine.getState().channels, before);
@@ -590,12 +609,10 @@ test('a failed earlier recording, even after a failed recovery, never blocks Sta
   assert.equal(state.problem, null);
   assert.equal(state.recordings.length, 2);
   const earlier = state.recordings.find((r) => r.id === failedId);
-  assert.equal(earlier.paused, true, 'set aside, kept on this Mac');
-  assert.equal(earlier.continueLater, false, 'a failed one waits to be recovered');
-  assert.equal(earlier.status, 'error');
+  assert.equal(earlier.status, 'error', 'it waits to be recovered, untouched');
 });
 
-test('Start is available while the last recording is processed; that one continues afterwards', async (t) => {
+test('Start is available while the last recording is processed, and that one carries on', async (t) => {
   const f = await setup(t);
   await f.command('start');
   await f.command('stop');
@@ -605,33 +622,23 @@ test('Start is available while the last recording is processed; that one continu
 
   await f.command('start'); // straight away, without waiting for processing
   assert.equal(f.engine.getState().phase, 'recording');
+  // Sending a finished file does not depend on the recorder, so nothing is set aside.
   let earlier = f.engine.getState().recordings.find((r) => r.id === firstId);
-  assert.deepEqual(
-    [earlier.paused, earlier.continueLater, earlier.status, earlier.jobStage],
-    [true, true, 'processing', 'waiting'],
-  );
-  assert.equal(f.engine.getState().pending.find((p) => p.id === firstId).status, 'waiting');
-  // The recorder restarting ends the old wait; that is not a failure of the earlier recording.
-  f.recorder.emit('recording-relay-failed', { sessionId: first });
+  assert.equal(earlier.paused, undefined);
+  assert.equal(earlier.status, 'processing');
+
+  f.recorder.finish(first); // the first is ready while the second is still recording
   await flush();
+  earlier = f.engine.getState().recordings.find((r) => r.id === firstId);
+  assert.equal(earlier.status, 'ready');
   assert.equal(
-    f.engine.getState().recordings.find((r) => r.id === firstId).status,
-    'processing',
+    f.engine.getState().phase,
+    'recording',
+    'the new recording is not disturbed',
   );
 
   await f.command('stop');
-  f.recorder.finish(); // the second recording is ready
-  await flush();
-  await f.engine.whenIdle();
-  await flush();
-  earlier = f.engine.getState().recordings.find((r) => r.id === firstId);
-  assert.equal(earlier.paused, false, 'picked up again');
-  assert.equal(earlier.continueLater, false);
-  assert.ok(
-    f.calls.some(([name, recordingId]) => name === 'relay' && recordingId === `job-${first}`),
-    'processing of the earlier recording is asked for again',
-  );
-  f.recorder.finish(first);
+  f.recorder.finish();
   await flush();
   assert.equal(
     f.engine.getState().recordings.filter((r) => r.status === 'ready').length,
@@ -648,6 +655,10 @@ test('Start is not offered while the file is still being written', async (t) => 
   assert.equal(f.engine.getState().phase, 'saving');
   assert.equal(f.engine.getState().recordings[0].recordingId, undefined);
   await f.command('start');
-  assert.equal(f.engine.getState().phase, 'saving', 'no second capture over an unfinished file');
+  assert.equal(
+    f.engine.getState().phase,
+    'saving',
+    'no second capture over an unfinished file',
+  );
   assert.equal(f.engine.getState().recordings.length, 1);
 });

@@ -79,9 +79,9 @@ function createCapture(
       let attempted = false,
         started = false;
       try {
-        await service.ensureCollection();
-        const session = await service.createSession(operationId);
-        sessionId = session.id;
+        // Standalone recording has no backend session: the id is Bloom's own, and nothing
+        // is asked of VideoDB before capture begins.
+        sessionId = `rec-${operationId}`;
         const title = state.purpose || datedTitle(new Date());
         record = newRecord({ id: `local-${operationId}`, sessionId, title });
         record.requestedTitle = title; // VideoDB gets the same name
@@ -107,11 +107,8 @@ function createCapture(
               ]
             : []),
         ];
-        // Starting a session restarts the recorder, which stops work on earlier recordings.
-        // Set them aside; the ones that were going well continue when this one is done.
-        jobs.setAside(record.id);
         attempted = true;
-        await recorder.start({ sessionId, channels });
+        await recorder.start({ sessionId, channels, title });
         started = true;
         accumulated = 0;
         ctx.set({ phase: 'recording' });

@@ -351,7 +351,7 @@ test('download returns only a secure URL and safe filename, not raw SDK metadata
   });
 });
 
-test('published legacy client is gated without spawning a binary or creating a session', () => {
+test('a client without standalone capture is reported without being started', () => {
   class LegacyClient {
     constructor() {
       assert.fail('must not instantiate');
@@ -359,9 +359,9 @@ test('published legacy client is gated without spawning a binary or creating a s
   }
   const { service } = fixture({ CaptureClient: LegacyClient });
   assert.deepEqual(service.captureCapabilities().missing, [
-    'relayRecording',
-    'listLocalRecordings',
-    'waitForProcessing',
+    'startLocalRecording',
+    'stopLocalRecording',
+    'getWindows',
   ]);
   assert.equal(service.captureCapabilities().supported, false);
 });

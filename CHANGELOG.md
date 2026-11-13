@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Recording uses the SDK's standalone mode: no session or token is needed to start, the recording is a file on this Mac, and Bloom sends it to VideoDB itself. An earlier recording keeps being processed while you record the next. Recording uses the default microphone, so the microphone chooser is gone.
 - Quit: a second, older check could still ask "Bloom is still processing a recording" after the quiet quit and leave Bloom running; it now applies to the sample engine only.
 
 ## [2.3.5] - 2026-11-13

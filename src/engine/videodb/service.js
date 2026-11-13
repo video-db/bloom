@@ -12,6 +12,7 @@ const DEV_API = 'https://api.dev.videodb.io';
 const PROD_API = 'https://api.videodb.io';
 const SDK_BRANCH = 'release-0.3.3';
 const COLLECTION_NAME = 'Bloom Recordings';
+const UPLOAD_DEADLINE_MS = 30 * 60 * 1000;
 
 // Main-process boundary only. The SDK and credential store are injected for offline verification.
 function createVideoDBService({
@@ -156,6 +157,28 @@ function createVideoDBService({
         return coll.id;
       });
     },
+    // Send a finished recording file to the Bloom collection. Reading the file and the
+    // transfer can take minutes, so this has its own long deadline.
+    async uploadRecording({ path: filePath, title }) {
+      const scope = account();
+      await this.ensureCollection();
+      assertCurrent(scope);
+      const video = await request(
+        () =>
+          scope.collection.uploadFile({
+            filePath,
+            ...(title ? { name: title } : {}),
+          }),
+        { timeoutMs: UPLOAD_DEADLINE_MS },
+      );
+      assertCurrent(scope);
+      if (typeof video?.id !== 'string')
+        throw new ServiceError(
+          'invalid-response',
+          'VideoDB did not confirm the recording. Recover it to try again.',
+        );
+      return { id: video.id };
+    },
     pendingOperations() {
       return journal
         .list(account().id)
@@ -186,16 +209,14 @@ function createVideoDBService({
     captureCapabilities() {
       const prototype = CaptureClient?.prototype;
       const missing = [
-        'relayRecording',
-        'listLocalRecordings',
-        'waitForProcessing',
+        'startLocalRecording',
+        'stopLocalRecording',
+        'getWindows',
       ].filter((method) => typeof prototype?.[method] !== 'function');
       return {
-        // Methods alone cannot prove event forwarding, fresh-token support, or graceful shutdown.
         supported: missing.length === 0,
         missing,
-        reason:
-          'Local recording requires a verified SDK relay, token-refresh, event and recovery adapter.',
+        reason: 'Recording needs an SDK with standalone capture.',
       };
     },
   };

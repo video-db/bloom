@@ -28,13 +28,18 @@ function createEngine(options = {}) {
     const path = require('node:path');
     const { createVideoDBBoundary } = require('./videodb');
     const { createVideoDBEngine } = require('./videodb/engine');
-    const { createSDKRecorder } = require('./videodb/recorder');
+    const { createLocalRecorder } = require('./videodb/local-recorder');
     const { createRecordingCache } = require('./videodb/cache');
     const { CaptureClient } = require('videodb-capture/capture');
     const service = createVideoDBBoundary(options);
-    const recorder = createSDKRecorder({
+    const directory = path.join(
+      options.dataDir,
+      service.apiUrl.includes('.dev.') ? 'videodb-dev' : 'videodb-prod',
+    );
+    const recorder = createLocalRecorder({
       CaptureClient,
       service,
+      journalFile: path.join(directory, 'local-recordings.json'),
       permissionStatus: options.permissionStatus,
       permissionDecided: options.permissionDecided,
     });

@@ -4,7 +4,8 @@ function initialState() {
   return {
     sample: false,
     capabilities: capabilitiesFor('v1'),
-    account: { status: 'signed-out', label: '' },
+    account: { status: 'signed-out', label: '' }, // signed-out | checking | signed-in | invalid | offline
+    recorder: { status: 'idle', message: '' }, // idle | preparing | ready | failed
     online: true,
     phase: 'idle',
     sessionId: null,

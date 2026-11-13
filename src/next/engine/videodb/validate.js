@@ -8,6 +8,7 @@ const commandArgs = {
   checkConnection: none,
   refresh: none,
   checkPermission: none,
+  prepareRecorder: none,
   start: none,
   stop: none,
   pause: none,

@@ -1,20 +1,26 @@
-const { ServiceError } = require('./errors');
+const { ServiceError, safeError } = require('./errors');
 
+// Who is signed in, what macOS allows, and whether the recorder is ready. These are three
+// separate answers: a key that VideoDB accepted stays accepted even if the recorder or the
+// library then fails, so neither failure is ever reported as a bad key.
 function createAccess(ctx, { service, recorder, library, recover }) {
   let checking = false;
-  async function connected(identity) {
-    ctx.switchScope(identity.scopeId);
-    ctx.set({
-      account: { status: 'signed-in', label: 'VideoDB account' },
-      online: true,
-      problem: null,
-    });
-    await library.refresh();
-    ctx.set({ permissions: recorder.permissions() });
-    // Discovery initializes the recorder only after an explicit sign-in or saved-account restore.
-    const channels = await recorder.channels();
+
+  // Starts the recorder and finds what it can capture. Runs only after sign-in.
+  async function prepareRecorder() {
+    ctx.set({ recorder: { status: 'preparing', message: '' } });
+    let channels;
+    try {
+      channels = await recorder.channels();
+    } catch (error) {
+      ctx.set({
+        recorder: { status: 'failed', message: safeError(error).message },
+      });
+      return false;
+    }
     const sources = ctx.get().sources;
     ctx.set({
+      recorder: { status: 'ready', message: '' },
       channels,
       sources: {
         ...sources,
@@ -26,8 +32,29 @@ function createAccess(ctx, { service, recorder, library, recover }) {
           : channels.mics[0]?.id || '',
       },
     });
-    await recover();
+    return true;
   }
+
+  async function connected(identity) {
+    ctx.switchScope(identity.scopeId);
+    ctx.set({
+      account: { status: 'signed-in', label: 'VideoDB account' },
+      online: true,
+      problem: null,
+      permissions: recorder.permissions(),
+    });
+    const ready = await prepareRecorder();
+    await library.refresh();
+    if (ready) await recover();
+  }
+
+  const rejected = (error) =>
+    ctx.set({
+      account: {
+        status: error.code === 'authentication' ? 'invalid' : 'offline',
+        label: '',
+      },
+    });
   async function bootstrap() {
     if (checking) return;
     checking = true;
@@ -36,17 +63,15 @@ function createAccess(ctx, { service, recorder, library, recover }) {
       if (!cached) return;
       ctx.switchScope(cached.scopeId);
       ctx.set({ account: { status: 'checking', label: '' } });
-      const identity = await service.restore();
+      let identity;
+      try {
+        identity = await service.restore();
+      } catch (error) {
+        rejected(error);
+        ctx.set({ online: false });
+        throw error;
+      }
       if (identity) await connected(identity);
-    } catch (error) {
-      ctx.set({
-        account: {
-          status: error.code === 'authentication' ? 'invalid' : 'offline',
-          label: '',
-        },
-        online: false,
-      });
-      throw error;
     } finally {
       checking = false;
     }
@@ -65,18 +90,26 @@ function createAccess(ctx, { service, recorder, library, recover }) {
       checking = true;
       ctx.set({ account: { status: 'checking', label: '' }, problem: null });
       try {
-        await connected(await service.signIn(key));
-      } catch (error) {
-        ctx.set({
-          account: {
-            status: error.code === 'authentication' ? 'invalid' : 'offline',
-            label: '',
-          },
-        });
-        throw error;
+        let identity;
+        try {
+          identity = await service.signIn(key);
+        } catch (error) {
+          rejected(error);
+          throw error;
+        }
+        await connected(identity);
       } finally {
         checking = false;
       }
+    },
+    // Retry after the recorder failed to start. The account is untouched.
+    async prepareRecorder() {
+      if (
+        ctx.get().account.status !== 'signed-in' ||
+        ctx.get().recorder.status === 'preparing'
+      )
+        return;
+      if (await prepareRecorder()) await recover();
     },
     async signOut() {
       if (
@@ -93,6 +126,7 @@ function createAccess(ctx, { service, recorder, library, recover }) {
       ctx.switchScope(null);
       ctx.set({
         account: { status: 'signed-out', label: '' },
+        recorder: { status: 'idle', message: '' },
         phase: 'idle',
         result: null,
         sessionId: null,

@@ -88,6 +88,6 @@
   },
   "dependencies": {
     "hls.js": "^1.7.4",
-    "videodb-capture": "github:video-db/videodb-node#release-0.3.3"
+    "videodb-capture": "github:video-db/videodb-node#a0c395a596e793b369f202810f323be1f41f3324"
   }
 }

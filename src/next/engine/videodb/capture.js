@@ -90,12 +90,9 @@ function createCapture(
         await service.ensureCollection();
         const session = await service.createSession(operationId);
         sessionId = session.id;
-        record = newRecord({
-          id: `local-${operationId}`,
-          sessionId,
-          title: state.purpose || datedTitle(new Date()),
-        });
-        record.requestedTitle = state.purpose || '';
+        const title = state.purpose || datedTitle(new Date());
+        record = newRecord({ id: `local-${operationId}`, sessionId, title });
+        record.requestedTitle = title; // VideoDB gets the same name
         ctx.records([record, ...ctx.get().recordings]);
         ctx.set({ sessionId });
         const channels = [

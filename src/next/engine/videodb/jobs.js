@@ -36,7 +36,7 @@ function createJobs(ctx, { service, recorder }) {
         jobStage: 'complete',
         streamUrl: video.streamUrl,
         playerUrl: video.playerUrl,
-        title: video.title,
+        title: record.requestedTitle || video.title,
         duration: video.duration || record.duration,
       });
       if (ctx.get().sessionId === payload.sessionId) {

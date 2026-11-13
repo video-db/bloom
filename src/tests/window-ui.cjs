@@ -76,6 +76,9 @@ fs.mkdirSync(evidence, { recursive: true });
     for (let i = 0; i < 40 && (await camSize())[0] !== 280; i++)
       await new Promise((resolve) => setTimeout(resolve, 50));
     assert.deepEqual(await camSize(), [280, 280]);
+    await cam.locator('.cam-sizes button.on[data-size="l"]').waitFor({
+      state: 'attached',
+    });
     await cam.screenshot({
       path: path.join(evidence, `camera-${theme}.png`),
       omitBackground: true,

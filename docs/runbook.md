@@ -30,13 +30,19 @@ With Playwright available, run the Electron walkthroughs one at a time (the app 
 | Command | Covers |
 |---|---|
 | `node src/tests/app-ui.cjs light` | The tray panel through every recording state, the main window and Settings, with a fake recorder |
-| `node src/tests/window-ui.cjs light` | Recording a single window: named, switched, hidden and shown, paused, stopped |
+| `node src/tests/window-ui.cjs light` | The floating camera (drawn without opening the camera), then recording a single window: named, switched, hidden and shown, the floating control, paused, stopped |
 | `node src/tests/quit-ui.cjs` | Quitting while a recording is being processed exits with no question |
 | `node src/tests/onboarding-ui.cjs light` | First run with a fake service and recorder: key check, automatic advance, recorder failure, reopen, optional microphone, hand-off to the menu bar |
 
 On macOS, `node src/tests/dock-ui.cjs` checks native Dock visibility through tray creation/show/hide, workspace/setup and window closure, plus preservation of accessory mode for background automation. It uses isolated blank windows without accounts or capture.
 
 The app and onboarding walkthroughs run the real engine against a fake service and recorder (`--fixture`). Neither contacts VideoDB, looks at the screen or opens the microphone, and the fixture mode is ignored by packaged builds. Set `BLOOM_ELECTRON_PATH` and `BLOOM_PLAYWRIGHT_MODULE` if the tools are not installed in this checkout. Screenshots are saved under `.context/` (override with `BLOOM_UI_EVIDENCE`); look at them after a change to what a person sees.
+
+### The real recorder
+
+`node src/tests/recorder-check.cjs` checks what a fake recorder cannot: it opens two test windows that show the time as coloured columns, records them with the real recorder in standalone mode, and reads the time back out of each frame. It reports how soon after Start the first frame is from, whether a paused stretch stays in the file as a held picture or is cut out (and so whether the pause positions Bloom stores match the file), that the window list has the test windows, that switching and hiding a window show in the file, that a window lying on top of the recorded one is not in a window recording, and whether the recorder's display ids match the system's. Add `--display` to also record the main display for three seconds (everything on it), and `--keep` to keep the files.
+
+It needs the Mac unlocked, Screen Recording allowed for the terminal, Bloom quit (one recorder runs at a time) and ffmpeg. Nothing is sent anywhere and the files are deleted at the end. A locked Mac offers no displays, so the check refuses to run on one. It exits 0 when every check passes, 1 when one fails and 2 when it could not run.
 
 For a change that must not alter any screen, set `BLOOM_STYLE_SNAPSHOT=1` and a different `BLOOM_UI_EVIDENCE` folder before and after; each screenshot then also saves every element's computed style and box. `node src/tests/helpers/compare-styles.cjs <before> <after>` lists what differs.
 
@@ -70,10 +76,11 @@ On the actual target platform, with a test account and a screen you are content 
 2. Sign in with a valid API key; confirm an invalid key yields an actionable error in place.
 3. Grant permissions, choose a display and microphone, and record a short sample. Check both selected audio sources and that a source turned off is absent.
 4. Pause and resume, add a mark, then Stop. Wait through saving and confirm the tray shows the finished recording.
-5. Open the main window: check playback, the copied link, the transcript for a sample with speech, rename, download and delete.
-6. Record a second time. Quit during saving and confirm Bloom asks first; reopen and confirm the recording finishes saving.
-7. Check both themes, native tooltips, the global shortcut and notifications.
-8. Repeat in a packaged build on each supported Mac architecture.
+5. Turn the camera on from the tray: macOS asks once, then a round picture appears bottom left. Drag it, change its size, record the display and confirm the picture is in the recording; record a single window and confirm it is not.
+6. Open the main window: check playback, the copied link, the transcript for a sample with speech, rename, download and delete.
+7. Record a second time. Quit during saving and confirm Bloom asks first; reopen and confirm the recording finishes saving.
+8. Check both themes, native tooltips, the global shortcut and notifications.
+9. Repeat in a packaged build on each supported Mac architecture.
 
 Redact keys, tokens and recording URLs before sharing any diagnostic output.
 

@@ -47,7 +47,10 @@ function registerIpc({
     fromOnboarding(event) ? screenPreview.capture() : null,
   );
   ipcMain.handle('bloom:get-state', (event) => {
-    if (!roleOf(BrowserWindow.fromWebContents(event.sender))) return null;
+    const role = roleOf(BrowserWindow.fromWebContents(event.sender));
+    if (!role) return null;
+    // The camera window needs its size and nothing about the account or recordings.
+    if (role === 'camera') return floating.cameraState();
     return appState.withPrefs(engine.getState());
   });
 
@@ -111,7 +114,8 @@ function registerIpc({
     if (role === 'camera') {
       if (name === 'camera-drag') floating.dragCamera(args.dx, args.dy);
       if (name === 'camera-drop') floating.dropCamera();
-      if (name === 'camera-size') floating.resizeCamera(args.size);
+      if (name === 'camera-size' && floating.resizeCamera(args.size))
+        appState.broadcast(engine.getState());
       return;
     }
     if (

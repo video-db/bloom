@@ -121,7 +121,10 @@ function createFloating({
       .then((allowed) => {
         asking = false;
         if (isQuitting()) return;
-        if (!allowed) return cameraRefused();
+        if (!allowed) {
+          if (cameraWanted(latest)) cameraRefused();
+          return;
+        }
         // It may have been turned off again while macOS was asking.
         if (cameraWanted(latest) && !alive(camera)) showCamera(latest);
       });
@@ -167,19 +170,24 @@ function createFloating({
       const [x, y] = camera.getPosition();
       prefs.set('camAt', { x, y });
     },
-    // A new size keeps the picture's bottom-left corner where it is.
+    // A new size keeps the picture's bottom-left corner where it is, as far as its display
+    // allows. True when the size changed.
     resizeCamera(size) {
-      if (!CAMERA[size] || !prefs.set('camSize', size) || !alive(camera))
-        return;
-      const [x, y] = camera.getPosition();
-      const [, was] = camera.getSize();
+      if (!CAMERA[size] || !prefs.set('camSize', size)) return false;
+      if (!alive(camera)) return true;
+      const side = CAMERA[size];
+      const was = camera.getBounds();
+      const area = screen.getDisplayMatching(was).workArea;
+      const within = (value, from, length) =>
+        Math.max(from, Math.min(value, from + length - side));
       camera.setBounds({
-        x,
-        y: y + was - CAMERA[size],
-        width: CAMERA[size],
-        height: CAMERA[size],
+        x: within(was.x, area.x, area.width),
+        y: within(was.y + was.height - side, area.y, area.height),
+        width: side,
+        height: side,
       });
       this.dropCamera();
+      return true;
     },
     roleOf: (window) =>
       alive(control) && window === control
@@ -187,9 +195,15 @@ function createFloating({
         : alive(camera) && window === camera
           ? 'camera'
           : null,
+    // The camera window is told its size and nothing about the account or recordings.
+    cameraState: () => ({ prefs: { camSize: prefs.all().camSize } }),
     send(channel, payload) {
-      for (const window of [control, camera])
-        if (alive(window)) window.webContents.send(channel, payload);
+      if (alive(control)) control.webContents.send(channel, payload);
+      if (alive(camera))
+        camera.webContents.send(
+          channel,
+          channel === 'bloom:state' ? this.cameraState() : payload,
+        );
     },
     isShowing: () => alive(control) && control.isVisible(),
     cameraShowing: () => alive(camera) && camera.isVisible(),

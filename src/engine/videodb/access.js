@@ -120,6 +120,7 @@ function createAccess(ctx, { service, recorder, library, recover }) {
       ctx.switchScope(null);
       ctx.set({
         account: { status: 'signed-out', label: '' },
+        sources: { ...ctx.get().sources, camera: false },
         recorder: { status: 'idle', message: '' },
         phase: 'idle',
         result: null,

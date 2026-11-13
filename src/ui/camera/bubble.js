@@ -36,6 +36,12 @@ export function mountCamera(root) {
       })
       .then((media) => {
         stream = media;
+        // Unplugged, or taken by something else.
+        media
+          .getVideoTracks()[0]
+          ?.addEventListener('ended', () =>
+            say('The camera stopped. Turn it off and on again.'),
+          );
         root.querySelector('video').srcObject = media;
       })
       .catch(() => say('The camera could not be opened.'));

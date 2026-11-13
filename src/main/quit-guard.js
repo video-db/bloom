@@ -1,32 +1,26 @@
-// Asks before quitting while a recording is still being saved or uploaded. Quitting then
-// leaves it on this Mac until the next launch, so it must be a choice, not an accident.
+const { canStart } = require('../engine/videodb/model');
+
+// True when Bloom can quit or restart without asking: nothing is being captured and the last
+// recording's file is on this Mac. Processing continues on the next launch (ADR 0004).
+const quitsQuietly = (state) => canStart(state);
+
+// The question asked before quitting while Bloom is capturing or still writing the file:
+// that is the only time quitting can cost someone their recording.
 function recordingQuitPrompt(state) {
-  if (['idle', 'finished'].includes(state.phase) && !state.pending.length)
-    return null;
-  const retained = ['idle', 'finished', 'processing-error'].includes(
-    state.phase,
-  );
+  if (quitsQuietly(state)) return null;
   return {
     type: 'warning',
-    buttons: ['Keep Bloom Open', retained ? 'Quit Bloom' : 'Stop and Quit'],
+    buttons: ['Keep Bloom Open', 'Stop and Quit'],
     defaultId: 0,
     cancelId: 0,
-    message: retained
-      ? 'A recording still needs attention'
-      : 'A recording is still active or being saved',
-    detail: retained
-      ? 'Bloom will keep any retained recording files on this Mac. Reopen Bloom to check the recording status and retry failed uploads.'
-      : 'Bloom must confirm capture has stopped and finalize media before quitting. Complete pending files can upload after you reopen Bloom. Incomplete media is not guaranteed recoverable.',
+    message: 'A recording is still in progress',
+    detail:
+      'Bloom will stop recording and finish saving the file before it quits. The recording is processed the next time you open Bloom. A file that has not finished saving may not be recoverable.',
   };
 }
 
-// True when nothing is being captured or finalised, so Bloom can restart without asking:
-// a retained upload stays on this Mac and is picked up on the next launch, as always.
-const restartsQuietly = (state) =>
-  ['idle', 'finished', 'processing-error'].includes(state.phase);
-
-// How long quitting waits for the recorder when nothing is being captured. Its shutdown has
-// been seen not to return with only a failed upload retained; quitting must still happen.
+// How long quitting waits for the recorder when nothing is being captured. Its shutdown can
+// take minutes while an earlier recording is failing; quitting must not wait for that.
 const QUIET_SHUTDOWN_MS = 4000;
 
 // Settles when `work` does, or after `ms`, whichever comes first. Never rejects.
@@ -63,9 +57,9 @@ function createQuitGuard({ engine, ask }) {
           buttons: ['Keep Bloom Open', 'Quit Anyway'],
           defaultId: 0,
           cancelId: 0,
-          message: 'Bloom is still uploading a recording',
+          message: 'Bloom is still processing a recording',
           detail:
-            'If you quit now, the recording stays on this Mac and the upload continues the next time you open Bloom.',
+            'If you quit now, the recording stays on this Mac and processing continues the next time you open Bloom.',
         }) === 1;
       return confirmed;
     },
@@ -75,6 +69,6 @@ function createQuitGuard({ engine, ask }) {
 module.exports = {
   createQuitGuard,
   recordingQuitPrompt,
-  restartsQuietly,
+  quitsQuietly,
   settledWithin,
 };

@@ -1,68 +1,52 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { recordingQuitPrompt } = require('../main/quit-guard');
+const {
+  recordingQuitPrompt,
+  quitsQuietly,
+  settledWithin,
+} = require('../main/quit-guard');
 
-test('retained failed uploads do not describe an idle recorder as active', () => {
+const record = (extra) => ({ sessionId: 's1', status: 'processing', ...extra });
+
+test('a recording being processed or needing recovery never raises a question at quit', () => {
   for (const phase of ['idle', 'finished', 'processing-error']) {
-    const prompt = recordingQuitPrompt({
+    const state = {
       phase,
-      pending: [{ status: 'failed' }],
-    });
-    assert.equal(prompt.message, 'A recording still needs attention');
-    assert.equal(prompt.buttons[1], 'Quit Bloom');
-    assert.match(prompt.detail, /keep any retained recording files/);
-    assert.match(prompt.detail, /retry failed uploads/);
-    assert.equal(prompt.cancelId, 0);
+      sessionId: 's1',
+      recordings: [record({ status: 'error' })],
+    };
+    assert.equal(recordingQuitPrompt(state), null);
+    assert.equal(quitsQuietly(state), true);
   }
+  // Stopped, and the file is on this Mac: processing is background work.
+  const processing = {
+    phase: 'saving',
+    sessionId: 's1',
+    recordings: [record({ recordingId: 'local-1' })],
+  };
+  assert.equal(recordingQuitPrompt(processing), null);
 });
 
-test('capture and finalization retain the stop-and-quit warning', () => {
-  for (const phase of [
-    'starting',
-    'recording',
-    'paused',
-    'stopping',
-    'stopped',
-    'saving',
-  ]) {
-    const prompt = recordingQuitPrompt({ phase, pending: [] });
+test('capture, and a file still being written, ask before quitting', () => {
+  const asks = (state) => {
+    const prompt = recordingQuitPrompt(state);
     assert.equal(prompt.buttons[1], 'Stop and Quit');
-    assert.match(prompt.detail, /confirm capture has stopped/);
     assert.equal(prompt.defaultId, 0);
     assert.equal(prompt.cancelId, 0);
-  }
-});
-
-test('completed work quits without a warning; pending uploads still ask', () => {
-  for (const phase of ['idle', 'finished']) {
-    assert.equal(recordingQuitPrompt({ phase, pending: [] }), null);
-    for (const status of ['waiting', 'uploading', 'failed'])
-      assert.ok(recordingQuitPrompt({ phase, pending: [{ status }] }));
-  }
-  assert.ok(recordingQuitPrompt({ phase: 'processing-error', pending: [] }));
-});
-
-test('setup can reopen Bloom without asking unless capture or finalisation is under way', () => {
-  const { restartsQuietly } = require('../main/quit-guard');
-  // A retained failed upload does not stand in the way of applying a new permission.
-  for (const phase of ['idle', 'finished', 'processing-error'])
-    assert.equal(
-      restartsQuietly({ phase, pending: [{ status: 'failed' }] }),
-      true,
-    );
+    assert.doesNotMatch(`${prompt.message} ${prompt.detail}`, /upload/i);
+  };
   for (const phase of [
     'starting',
     'recording',
     'paused',
     'stopping',
     'stopped',
-    'saving',
   ])
-    assert.equal(restartsQuietly({ phase, pending: [] }), false);
+    asks({ phase, sessionId: 's1', recordings: [record()] });
+  asks({ phase: 'saving', sessionId: 's1', recordings: [record()] }); // no recorder id yet
 });
 
 test('a recorder shutdown that never returns cannot hold up quitting', async () => {
-  const { settledWithin } = require('../main/quit-guard');
   const started = Date.now();
   await settledWithin(new Promise(() => {}), 40); // never settles
   assert.ok(Date.now() - started < 1000);

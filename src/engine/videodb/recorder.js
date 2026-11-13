@@ -168,6 +168,17 @@ function createSDKRecorder({ CaptureClient, service, permissionStatus }) {
       }
       client = null;
     },
+    // Quitting with a recorder that has not answered its shutdown: end its process so it
+    // cannot keep running without Bloom. The SDK has no public call for this, so this is the
+    // one place that reaches past it. Recordings on disk are untouched.
+    abandon() {
+      try {
+        client?.binaryManager?.kill?.();
+      } catch {
+        // nothing more can be done from here
+      }
+      client = null;
+    },
   };
 }
 

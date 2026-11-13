@@ -14,7 +14,7 @@ const { registerIpc } = require('./ipc');
 const {
   createQuitGuard,
   recordingQuitPrompt,
-  restartsQuietly,
+  quitsQuietly,
   settledWithin,
 } = require('./quit-guard');
 const { createScreenPreview } = require('./screen-preview');
@@ -128,39 +128,44 @@ app
     app.quit();
   });
 
-// Setup asks Bloom to reopen so macOS applies a newly granted permission. Nothing is being
-// captured at that point, so a retained upload is left for the next launch without a question.
-function restartForPermission() {
-  app.relaunch();
-  if (!engine || !restartsQuietly(engine.getState())) return app.quit();
+// Quit with nothing being captured: the recorder gets a moment to stop, and is ended if it
+// has not, so it never outlives Bloom. Recordings on this Mac are picked up on the next launch.
+function quitQuietly() {
   shutdownPending = true;
-  // The recorder gets a moment to suspend; the restart happens either way.
-  settledWithin(engine.shutdown({ suspend: true })).then(() => {
+  let stopped = false;
+  settledWithin(
+    engine.shutdown({ suspend: true }).then(() => {
+      stopped = true;
+    }),
+  ).then(() => {
+    if (!stopped) engine.abandon?.();
     quitting = true;
     app.quit();
   });
+}
+
+// Setup asks Bloom to reopen so macOS applies a newly granted permission.
+function restartForPermission() {
+  app.relaunch();
+  if (!engine || !quitsQuietly(engine.getState())) return app.quit();
+  quitQuietly();
 }
 
 app.on('before-quit', (event) => {
   if (engine && !engine.getState().sample && !quitting) {
     event.preventDefault();
     if (shutdownPending) return;
-    const state = engine.getState();
-    const prompt = recordingQuitPrompt(state);
-    const suspend = !!prompt && dialog.showMessageBoxSync(prompt) === 1;
-    if (prompt && !suspend) return;
+    // Only capture, or a file still being written, is worth a question (ADR 0004).
+    const prompt = recordingQuitPrompt(engine.getState());
+    if (!prompt) return quitQuietly();
+    if (dialog.showMessageBoxSync(prompt) !== 1) return;
     shutdownPending = true;
-    const finish = () => {
-      quitting = true;
-      app.quit();
-    };
-    // Nothing is being captured: give the recorder a moment, then quit regardless. Retained
-    // recordings stay on this Mac and are picked up on the next launch.
-    if (restartsQuietly(state))
-      return void settledWithin(engine.shutdown({ suspend })).then(finish);
     engine
-      .shutdown({ suspend })
-      .then(finish)
+      .shutdown({ suspend: true })
+      .then(() => {
+        quitting = true;
+        app.quit();
+      })
       .catch(() => {
         shutdownPending = false;
         dialog.showMessageBox({

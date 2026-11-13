@@ -50,6 +50,9 @@ function start() {
           : 'https://api.dev.videodb.io',
       permissionStatus: (kind) =>
         systemPreferences.getMediaAccessStatus(kind) === 'granted',
+      // False while macOS is still asking the person, so setup does not call that "off".
+      permissionDecided: (kind) =>
+        systemPreferences.getMediaAccessStatus(kind) !== 'not-determined',
       scope: flags.flag('v1') ? 'v1' : 'full',
       // Someone who has been through onboarding already has an account.
       signedIn: flags.flag('skip-onboarding') || prefs.all().onboardingComplete,

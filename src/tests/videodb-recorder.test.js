@@ -80,6 +80,7 @@ test('a permission request acknowledgement does not become a granted OS permissi
   assert.deepEqual(await recorder.requestPermission('screen'), {
     screen: false,
     mic: false,
+    micDecided: true, // nothing says macOS is still asking
     camera: false,
   });
 });

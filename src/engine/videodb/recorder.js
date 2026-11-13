@@ -13,7 +13,12 @@ const EVENTS = [
 ];
 
 // All public Node SDK recorder calls and native event names are confined to this adapter.
-function createSDKRecorder({ CaptureClient, service, permissionStatus }) {
+function createSDKRecorder({
+  CaptureClient,
+  service,
+  permissionStatus,
+  permissionDecided = () => true,
+}) {
   const events = new EventEmitter();
   let client = null;
   let initializing = null;
@@ -76,6 +81,8 @@ function createSDKRecorder({ CaptureClient, service, permissionStatus }) {
       return {
         screen: permissionStatus('screen'),
         mic: permissionStatus('microphone'),
+        // macOS has an answer for the microphone: allowed or refused, not still asking.
+        micDecided: permissionDecided('microphone'),
         camera: false,
       };
     },

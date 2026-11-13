@@ -166,6 +166,12 @@ export function createOnboarding(root) {
     settle = flow.screenAsked || flow.micAsking;
     window.bloom.command('checkPermission');
   });
+  // The macOS microphone question does not always take focus away, so its answer may come
+  // with no focus change. Look once a second while the question is open.
+  setInterval(() => {
+    if (flow.step === 1 && flow.micAsking)
+      window.bloom.command('checkPermission');
+  }, 1000);
   window.addEventListener('beforeunload', previews.stop);
 
   return {
@@ -173,14 +179,18 @@ export function createOnboarding(root) {
       state = next;
       // The macOS microphone question takes focus; an update that arrives once this
       // window has it back is the answer.
+      // While macOS is still asking, there is no answer to show yet.
+      const decided =
+        state.permissions.mic || state.permissions.micDecided !== false;
       const answered =
         flow.micAsking &&
-        document.hasFocus() &&
-        Date.now() - flow.micAskedAt > 800;
+        decided &&
+        (state.permissions.mic ||
+          (document.hasFocus() && Date.now() - flow.micAskedAt > 800));
       if (settle || answered) {
         settle = false;
         flow.screenReturned = flow.screenAsked && !state.permissions.screen;
-        if (flow.micAsking) {
+        if (flow.micAsking && decided) {
           flow.micAsking = false;
           flow.micDenied = !state.permissions.mic;
         }

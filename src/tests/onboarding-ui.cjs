@@ -185,7 +185,9 @@ fs.mkdirSync(evidence, { recursive: true });
       };
     });
     await alert.getByRole('button', { name: 'Try again' }).click();
-    await page.getByText('While you record').waitFor();
+    // The recorder started this time: the warning goes, and nothing takes its place.
+    await alert.waitFor({ state: 'detached' });
+    assert.equal(await page.getByText('While you record').count(), 0);
 
     // ---- 2 · Permissions: ask, waiting, reopen, on; microphone turned down ----
     assert.equal(await button('Continue').isDisabled(), true);
@@ -216,8 +218,19 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await button('Check again').count(), 0);
     assert.equal(await button('Continue').isEnabled(), true);
 
+    // macOS is still asking: the row waits for the answer, even if the window gets focus.
+    await main(() => {
+      global.__bloom.getFixture().recorder.permission.micDecided = false;
+    });
     await button('Request access').click();
     await comeBack();
+    await page.waitForTimeout(1200);
+    await page.getByText('Answer the macOS question.').waitFor();
+    assert.equal(await page.getByText('Off. You can record without it').count(), 0);
+    // The answer arrives with no focus change; setup notices it by itself.
+    await main(() => {
+      global.__bloom.getFixture().recorder.permission.micDecided = true;
+    });
     await page.getByText('Off. You can record without it').waitFor();
     await shot(page, '2-permissions-mic-off');
     assert.equal(

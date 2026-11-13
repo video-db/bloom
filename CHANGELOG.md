@@ -4,6 +4,7 @@
 
 - An earlier recording never blocks the next one: Start is available as soon as a recording's file is on this Mac, including after a failed recording or a failed recovery. A recording still being processed is set aside while you record and continues afterwards.
 - Bloom asks before quitting only while it is recording or still writing the file; otherwise it quits at once and continues processing on the next launch. Launch no longer waits for earlier recordings.
+- Setup: the microphone row waits for macOS's answer and turns on as soon as access is given, instead of staying "Off" after access was granted. The line about where recordings go is removed from the Permissions step.
 - Wording: recordings are "Processing" and then ready; a failed one "Needs recovery" with "Recover". "Upload" and "Retry" no longer appear.
 - Setup: "Reopen Bloom" after granting screen recording restarts without the quit warning when nothing is being captured or finalised; a retained failed upload no longer blocks it.
 - Search: a search with no matches shows "No moments found" instead of a connection error.

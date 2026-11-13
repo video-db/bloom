@@ -36,6 +36,7 @@ function createEngine(options = {}) {
       CaptureClient,
       service,
       permissionStatus: options.permissionStatus,
+      permissionDecided: options.permissionDecided,
     });
     return createVideoDBEngine({
       service,

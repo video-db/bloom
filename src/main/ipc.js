@@ -29,6 +29,7 @@ function registerIpc({
   windows,
   appState,
   screenPreview,
+  restart,
 }) {
   const download = createDownloads({ engine, dialog });
   const fromOnboarding = (event) =>
@@ -221,10 +222,7 @@ function registerIpc({
     }
     // macOS can hold a new screen-recording permission until the app reopens. Setup resumes
     // on the same step, because the account is saved and the step follows from state.
-    if (name === 'relaunch' && role === 'onboarding') {
-      app.relaunch();
-      app.quit();
-    }
+    if (name === 'relaunch' && role === 'onboarding') restart();
     if (name === 'show-panel') windows.showPanel();
     if (name === 'open-onboarding') {
       windows.hidePanel();

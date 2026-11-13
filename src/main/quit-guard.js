@@ -3,7 +3,9 @@
 function recordingQuitPrompt(state) {
   if (['idle', 'finished'].includes(state.phase) && !state.pending.length)
     return null;
-  const retained = ['idle', 'finished', 'processing-error'].includes(state.phase);
+  const retained = ['idle', 'finished', 'processing-error'].includes(
+    state.phase,
+  );
   return {
     type: 'warning',
     buttons: ['Keep Bloom Open', retained ? 'Quit Bloom' : 'Stop and Quit'],
@@ -17,6 +19,11 @@ function recordingQuitPrompt(state) {
       : 'Bloom must confirm capture has stopped and finalize media before quitting. Complete pending files can upload after you reopen Bloom. Incomplete media is not guaranteed recoverable.',
   };
 }
+
+// True when nothing is being captured or finalised, so Bloom can restart without asking:
+// a retained upload stays on this Mac and is picked up on the next launch, as always.
+const restartsQuietly = (state) =>
+  ['idle', 'finished', 'processing-error'].includes(state.phase);
 
 // `ask` shows the question and returns the index of the chosen button.
 function createQuitGuard({ engine, ask }) {
@@ -49,4 +56,4 @@ function createQuitGuard({ engine, ask }) {
   };
 }
 
-module.exports = { createQuitGuard, recordingQuitPrompt };
+module.exports = { createQuitGuard, recordingQuitPrompt, restartsQuietly };

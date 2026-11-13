@@ -1,10 +1,5 @@
 // Entry point of Bloom: lifecycle and wiring only. Capture is supplied by src/engine.
-const {
-  app,
-  desktopCapturer,
-  dialog,
-  systemPreferences,
-} = require('electron');
+const { app, desktopCapturer, dialog, systemPreferences } = require('electron');
 const { createEngine } = require('../engine');
 const flags = require('./flags');
 const { createPrefs } = require('./prefs');
@@ -16,7 +11,11 @@ const { createAppState } = require('./state');
 const { createShortcuts } = require('./shortcuts');
 const { installMenu } = require('./menu');
 const { registerIpc } = require('./ipc');
-const { createQuitGuard, recordingQuitPrompt } = require('./quit-guard');
+const {
+  createQuitGuard,
+  recordingQuitPrompt,
+  restartsQuietly,
+} = require('./quit-guard');
 const { createScreenPreview } = require('./screen-preview');
 const { openFirstWindow } = require('./first-window');
 
@@ -39,19 +38,21 @@ function start() {
   // Walkthroughs drive the real engine against a fake service and recorder; never when packaged.
   if (flags.flag('fixture') && !app.isPackaged)
     fixture = require('../tests/helpers/fixture').createFixture();
-  engine = fixture?.engine || createEngine({
-    mode: 'videodb',
-    dataDir: app.getPath('userData'),
-    apiUrl:
-      flags.flag('production') || app.isPackaged
-        ? 'https://api.videodb.io'
-        : 'https://api.dev.videodb.io',
-    permissionStatus: (kind) =>
-      systemPreferences.getMediaAccessStatus(kind) === 'granted',
-    scope: flags.flag('v1') ? 'v1' : 'full',
-    // Someone who has been through onboarding already has an account.
-    signedIn: flags.flag('skip-onboarding') || prefs.all().onboardingComplete,
-  });
+  engine =
+    fixture?.engine ||
+    createEngine({
+      mode: 'videodb',
+      dataDir: app.getPath('userData'),
+      apiUrl:
+        flags.flag('production') || app.isPackaged
+          ? 'https://api.videodb.io'
+          : 'https://api.dev.videodb.io',
+      permissionStatus: (kind) =>
+        systemPreferences.getMediaAccessStatus(kind) === 'granted',
+      scope: flags.flag('v1') ? 'v1' : 'full',
+      // Someone who has been through onboarding already has an account.
+      signedIn: flags.flag('skip-onboarding') || prefs.all().onboardingComplete,
+    });
   // Test runs and the sample engine must never look at the real screen or microphone.
   const real = !fixture && !engine.getState().sample;
   const screenPreview = createScreenPreview({
@@ -105,6 +106,7 @@ function start() {
     windows,
     appState,
     screenPreview,
+    restart: restartForPermission,
   });
   shortcuts.register();
 }
@@ -124,6 +126,21 @@ app
     quitting = true;
     app.quit();
   });
+
+// Setup asks Bloom to reopen so macOS applies a newly granted permission. Nothing is being
+// captured at that point, so a retained upload is left for the next launch without a question.
+function restartForPermission() {
+  app.relaunch();
+  if (!engine || !restartsQuietly(engine.getState())) return app.quit();
+  shutdownPending = true;
+  engine
+    .shutdown({ suspend: true })
+    .catch(() => {}) // the recorder may not have started; the restart is what matters
+    .finally(() => {
+      quitting = true;
+      app.quit();
+    });
+}
 
 app.on('before-quit', (event) => {
   if (engine && !engine.getState().sample && !quitting) {

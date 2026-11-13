@@ -4,7 +4,10 @@ const { recordingQuitPrompt } = require('../main/quit-guard');
 
 test('retained failed uploads do not describe an idle recorder as active', () => {
   for (const phase of ['idle', 'finished', 'processing-error']) {
-    const prompt = recordingQuitPrompt({ phase, pending: [{ status: 'failed' }] });
+    const prompt = recordingQuitPrompt({
+      phase,
+      pending: [{ status: 'failed' }],
+    });
     assert.equal(prompt.message, 'A recording still needs attention');
     assert.equal(prompt.buttons[1], 'Quit Bloom');
     assert.match(prompt.detail, /keep any retained recording files/);
@@ -37,4 +40,23 @@ test('completed work quits without a warning; pending uploads still ask', () => 
       assert.ok(recordingQuitPrompt({ phase, pending: [{ status }] }));
   }
   assert.ok(recordingQuitPrompt({ phase: 'processing-error', pending: [] }));
+});
+
+test('setup can reopen Bloom without asking unless capture or finalisation is under way', () => {
+  const { restartsQuietly } = require('../main/quit-guard');
+  // A retained failed upload does not stand in the way of applying a new permission.
+  for (const phase of ['idle', 'finished', 'processing-error'])
+    assert.equal(
+      restartsQuietly({ phase, pending: [{ status: 'failed' }] }),
+      true,
+    );
+  for (const phase of [
+    'starting',
+    'recording',
+    'paused',
+    'stopping',
+    'stopped',
+    'saving',
+  ])
+    assert.equal(restartsQuietly({ phase, pending: [] }), false);
 });

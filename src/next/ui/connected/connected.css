@@ -135,8 +135,18 @@
   background: transparent;
 }
 
+/* The tinted surface and soft glow identify focus without a hard outline. */
 .connected-form .field:focus {
-  border-color: var(--mid);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 8%, transparent);
+  background: color-mix(in srgb, var(--brand) 3%, var(--paper));
+  border-color: color-mix(in srgb, var(--brand) 22%, var(--paper));
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--brand) 5%, transparent),
+    0 4px 20px color-mix(in srgb, var(--brand) 12%, transparent);
   outline: none;
+}
+@media (forced-colors: active) {
+  .connected-form .field:focus {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
 }

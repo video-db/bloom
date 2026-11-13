@@ -128,7 +128,15 @@
   padding: 6px 0;
 }
 
-.account-key-help {
-  font-size: 12px;
+.account-create {
+  width: 100%;
   color: var(--mid);
+  border-color: var(--line);
+  background: transparent;
+}
+
+.connected-form .field:focus {
+  border-color: var(--mid);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 8%, transparent);
+  outline: none;
 }

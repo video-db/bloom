@@ -72,6 +72,8 @@ fs.mkdirSync(evidence, { recursive: true });
     await onboarding.getByRole('button', { name: 'Create a VideoDB account (opens browser)', exact: true }).click();
     assert.equal(await app.evaluate(() => global.__openedKeyUrl), 'https://console.videodb.io/');
     await app.evaluate(({ shell }) => { shell.openExternal = global.__originalOpenExternal; });
+    await onboarding.getByLabel('VideoDB API key').focus();
+    await onboarding.screenshot({ path: path.join(evidence, `${theme}-key-focus.png`) });
     await onboarding.getByLabel('VideoDB API key').fill('synthetic-ui-key');
     await onboarding
       .getByRole('button', { name: 'Connect to VideoDB', exact: true })

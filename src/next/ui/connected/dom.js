@@ -52,7 +52,7 @@ export function accountForm(s, { onboarding = false } = {}) {
         locally, then uploaded.
       </p>`}
     </form>
-    <p class="account-key-help">New to VideoDB? <button type="button" class="link" data-ui="get-api-key" aria-label="Create a VideoDB account (opens browser)">Create an account ↗</button></p>
+    <button type="button" class="btn account-create" data-ui="get-api-key" aria-label="Create a VideoDB account (opens browser)">Create a VideoDB account</button>
     ${s.account.status === 'offline'
       ? button('checkConnection', 'Retry saved connection')
       : ''}`;

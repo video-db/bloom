@@ -127,9 +127,8 @@
   right: 0;
   height: 36px;
 }
-.connected-onboarding .account-key-help {
-  margin: 0;
-  text-align: center;
+.connected-onboarding .account-create {
+  height: 36px;
   font-size: 12px;
 }
 

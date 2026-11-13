@@ -118,7 +118,7 @@ function account(s) {
         'VideoDB account',
         busy
           ? 'Connected. Sign out is available once the current recording has finished saving.'
-          : 'Connected. Your key is encrypted on this Mac.',
+          : 'Connected to VideoDB.',
         `<button class="btn sm" data-command="signOut" ${busy ? 'disabled' : ''}>Sign out</button>`,
       )}
     </div>`;

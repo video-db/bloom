@@ -11,7 +11,7 @@ npm ci
 npm start
 ```
 
-`npm start` runs Bloom with the real engine against the dev API; `npm start -- --production` selects production, which a packaged app always uses. First launch opens setup: use **Create a VideoDB account** to open the VideoDB console if you need a key, paste the key, then grant screen recording (which also covers system audio) and, optionally, the microphone. The key is validated and encrypted with Electron safeStorage. Flags and file locations are in the [configuration reference](reference/configuration.md).
+`npm start` runs Bloom with the real engine against the dev API; `npm start -- --production` selects production, which a packaged app always uses. First launch opens setup: use **Create a VideoDB account** to open the VideoDB console if you need a key, paste the key, then grant screen recording (which also covers system audio) and, optionally, the microphone. The key is validated and saved locally without Keychain prompts. Updating from encrypted storage requires entering the key once; see the storage details in the configuration reference. Flags and file locations are in the [configuration reference](reference/configuration.md).
 
 Bloom remains in the macOS Dock while it is running. The tray icon appears only after sign-in, required permissions and setup completion. Until then, the recording shortcut opens setup, and recording, library and Settings menu actions are unavailable. Signing out removes the tray, closes the main window and returns to setup. Active capture controls remain available to stop or recover an existing recording.
 

@@ -79,7 +79,6 @@ const connectButton = {
 
 const connectMessage = {
   invalid: `<p class="setup-message bad" role="alert">${icons.warning}<span>That key wasn’t accepted. Check it and try again.</span></p>`,
-  offline: `<p class="setup-message warn" role="alert">${icons.warning}<span>Can’t reach VideoDB. Check your connection.</span></p>`,
 };
 
 export function connect(s, flow) {
@@ -119,9 +118,12 @@ export function connect(s, flow) {
               : `<button type="button" class="setup-paste" data-act="paste">Paste</button>`
           }
         </div>
-        ${connectMessage[status] || ''}${connectButton[status]}
+        ${
+          status === 'offline'
+            ? `<p class="setup-message warn" role="alert">${icons.warning}<span>${esc(s.problem?.message || 'Can’t reach VideoDB. Check your connection.')}</span></p>`
+            : connectMessage[status] || ''
+        }${connectButton[status]}
       </form>
-      <p class="setup-note">Encrypted on this Mac.</p>
       <button
         type="button"
         class="btn setup-create"

@@ -2,7 +2,7 @@
 
 ## Sign-in and cloud access
 
-Bloom asks for a VideoDB API key during setup. The main process validates the key with VideoDB before saving it, encrypted with Electron `safeStorage`; there is no plaintext fallback and the key is never sent to a renderer or logged. Recording requires a network connection at start and a signed-in account. Sign out from **Bloom → Sign Out** or Settings.
+Bloom asks for a VideoDB API key during setup. The main process validates the key with VideoDB before saving it in local `credentials.json`. This internal build stores the key without Keychain encryption, using an owner-only file (0600) and directory (0700) on POSIX systems. The key is never included in renderer state or logs. Processes running as the same user can read the file. Recording requires a network connection at start and a signed-in account. Sign out from **Bloom → Sign Out** or Settings.
 
 Recordings are stored in a private **Bloom Recordings** collection in the signed-in VideoDB account. The contract with VideoDB is in the [VideoDB boundary reference](videodb-integration.md).
 
@@ -13,7 +13,7 @@ Bloom keeps its data in the `bloom-next` folder under the system application-sup
 | Path | Purpose |
 |---|---|
 | `prefs.json` | Saved preferences: appearance, recording defaults, notifications, open at login, setup completion |
-| `videodb-dev/` or `videodb-prod/` | Per-environment encrypted credential, operation receipts and cached library metadata; see [persistence](videodb-integration.md#persistence-and-errors) |
+| `videodb-dev/` or `videodb-prod/` | Per-environment local credential, operation receipts and cached library metadata; see [persistence](videodb-integration.md#persistence-and-errors) |
 
 The native recorder owns local recording files and its own upload receipts until VideoDB confirms ingestion. Automated runs use a separate `bloom-next-test` folder so they never read a person's data.
 

@@ -4,16 +4,15 @@ The trusted-process service in `src/engine/videodb/` is separate from the engine
 
 ## Construction
 
-Call `createVideoDBBoundary` from Electron main after `app.whenReady()`. Pass Bloom's own data directory and Electron `safeStorage`; never the folder used by releases up to 2.3.0. Construction loads dependencies and any operation journal but performs no network requests, launches no capture process and requests no permissions.
+Call `createVideoDBBoundary` from Electron main after `app.whenReady()`. Pass Bloom's own data directory; never the folder used by releases up to 2.3.0. Construction loads dependencies and any operation journal but performs no network requests, launches no capture process and requests no permissions.
 
 ```javascript
-const { app, safeStorage } = require('electron');
+const { app } = require('electron');
 const { createVideoDBBoundary } = require('./src/engine/videodb');
 
 app.whenReady().then(() => {
   const service = createVideoDBBoundary({
     dataDir: app.getPath('userData'),
-    safeStorage,
     apiUrl: 'https://api.dev.videodb.io',
   });
 });
@@ -25,7 +24,7 @@ The service constructor defaults to development. Production can be explicitly se
 
 | Method | Contract |
 |---|---|
-| `signIn(apiKey)` / `restore()` | Validate through collection discovery before saving encrypted credentials or replacing the active scope. A failed connection preserves the previous scope. Return non-secret scope and collection identifiers; never return the key |
+| `signIn(apiKey)` / `restore()` | Validate through collection discovery before saving local credentials or replacing the active scope. A failed connection preserves the previous scope. Return non-secret scope and collection identifiers; never return the key |
 | `signOut()` | Remove the saved credential and invalidate delayed reads. Pending or uncertain mutations block sign-out/account switching |
 | `ensureCollection()` | Explicitly create a private Bloom Recordings collection only when missing. Sign-in and library browsing do not create one |
 | `listRecordings()` / `getPlayback(id, collectionId?)` | Use the bound Bloom collection, or for `getPlayback` another collection of the same account when one is named; return projected metadata and validated HTTPS playback/thumbnail URLs. Existing thumbnail metadata is displayed without generation; missing or failed images keep the placeholder. No indexing or generation is triggered |
@@ -47,7 +46,7 @@ Duplicate Bloom collection names are rejected instead of silently selecting a co
 
 ## Persistence and errors
 
-`key.enc` holds only Electron-encrypted credential bytes; there is no plaintext fallback, including Linux's `basic_text` backend. `operations.json` contains a versioned allowlisted set of operation identities, intended rename titles and confirmation states, never credentials, media URLs or raw SDK responses. Writes use unique temporary files, restrictive permissions, file sync, directory sync on platforms supporting it, and atomic rename. `library.json` caches allowlisted recording fields and marks separately; media paths and playback URLs are excluded. Corrupt library data is copied aside before rebuilding from cloud recordings and native jobs. Corrupt files are retained and reported; they are not silently reset. This journal does not replace the native recorder's media/relay journal.
+`credentials.json` holds a versioned local API key record without encryption at rest, per the owner’s internal-build storage decision. No Keychain API is called. The earlier `key.enc` file is ignored: enter the key once after updating. Sign-out removes both credential files. `operations.json` contains a versioned allowlisted set of operation identities, intended rename titles and confirmation states, never credentials, media URLs or raw SDK responses. Writes use unique temporary files, restrictive permissions, file sync, directory sync on platforms supporting it, and atomic rename. `library.json` caches allowlisted recording fields and marks separately; media paths and playback URLs are excluded. Corrupt library data is copied aside before rebuilding from cloud recordings and native jobs. Corrupt files are retained and reported; they are not silently reset. This journal does not replace the native recorder's media/relay journal.
 
 The default host request deadline is 30 seconds. A deadline ends the host wait, not the SDK request or a remote mutation. Uncertain mutations remain in the journal and are not replayed automatically. Confirmed indexing receipts survive restart. Uncertain indexing/session mutations without sufficient remote evidence remain pending for explicit recovery handling; a service caller must not display a generic Retry that resubmits them.
 
@@ -55,7 +54,7 @@ Errors crossing the service boundary use safe `code`, `message` and `uncertain` 
 
 ## Verification
 
-Run `node --test src/tests/videodb-service.test.js` for fake-SDK checks of collection isolation, acknowledgement, timeouts, late-result reconciliation, restart receipts, account switching, credential encryption, corruption and safe error mapping. These tests make no network requests and start no capture. `videodb-engine.test.js` verifies the capture state machine, source exclusion, pause timing, recovery and shutdown against a fake recorder; `videodb-recorder.test.js` verifies the SDK adapter. `app-ui.cjs light` and `dark` verify the views with the real engine on a fake service and recorder, with external media requests blocked. The --fixture mode is ignored by packaged builds. `node --check` applies to every module in this boundary. Installed binary checks and real recording/playback acceptance are separate evidence in the architecture tracker.
+Run `node --test src/tests/videodb-service.test.js` for fake-SDK checks of collection isolation, acknowledgement, timeouts, late-result reconciliation, restart receipts, account switching, credential persistence and permissions, corruption and safe error mapping. These tests make no network requests and start no capture. `videodb-engine.test.js` verifies the capture state machine, source exclusion, pause timing, recovery and shutdown against a fake recorder; `videodb-recorder.test.js` verifies the SDK adapter. `app-ui.cjs light` and `dark` verify the views with the real engine on a fake service and recorder, with external media requests blocked. The --fixture mode is ignored by packaged builds. `node --check` applies to every module in this boundary. Installed binary checks and real recording/playback acceptance are separate evidence in the architecture tracker.
 
 ## Engine and renderer integration
 

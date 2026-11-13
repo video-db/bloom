@@ -36,6 +36,7 @@ export function createOnboarding(root) {
     const next = JSON.stringify([
       { ...flow, key: !!flow.key },
       state.account.status,
+      state.problem,
       state.recorder,
       state.permissions,
       state.loginSupported,

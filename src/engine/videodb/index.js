@@ -7,7 +7,6 @@ const { createOperationJournal } = require('./journal');
 // Compose only in Electron main, after app readiness. Construction makes no network calls.
 function createVideoDBBoundary({
   dataDir,
-  safeStorage,
   sdk,
   captureSdk,
   apiUrl = DEV_API,
@@ -28,8 +27,8 @@ function createVideoDBBoundary({
     connect,
     CaptureClient,
     credentials: createCredentialStore({
-      file: path.join(directory, 'key.enc'),
-      safeStorage,
+      file: path.join(directory, 'credentials.json'),
+      legacyFile: path.join(directory, 'key.enc'),
     }),
     journal: createOperationJournal(path.join(directory, 'operations.json')),
     apiUrl,

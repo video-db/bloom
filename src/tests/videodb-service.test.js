@@ -366,29 +366,24 @@ test('published legacy client is gated without spawning a binary or creating a s
   assert.equal(service.captureCapabilities().supported, false);
 });
 
-test('credential persistence requires secure storage and atomic encrypted bytes', () => {
+test('local credentials persist across restart with private permissions and clear on sign-out', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bloom-credentials-'));
   try {
-    const file = path.join(dir, 'credential');
-    const safeStorage = { isEncryptionAvailable: () => false };
-    const store = createCredentialStore({ file, safeStorage });
-    assert.equal(store.read(), null);
-    assert.throws(() => store.write('synthetic-test-key'), {
-      code: 'secure-storage',
-    });
-    assert.equal(fs.existsSync(file), false);
-    safeStorage.isEncryptionAvailable = () => true;
-    safeStorage.encryptString = () => Buffer.from('encrypted-test-bytes');
-    safeStorage.decryptString = (bytes) => {
-      assert.equal(bytes.toString(), 'encrypted-test-bytes');
-      return 'synthetic-test-key';
-    };
-    store.write('synthetic-test-key');
-    assert.equal(store.read(), 'synthetic-test-key');
-    assert(!fs.readFileSync(file, 'utf8').includes('synthetic-test-key'));
+    const file = path.join(dir, 'account', 'credentials.json');
+    const legacyFile = path.join(dir, 'key.enc');
+    fs.writeFileSync(legacyFile, 'old-encrypted-bytes');
+    const store = createCredentialStore({ file, legacyFile });
+    assert.equal(store.read(), null, 'does not read the old encrypted file');
+    store.write('  synthetic-test-key  ');
+    const restarted = createCredentialStore({ file, legacyFile });
+    assert.equal(restarted.read(), 'synthetic-test-key');
     assert.equal(fs.statSync(file).mode & 0o777, 0o600);
-    store.clear();
+    assert.equal(fs.statSync(path.dirname(file)).mode & 0o777, 0o700);
+    assert.throws(() => store.write(' '), { code: 'invalid-input' });
+    assert.equal(restarted.read(), 'synthetic-test-key', 'invalid input preserves the saved key');
+    restarted.clear();
     assert.equal(store.read(), null);
+    assert.equal(fs.existsSync(legacyFile), false);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -399,16 +394,8 @@ test('corrupt credential and journal files are retained, never silently reset', 
   try {
     const file = path.join(dir, 'data');
     fs.writeFileSync(file, 'corrupt');
-    const store = createCredentialStore({
-      file,
-      safeStorage: {
-        isEncryptionAvailable: () => true,
-        decryptString() {
-          throw new Error('raw keychain failure');
-        },
-      },
-    });
-    assert.throws(() => store.read(), { code: 'secure-storage' });
+    const store = createCredentialStore({ file });
+    assert.throws(() => store.read(), { code: 'credential-storage' });
     assert.throws(() => createOperationJournal(file), {
       code: 'journal-corrupt',
     });
@@ -515,20 +502,15 @@ test('the composed boundary never restores a dev credential into production', as
         },
       },
       captureSdk: { CaptureClient: class {} },
-      safeStorage: {
-        isEncryptionAvailable: () => true,
-        encryptString: () => Buffer.from('encrypted-test-bytes'),
-        decryptString: () => 'synthetic-test-key',
-      },
     };
     const dev = createVideoDBBoundary(dependencies);
     await login(dev);
     const prod = createVideoDBBoundary({ ...dependencies, apiUrl: PROD_API });
     assert.equal(await prod.restore(), null);
     assert.equal(connections, 1);
-    assert.equal(fs.existsSync(path.join(dir, 'videodb-dev', 'key.enc')), true);
+    assert.equal(fs.existsSync(path.join(dir, 'videodb-dev', 'credentials.json')), true);
     assert.equal(
-      fs.existsSync(path.join(dir, 'videodb-prod', 'key.enc')),
+      fs.existsSync(path.join(dir, 'videodb-prod', 'credentials.json')),
       false,
     );
   } finally {

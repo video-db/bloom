@@ -3,7 +3,6 @@ const {
   app,
   desktopCapturer,
   dialog,
-  safeStorage,
   systemPreferences,
 } = require('electron');
 const { createEngine } = require('../engine');
@@ -47,7 +46,6 @@ function start() {
       flags.flag('production') || app.isPackaged
         ? 'https://api.videodb.io'
         : 'https://api.dev.videodb.io',
-    safeStorage,
     permissionStatus: (kind) =>
       systemPreferences.getMediaAccessStatus(kind) === 'granted',
     scope: flags.flag('v1') ? 'v1' : 'full',

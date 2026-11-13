@@ -143,7 +143,7 @@ fs.mkdirSync(evidence, { recursive: true });
     await main(() => global.__signIn('offline'));
     await button('Connect to VideoDB').click();
     await main(() => global.__answer());
-    await page.getByText('Can’t reach VideoDB').waitFor();
+    await page.getByText('VideoDB could not complete the request.').waitFor();
     assert.equal(
       await key.inputValue(),
       'synthetic-second-key',

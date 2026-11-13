@@ -12,6 +12,7 @@
 - `npm start` runs the app; `npm test` runs the automated tests.
 
 ### Internal testing fixes
+- Save the API key locally without Keychain prompts, remove encryption wording, and show actionable sign-in errors. Updating from encrypted storage requires entering the key once.
 - Restore setup when reopening Bloom, refresh displays after permission changes, and retain the Dock icon.
 - Sign the complete macOS app bundle as Bloom and verify its identity before packaging.
 - Package separate Apple Silicon and Intel installers with matching native capture binaries.

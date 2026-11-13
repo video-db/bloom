@@ -295,7 +295,6 @@ test('installed SDK composes a signed-out real engine without native capture or 
     engine = require('../engine').createEngine({
       mode: 'videodb',
       dataDir: dir,
-      safeStorage: { isEncryptionAvailable: () => false },
       permissionStatus: () => false,
     });
     await engine.ready;

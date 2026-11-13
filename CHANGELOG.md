@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [2.3.6] - 2026-11-14
+
 - A floating camera: the camera icon in the tray shows a round, mirrored picture of your camera on screen, bottom left. Drag it anywhere; three sizes appear under the pointer. It can be turned on or off while recording. It is part of a display recording because it is on that screen; it is not part of a single-window recording, and the tray says so.
 - Muting a source from the floating control no longer races with Pause and Resume, a pause no longer asks again for a source that is already muted, and a mute that fails is said.
 - A floating recording control: a small translucent capsule with Stop and the time, Pause, Mark, the microphone and system audio each muted on their own, and Hide window. It appears while a window is recorded, or on a display that is not the one being recorded, so it is never in the recording. It can be dragged and turned off in Settings.

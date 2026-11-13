@@ -246,7 +246,16 @@ fs.mkdirSync(evidence, { recursive: true });
     await main
       .getByRole('heading', { name: 'Settings', exact: true })
       .waitFor();
-    await main.getByLabel('Microphone on by default').uncheck();
+    const micDefault = main.getByRole('button', {
+      name: 'Microphone on by default',
+    });
+    assert.equal(await micDefault.getAttribute('aria-pressed'), 'true');
+    await micDefault.click();
+    await main
+      .locator('.tgl[aria-label="Microphone on by default"][aria-pressed="false"]')
+      .waitFor();
+    assert.equal(await main.locator('.set .srow').count() >= 10, true, 'settings rows use the approved layout');
+    assert.equal(await main.locator('.set input, .set select').count(), 0, 'no bare form controls');
     assert.equal(
       await app.evaluate(() => global.__bloom.getPrefs().defaultMic),
       false,

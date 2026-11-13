@@ -151,6 +151,18 @@ root.addEventListener('click', async (event) => {
       ...(target.dataset.key ? { key: target.dataset.key } : {}),
       ...(target.dataset.view ? { view: target.dataset.view } : {}),
     });
+  if (target.dataset.pref) {
+    const { pref, value } = target.dataset;
+    window.bloom.ui('set-pref', {
+      key: pref,
+      value:
+        value === 'true' || value === 'false'
+          ? value === 'true'
+          : pref === 'nudgeMinutes'
+            ? Number(value)
+            : value,
+    });
+  }
   if (target.dataset.chooser) {
     chooser.toggle(target.dataset.chooser);
     render(true);
@@ -201,16 +213,6 @@ root.addEventListener('change', (event) => {
     window.bloom.command('setSource', {
       key: el.dataset.source,
       value: el.type === 'checkbox' ? el.checked : el.value,
-    });
-  if (el.dataset.pref)
-    window.bloom.ui('set-pref', {
-      key: el.dataset.pref,
-      value:
-        el.type === 'checkbox'
-          ? el.checked
-          : el.dataset.pref === 'nudgeMinutes'
-            ? Number(el.value)
-            : el.value,
     });
 });
 root.addEventListener('input', (event) => {

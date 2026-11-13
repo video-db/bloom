@@ -9,6 +9,7 @@ function createAppState({
   notifications,
   windows,
   loginSupported = false,
+  version = '',
   livePreviews = false,
   syncMenu = () => {},
 }) {
@@ -33,6 +34,7 @@ function createAppState({
     prefs: prefs.all(),
     prefError,
     loginSupported,
+    version,
     livePreviews, // onboarding may show the screen and microphone working
     hint,
   });

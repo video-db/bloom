@@ -22,34 +22,12 @@
   max-height: 100vh;
   background: var(--paper);
 }
-.connected-capture,
-.connected-form {
+.connected-capture {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.connected-capture label,
-.connected-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.connected-capture .field,
-.connected-form .field {
-  width: 100%;
-}
-.connected-status,
-.connected-setting {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.connected-setting {
-  padding: 12px 0;
-}
-.connected-capture p,
-.connected-form p {
+.connected-capture p {
   margin: 0;
 }
 
@@ -87,21 +65,6 @@
   background: transparent;
 }
 
-/* The tinted surface and soft glow identify focus without a hard outline. */
-.connected-form .field:focus {
-  background: color-mix(in srgb, var(--brand) 3%, var(--paper));
-  border-color: color-mix(in srgb, var(--brand) 22%, var(--paper));
-  box-shadow:
-    0 0 0 4px color-mix(in srgb, var(--brand) 5%, transparent),
-    0 4px 20px color-mix(in srgb, var(--brand) 12%, transparent);
-  outline: none;
-}
-@media (forced-colors: active) {
-  .connected-form .field:focus {
-    outline: 2px solid Highlight;
-    outline-offset: 2px;
-  }
-}
 /* Shown once, after setup, until the first recording starts. */
 .panel-hint {
   margin: 0;
@@ -436,4 +399,19 @@
 .app .btn.pri:hover {
   background: color-mix(in srgb, var(--brand) 70%, #000);
   opacity: 1;
+}
+
+/* ---- settings ---- */
+.set-note {
+  font-size: 12.5px;
+}
+.set-actions {
+  display: inline-flex;
+  flex: none;
+  gap: 8px;
+}
+.set .srow > .soft,
+.set .srow > .chip,
+.set .srow > .btn {
+  flex: none;
 }

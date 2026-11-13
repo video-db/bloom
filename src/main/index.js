@@ -94,6 +94,7 @@ function start() {
     notifications,
     windows,
     loginSupported: !!app.isPackaged,
+    version: app.getVersion?.() || '',
     livePreviews: real,
   });
 

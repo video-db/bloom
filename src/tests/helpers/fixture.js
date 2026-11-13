@@ -12,7 +12,7 @@ function deferred() {
 }
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-function connectedFixture({
+function createFixture({
   cache = createRecordingCache(),
   records = [],
   autoRestore = false,
@@ -171,4 +171,4 @@ function connectedFixture({
   };
 }
 
-module.exports = { connectedFixture, deferred, flush };
+module.exports = { createFixture, deferred, flush };

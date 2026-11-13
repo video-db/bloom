@@ -1,9 +1,9 @@
 // The tray panel while a session exists: starting, recording, paused, stopping, saving,
 // finished, and the two states that need attention. The header carries the state; the body
 // holds only what can be done about it.
-import { esc, clock, button } from './dom.js';
-import { icon } from './icons.js';
-import { mark } from './mark.js';
+import { esc, clock, button } from '../shared/dom.js';
+import { icon } from '../shared/icons.js';
+import { mark } from '../shared/mark.js';
 import { sources } from './sources.js';
 
 // Plain words for where a saved recording has got to.

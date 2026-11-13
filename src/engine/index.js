@@ -18,7 +18,7 @@
 //   versions   saveVersion | renameVersion | deleteVersion
 //
 // The real VideoDB engine and the sample design engine implement the same surface.
-// The main process selects the real engine for the connected entry and packaged rebuild.
+// The main process always selects the real engine; the sample engine backs the main-process tests.
 //
 // State also carries `capabilities` (see capabilities.js): windows hide what a build cannot do.
 const { createSampleEngine } = require('./sample');

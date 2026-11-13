@@ -2,11 +2,11 @@
 // accepted must stay accepted when something after it fails.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { connectedFixture } = require('./helpers/connected');
+const { createFixture } = require('./helpers/fixture');
 const { ServiceError } = require('../engine/videodb/errors');
 
 const fixture = (t) => {
-  const f = connectedFixture();
+  const f = createFixture();
   t.after(() => f.engine.dispose());
   return f;
 };

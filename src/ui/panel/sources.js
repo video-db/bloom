@@ -1,8 +1,8 @@
 // What a recording will capture, as one row of icons: display, microphone, system audio.
 // An icon turns its source on or off. Where there is a choice (more than one display or
 // microphone) a small arrow beside the icon opens it. The display is always on.
-import { esc } from './dom.js';
-import { icon } from './icons.js';
+import { esc } from '../shared/dom.js';
+import { icon } from '../shared/icons.js';
 
 // Which chooser is open in this window: 'display', 'microphone' or null.
 let open = null;

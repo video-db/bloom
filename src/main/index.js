@@ -36,12 +36,12 @@ let quitting = false,
   shutdownPending = false;
 
 function start() {
-  const sampleRun =
-    !app.isPackaged && (flags.flag('sample') || flags.flag('connected-fixture'));
   prefs = createPrefs(flags.prefsFile());
-  engine = createEngine({
-    // The real engine unless the sample design is asked for; a packaged app is always real.
-    mode: sampleRun ? 'sample' : 'videodb',
+  // Walkthroughs drive the real engine against a fake service and recorder; never when packaged.
+  if (flags.flag('fixture') && !app.isPackaged)
+    fixture = require('../tests/helpers/fixture').createFixture();
+  engine = fixture?.engine || createEngine({
+    mode: 'videodb',
     dataDir: app.getPath('userData'),
     apiUrl:
       flags.flag('production') || app.isPackaged
@@ -54,11 +54,6 @@ function start() {
     // Someone who has been through onboarding already has an account.
     signedIn: flags.flag('skip-onboarding') || prefs.all().onboardingComplete,
   });
-  if (flags.flag('connected-fixture') && !app.isPackaged) {
-    fixture = require('../tests/helpers/connected').connectedFixture();
-    engine.dispose();
-    engine = fixture.engine;
-  }
   // Test runs and the sample engine must never look at the real screen or microphone.
   const real = !fixture && !engine.getState().sample;
   const screenPreview = createScreenPreview({

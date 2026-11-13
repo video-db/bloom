@@ -3,11 +3,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const { connectedFixture, deferred, flush } = require('./helpers/connected');
+const { createFixture, deferred, flush } = require('./helpers/fixture');
 const { createRecordingCache } = require('../engine/videodb/cache');
 
 const setup = async (t, options) => {
-  const f = connectedFixture(options);
+  const f = createFixture(options);
   t.after(() => f.engine.dispose());
   await f.command('signIn', { key: 'synthetic-key' });
   return f;
@@ -167,7 +167,7 @@ test('sign-out during pending upload is refused and cached work stays visible', 
 });
 
 test('native jobs owned by another account are not surfaced or relayed', async (t) => {
-  const f = connectedFixture();
+  const f = createFixture();
   t.after(() => f.engine.dispose());
   f.recorder.jobs = [
     {
@@ -186,7 +186,7 @@ test('native jobs owned by another account are not surfaced or relayed', async (
 });
 
 test('restart discovers the retained job with no media path in renderer state', async (t) => {
-  const f = connectedFixture();
+  const f = createFixture();
   t.after(() => f.engine.dispose());
   f.recorder.jobs = [
     {

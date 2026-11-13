@@ -48,16 +48,11 @@ function createWindows({
   };
 
   function load(window, surface, options = {}) {
-    if (engine.getState().sample)
-      window.loadFile(
-        path.join(ui, `${surface === 'workspace' ? 'main' : surface}.html`),
-        options,
-      );
-    else
-      window.loadFile(path.join(ui, 'connected.html'), {
-        ...options,
-        query: { surface },
-      });
+    // One page draws every window; the surface says which.
+    window.loadFile(path.join(ui, 'app.html'), {
+      ...options,
+      query: { surface },
+    });
     window.webContents.setWindowOpenHandler?.(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', (event, url) => {
       if (url.split('#')[0] !== window.webContents.getURL().split('#')[0])

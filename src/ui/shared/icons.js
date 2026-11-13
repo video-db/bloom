@@ -1,4 +1,4 @@
-// Line icons for the connected interface. Shapes come from the Bloom design asset pack.
+// Line icons. Shapes come from the Bloom design asset pack.
 const SHAPES = {
   screen:
     '<rect x="3" y="4" width="18" height="13" rx="3"/><path d="M8 21h8M12 17v4"/>',

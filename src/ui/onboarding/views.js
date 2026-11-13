@@ -1,6 +1,6 @@
 // The three onboarding steps as markup. Pure: each view is a function of the app state and
 // this window's flow state, so every state can be drawn and tested on its own.
-import { esc, logo } from '../dom.js';
+import { esc, logo } from '../shared/dom.js';
 
 const STEPS = ['Connect', 'Permissions', 'Ready'];
 

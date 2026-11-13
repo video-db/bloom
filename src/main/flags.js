@@ -18,7 +18,7 @@ const forcedTheme = () =>
 
 // Must run before anything reads the user-data path.
 // A run driven by the tests rather than by a person.
-const automated = () => flag('fresh') || flag('connected-fixture');
+const automated = () => flag('fresh') || flag('fixture');
 
 // The folder is not the system default on purpose: the app this one replaced kept its key and
 // database there, and this app never opens them (no legacy-data migration).

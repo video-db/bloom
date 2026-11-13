@@ -1,9 +1,9 @@
-import { esc, clock } from './dom.js';
-import { panel } from './panel.js';
-import { chooser } from './sources.js';
+import { esc, clock } from './shared/dom.js';
+import { panel } from './panel/panel.js';
+import { chooser } from './panel/sources.js';
 import { createOnboarding } from './onboarding/index.js';
-import { workspace } from './workspace.js';
-import { releasePlayer, mountPlayer, seek } from './player.js';
+import { workspace } from './workspace/workspace.js';
+import { releasePlayer, mountPlayer, seek } from './workspace/player.js';
 
 const root = document.querySelector('#root');
 const surface =

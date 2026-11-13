@@ -1,5 +1,5 @@
-import { esc, clock, logo, button, problems } from './dom.js';
-import { icon } from './icons.js';
+import { esc, clock, logo, button, problems } from '../shared/dom.js';
+import { icon } from '../shared/icons.js';
 import { sources } from './sources.js';
 import {
   stateHeader,

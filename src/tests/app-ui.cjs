@@ -5,26 +5,28 @@ const { _electron } = require(
   process.env.BLOOM_PLAYWRIGHT_MODULE || 'playwright',
 );
 const root = path.resolve(__dirname, '../..');
-const evidence = path.join(root, '.context/connected-ui');
+const evidence =
+  process.env.BLOOM_UI_EVIDENCE || path.join(root, '.context/app-ui');
 fs.mkdirSync(evidence, { recursive: true });
 
 (async () => {
   const theme = process.argv[2] || 'light';
   // A hung window must fail the run, not stall it.
   setTimeout(() => {
-    console.error('Connected walkthrough timed out.');
+    console.error('App walkthrough timed out.');
     process.exit(2);
   }, 150000).unref();
   const app = await _electron.launch({
     executablePath: require('electron'),
     args: [
       path.join(root, 'src/main/index.js'),
-      '--connected-fixture',
+      '--fixture',
       '--fresh',
       '--keep-open',
       `--${theme}`,
     ],
   });
+  require('./helpers/style-snapshot').watchAll(app);
   const errors = [];
   app.on('window', (page) => {
     page.on('pageerror', (error) => errors.push(error.message));
@@ -272,7 +274,7 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('recordings').enabled), false);
     assert.deepEqual(errors, []);
     console.log(
-      `Connected ${theme} walkthrough passes with fake recorder, no live API or screen capture.`,
+      `App ${theme} walkthrough passes with fake recorder, no live API or screen capture.`,
     );
   } finally {
     await app

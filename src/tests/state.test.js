@@ -173,8 +173,9 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
       });
       windows.push(this);
     }
-    loadFile(file) {
+    loadFile(file, options = {}) {
       this.file = file;
+      this.surface = options.query?.surface;
       this.webContents.emit('did-start-loading');
     }
     isDestroyed() {
@@ -302,7 +303,7 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
               : require(name),
     __dirname: mainDir,
     process: {
-      argv: ['node', 'main/index.js', '--sample', '--fresh', '--skip-onboarding'],
+      argv: ['node', 'main/index.js', '--fresh', '--skip-onboarding'],
       env: {},
       platform: 'darwin',
     },
@@ -358,7 +359,7 @@ test('native panel Close hides the panel and latest main route waits for rendere
     assert.equal(panel.isVisible(), true);
     h.api.openMain('library');
     h.api.openMain('settings');
-    const main = h.windows.find((w) => w.file.endsWith('main.html'));
+    const main = h.windows.find((w) => w.surface === 'workspace');
     assert.equal(h.messages.filter((m) => m.name === 'bloom:view').length, 0);
     h.ui(main, 'main-ready');
     assert.deepEqual(
@@ -413,7 +414,7 @@ test('onboarding stays open when completion cannot be persisted and malformed UI
     const panel = h.windows[0];
     h.ui(panel, 'open-onboarding');
     const onboarding = h.windows.find((w) =>
-      w.file.endsWith('onboarding.html'),
+      w.surface === 'onboarding',
     );
     assert(onboarding);
     h.ui(onboarding, 'onboarding-done');
@@ -440,21 +441,21 @@ test('closing onboarding only cancels capture owned by that onboarding window', 
     const engine = h.api.getEngine();
     const panel = h.windows[0];
     h.ui(panel, 'open-onboarding');
-    let onboarding = h.windows.find((w) => w.file.endsWith('onboarding.html'));
+    let onboarding = h.windows.find((w) => w.surface === 'onboarding');
     h.api.toggleCapture();
     onboarding.close();
     assert.equal(engine.getState().phase, 'starting');
     engine.command('cancel');
     h.ui(panel, 'open-onboarding');
     onboarding = h.windows
-      .filter((w) => w.file.endsWith('onboarding.html'))
+      .filter((w) => w.surface === 'onboarding')
       .at(-1);
     h.command(onboarding, 'start');
     onboarding.close();
     assert.equal(engine.getState().phase, 'idle');
     h.ui(panel, 'open-onboarding');
     onboarding = h.windows
-      .filter((w) => w.file.endsWith('onboarding.html'))
+      .filter((w) => w.surface === 'onboarding')
       .at(-1);
     h.command(onboarding, 'start');
     engine.command('cancel');
@@ -471,7 +472,7 @@ test('versions are immutable engine snapshots and survive closing and reopening 
   try {
     const engine = h.api.getEngine();
     h.api.openMain('editor/r1');
-    const first = h.windows.find((w) => w.file.endsWith('main.html'));
+    const first = h.windows.find((w) => w.surface === 'workspace');
     const value = {
       text: 'Keep this cut',
       cuts: { sil: true, fil: false, cap: true, chap: false },
@@ -490,7 +491,7 @@ test('versions are immutable engine snapshots and survive closing and reopening 
     assert.equal(typeof before[0].createdAt, 'number');
     first.close();
     h.api.openMain('detail/r1');
-    const second = h.windows.filter((w) => w.file.endsWith('main.html')).at(-1);
+    const second = h.windows.filter((w) => w.surface === 'workspace').at(-1);
     assert.notEqual(first, second);
     assert.deepEqual(
       engine.getState().recordings.find((r) => r.id === 'r1').versions,
@@ -595,11 +596,11 @@ test('main navigation can reopen while an earlier native window is still closing
   const h = await mainHarness();
   try {
     h.api.openMain('detail/r1');
-    const closing = h.windows.find((w) => w.file.endsWith('main.html'));
+    const closing = h.windows.find((w) => w.surface === 'workspace');
     closing.emit('close');
     h.api.openMain('editor/r2');
     const replacement = h.windows
-      .filter((w) => w.file.endsWith('main.html'))
+      .filter((w) => w.surface === 'workspace')
       .at(-1);
     assert.notEqual(replacement, closing);
     closing.destroyed = true;

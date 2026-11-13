@@ -1,9 +1,9 @@
 // The main window: a compact recording browser beside one workspace for the selected
 // recording. The transcript is the wide column; the player and marks sit beside it.
 // Editing, versions and the request bar join this layout when they are built.
-import { esc, clock, logo, button, problems } from './dom.js';
-import { icon } from './icons.js';
-import { settings } from './settings.js';
+import { esc, clock, logo, button, problems } from '../shared/dom.js';
+import { icon } from '../shared/icons.js';
+import { settings } from '../settings/settings.js';
 
 const day = (r) =>
   r.createdAt

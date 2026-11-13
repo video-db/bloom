@@ -23,12 +23,13 @@ fs.mkdirSync(evidence, { recursive: true });
     executablePath: require('electron'),
     args: [
       path.join(root, 'src/main/index.js'),
-      '--connected-fixture',
+      '--fixture',
       '--fresh',
       '--keep-open',
       `--${theme}`,
     ],
   });
+  require('./helpers/style-snapshot').watchAll(app);
   const errors = [];
   app.on('window', (page) => {
     page.on('pageerror', (error) => errors.push(error.message));

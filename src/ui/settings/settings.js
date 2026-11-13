@@ -1,6 +1,6 @@
 // Settings in the main window: grouped cards of rows, each a name, a one-line hint and its
 // control. Only rows the running app can honour are shown.
-import { esc } from './dom.js';
+import { esc } from '../shared/dom.js';
 
 const row = (name, hint, control) =>
   /* HTML */ `<div class="srow">

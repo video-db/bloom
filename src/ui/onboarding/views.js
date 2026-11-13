@@ -236,7 +236,7 @@ export function permissions(s, flow) {
         ${
           failed
             ? `<p class="setup-message warn" role="alert">${icons.warning}<span>${esc(s.recorder.message || 'Bloom’s recorder didn’t start.')} <button class="setup-link" data-command="prepareRecorder">Try again</button></span></p>`
-            : `<p class="setup-disclosure">While you record, your screen and audio go to your VideoDB account. The video is saved on this Mac first, then processed.</p>`
+            : ''
         }
       </section>
       <footer class="setup-foot">

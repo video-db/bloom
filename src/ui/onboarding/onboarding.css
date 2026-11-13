@@ -331,12 +331,6 @@
   transform-origin: 50% 100%;
   transition: transform 0.08s linear;
 }
-.setup-disclosure {
-  margin: 16px 0 0;
-  font-size: var(--t-label);
-  line-height: 1.55;
-  color: var(--mid);
-}
 .setup-rows + .setup-message {
   margin-top: 14px;
 }

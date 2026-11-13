@@ -51,7 +51,9 @@ function render(force = false) {
       const target = [...root.querySelectorAll('[data-focus]')].find(
         (el) => el.dataset.focus === focusKey,
       );
-      if (target && focusKey === 'note') target.value = focusValue;
+      // A field being typed in keeps what was typed.
+      if (target && focusValue !== undefined && 'value' in target)
+        target.value = focusValue;
       target?.focus();
       if (range && target?.setSelectionRange && target.type !== 'number')
         target.setSelectionRange(...range);

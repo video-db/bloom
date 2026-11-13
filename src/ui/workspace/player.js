@@ -47,3 +47,9 @@ export function seek(seconds) {
   if (video && Number.isFinite(seconds) && seconds >= 0)
     video.currentTime = seconds;
 }
+
+// Open this recording at a moment: the next time it is mounted it starts there.
+export function startAt(recordId, seconds) {
+  if (Number.isFinite(seconds) && seconds >= 0)
+    positions.set(recordId, seconds);
+}

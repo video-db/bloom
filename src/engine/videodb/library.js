@@ -51,8 +51,14 @@ function createLibrary({ account, read, assertCurrent, operations, journal }) {
       );
     return scope.collection;
   }
-  async function video(scope, id) {
-    const coll = await collection(scope);
+  // collectionId: a collection other than Bloom's own, for reading a video browsed there.
+  async function video(scope, id, collectionId) {
+    const coll =
+      collectionId && collectionId !== scope.collection?.id
+        ? await read(scope, () =>
+            scope.conn.getCollection(requireId(collectionId)),
+          )
+        : await collection(scope);
     return read(scope, () => coll.getVideo(requireId(id)));
   }
   return {
@@ -67,9 +73,9 @@ function createLibrary({ account, read, assertCurrent, operations, journal }) {
         );
       return videos.map(recording);
     },
-    async getPlayback(id) {
+    async getPlayback(id, collectionId) {
       const scope = account();
-      const item = await video(scope, id);
+      const item = await video(scope, id, collectionId);
       return recording(item);
     },
     async rename(id, title) {
@@ -121,9 +127,9 @@ function createLibrary({ account, read, assertCurrent, operations, journal }) {
       }
       return { ...result, reconciliationNeeded: !!entry && !confirmed };
     },
-    async transcript(id) {
+    async transcript(id, collectionId) {
       const scope = account();
-      const item = await video(scope, id);
+      const item = await video(scope, id, collectionId);
       const result = await read(scope, () =>
         item.getTranscript(undefined, undefined, 'word'),
       );
@@ -194,4 +200,4 @@ function createLibrary({ account, read, assertCurrent, operations, journal }) {
   };
 }
 
-module.exports = { createLibrary, mediaUrl };
+module.exports = { createLibrary, mediaUrl, recording, requireId };

@@ -7,6 +7,7 @@
 - Recording is local, with marks, pause and resume; each recording is finalised, uploaded and processed with durable recovery after a quit or lost connection.
 - The API key is validated before saving and encrypted with the system keychain; sign-out is available from the menu and Settings.
 - Bundled HLS playback, confirmed rename, delete and download, a single-instance guard and a quit prompt while a recording is saving.
+- The main window is an app with a sidebar: Home, Recordings and Search, the account's VideoDB collections (others open read-only), and the credit balance. One recording opens alone, with its transcript as paragraphs with times.
 - `npm start` runs the app; `npm test` runs the automated tests.
 
 ### Removed

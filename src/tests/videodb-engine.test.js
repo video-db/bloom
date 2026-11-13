@@ -342,3 +342,77 @@ test('a failed title update does not block an already playable recording', async
   assert.equal(f.engine.getState().recordings[0].status, 'ready');
   assert.equal(f.engine.getState().recordings[0].pendingOperation, 'rename');
 });
+
+test('the account overview, a browsed collection and search are read-only views', async () => {
+  const { engine, service, calls, command } = createFixture({
+    records: [
+      {
+        id: 'v1',
+        title: 'Standup',
+        duration: 10,
+        streamUrl: 'https://stream.example/v1.m3u8',
+        playerUrl: 'https://player.example/v1',
+      },
+    ],
+  });
+  await command('signIn', { key: 'key' });
+  let s = engine.getState();
+  assert.equal(s.credits, 316.28);
+  assert.deepEqual(
+    s.collections.map((c) => c.name),
+    ['Bloom Recordings', 'Product reviews'],
+    'Bloom’s own collection comes first',
+  );
+
+  await command('openCollection', { id: 'collection-2' });
+  s = engine.getState();
+  assert.equal(s.browsing.status, 'ready');
+  assert.deepEqual(
+    s.browsing.recordings.map((r) => [r.title, r.readOnly, r.collectionId]),
+    [
+      ['Design critique', true, 'collection-2'],
+      ['Sprint demo', true, 'collection-2'],
+    ],
+  );
+  assert.equal(s.recordings.length, 1, 'Bloom’s own recordings are untouched');
+
+  // A browsed video can be opened and read, never renamed or deleted.
+  await command('openRecording', { id: 'shelf-1' });
+  assert.equal(
+    engine.getState().browsing.recordings[0].transcriptStatus,
+    'ready',
+  );
+  await command('renameRecording', { id: 'shelf-1', text: 'Mine now' });
+  await command('deleteRecording', { id: 'shelf-1' });
+  assert.equal(
+    calls.some(([name]) => name === 'rename'),
+    false,
+  );
+  assert.equal(engine.getState().browsing.recordings.length, 2);
+
+  // Bloom's own collection is the Recordings place, not a browsed one.
+  await command('openCollection', { id: 'collection-1' });
+  assert.equal(engine.getState().browsing, null);
+
+  await command('search', { text: '  second thought ' });
+  s = engine.getState();
+  assert.equal(s.search.status, 'ready');
+  assert.deepEqual(
+    s.search.results.map((r) => [r.id, r.title, r.start]),
+    [['v1', 'Standup', 4]],
+  );
+  await command('search', { text: 'nothing like this' });
+  assert.deepEqual(engine.getState().search.results, []);
+  await command('search', { text: '' });
+  assert.equal(engine.getState().search.status, 'idle');
+
+  await command('signOut');
+  s = engine.getState();
+  assert.deepEqual(
+    [s.collections, s.credits, s.browsing, s.search.status],
+    [[], null, null, 'idle'],
+    'nothing about the account outlives sign-out',
+  );
+  assert.equal(typeof service.usage, 'function');
+  engine.dispose();
+});

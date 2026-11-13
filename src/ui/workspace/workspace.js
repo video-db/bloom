@@ -23,10 +23,13 @@ export function workspace(s, route, browse) {
           );
   // An open recording belongs to Recordings.
   const current = route.place === 'recording' ? 'recordings' : route.place;
+  const known = PLACES.some((p) => p.id === current) || current === 'settings';
+  // A collection other than Bloom's own is showing in Recordings (or one of its videos is open).
+  const browsing = !!s.browsing && current === 'recordings';
   return /* HTML */ `<div class="app">
     ${titleBar(s)}
     <div class="body">
-      ${sidebar(s, PLACES.some((p) => p.id === current) || current === 'settings' ? current : PLACES[0].id)}
+      ${sidebar(s, known ? current : PLACES[0].id, browsing)}
       <main class="view">${problems(s)}${page}</main>
     </div>
   </div>`;

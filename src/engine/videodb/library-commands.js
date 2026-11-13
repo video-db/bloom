@@ -36,7 +36,10 @@ function createLibraryCommands(ctx, service) {
     const scope = ctx.scope();
     const record = ctx.find(id);
     if (!record?.videoId) return;
-    const playback = await service.getPlayback(record.videoId);
+    const playback = await service.getPlayback(
+      record.videoId,
+      record.collectionId,
+    );
     if (scope !== ctx.scope()) return;
     ctx.update(id, {
       streamUrl: playback.streamUrl,
@@ -44,7 +47,10 @@ function createLibraryCommands(ctx, service) {
       status: playback.streamUrl ? 'ready' : 'processing',
     });
     try {
-      const transcript = await service.transcript(record.videoId);
+      const transcript = await service.transcript(
+        record.videoId,
+        record.collectionId,
+      );
       if (scope === ctx.scope())
         ctx.update(id, {
           transcript: transcript.text,
@@ -60,7 +66,7 @@ function createLibraryCommands(ctx, service) {
     openRecording: ({ id }) => open(id),
     async renameRecording({ id, text }) {
       const record = ctx.find(id);
-      if (!record) return;
+      if (!record || record.readOnly) return;
       if (!record.videoId) {
         ctx.update(id, { title: text, requestedTitle: text });
         return;
@@ -71,7 +77,7 @@ function createLibraryCommands(ctx, service) {
     },
     async deleteRecording({ id }) {
       const record = ctx.find(id);
-      if (!record?.videoId) return;
+      if (!record?.videoId || record.readOnly) return;
       ctx.update(id, { pendingOperation: 'delete' });
       await service.deleteRecording(record.videoId);
       ctx.records(ctx.get().recordings.filter((r) => r.id !== id));
@@ -91,7 +97,7 @@ function createLibraryCommands(ctx, service) {
     },
     async requestTranscript({ id }) {
       const record = ctx.find(id);
-      if (!record?.videoId) return;
+      if (!record?.videoId || record.readOnly) return;
       ctx.update(id, { transcriptStatus: 'processing' });
       await service.requestTranscript(record.videoId);
       await open(id);

@@ -21,6 +21,10 @@ function initialState() {
     channels: { displays: [], mics: [], systemAudio: [] },
     permissions: { screen: false, mic: false, camera: false },
     recordings: [],
+    collections: [], // [{ id, name, bloom }] from VideoDB
+    credits: null, // VideoDB credit balance, once known
+    browsing: null, // another collection being looked at: { id, name, status, recordings }
+    search: { query: '', status: 'idle', results: [] },
     recent: [],
     pending: [],
     marks: [],

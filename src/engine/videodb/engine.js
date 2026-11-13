@@ -5,6 +5,7 @@ const { createCapture } = require('./capture');
 const { createJobs } = require('./jobs');
 const { createAccess } = require('./access');
 const { createLibraryCommands } = require('./library-commands');
+const { createExploreCommands } = require('./explore-commands');
 const { validCommand } = require('./validate');
 
 // One owner for app state. SDK, disk and UI code never share mutable state objects.
@@ -43,6 +44,7 @@ function createVideoDBEngine({
         marks: [],
         result: null,
         notice: cache.warning || '',
+        ...explore.cleared(),
       });
     },
     records(records) {
@@ -54,11 +56,21 @@ function createVideoDBEngine({
         pending: pending(records),
       });
     },
-    find: (id) => state.recordings.find((r) => r.id === id),
+    // A record is one of Bloom's own, or one in the collection being browsed.
+    find: (id) =>
+      state.recordings.find((r) => r.id === id) ||
+      state.browsing?.recordings.find((r) => r.id === id),
     update(id, patch) {
-      ctx.records(
-        state.recordings.map((r) => (r.id === id ? { ...r, ...patch } : r)),
-      );
+      const apply = (r) => (r.id === id ? { ...r, ...patch } : r);
+      if (state.recordings.some((r) => r.id === id))
+        ctx.records(state.recordings.map(apply));
+      else if (state.browsing)
+        ctx.set({
+          browsing: {
+            ...state.browsing,
+            recordings: state.browsing.recordings.map(apply),
+          },
+        });
     },
     run(work) {
       try {
@@ -88,7 +100,16 @@ function createVideoDBEngine({
     },
   };
   const jobs = createJobs(ctx, { service, recorder });
-  const library = createLibraryCommands(ctx, service);
+  const explore = createExploreCommands(ctx, service);
+  const ownLibrary = createLibraryCommands(ctx, service);
+  // Refreshing the library also refreshes what the sidebar shows about the account.
+  const library = {
+    ...ownLibrary,
+    async refresh() {
+      await ownLibrary.refresh();
+      await explore.overview();
+    },
+  };
   const access = createAccess(ctx, {
     service,
     recorder,
@@ -100,6 +121,8 @@ function createVideoDBEngine({
   const commands = {
     ...access.commands,
     ...library.commands,
+    refresh: library.refresh,
+    ...explore.commands,
     ...capture.commands,
     setPurpose({ text }) {
       if (between()) ctx.set({ purpose: text });

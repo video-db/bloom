@@ -30,17 +30,27 @@ const tile = (r) =>
   </button>`;
 
 // browse: { filter, order } — how this window is looking at its recordings.
+// When another collection is being browsed, its videos show here instead of Bloom's own.
 export function recordings(s, browse) {
   const [filter, , keep] = pick(FILTERS, browse.filter);
   const [order, , compare] = pick(ORDERS, browse.order);
-  const shown = s.recordings.filter(keep).sort(compare);
-  const empty = s.recordings.length
+  const all = s.browsing ? s.browsing.recordings : s.recordings;
+  const shown = all.filter(keep).sort(compare);
+  const waiting = {
+    loading:
+      '<div class="page-empty" role="status"><p>Loading this collection…</p></div>',
+    error:
+      '<div class="page-empty" role="alert"><b>This collection could not be loaded</b><p>Check your connection and choose it again.</p></div>',
+  }[s.browsing?.status];
+  const empty = all.length
     ? '<div class="page-empty"><b>Nothing here</b><p>No recording matches this filter.</p></div>'
-    : '<div class="page-empty"><b>No recordings yet</b><p>Start one from the menu bar, or with ⇧⌘R from anywhere.</p></div>';
+    : s.browsing
+      ? '<div class="page-empty"><b>This collection is empty</b></div>'
+      : '<div class="page-empty"><b>No recordings yet</b><p>Start one from the menu bar, or with ⇧⌘R from anywhere.</p></div>';
   return /* HTML */ `<section class="page">
     <header class="page-head">
-      <h1>Recordings</h1>
-      <span class="caption">${s.recordings.length}</span>
+      <h1>${s.browsing ? esc(s.browsing.name) : 'Recordings'}</h1>
+      <span class="caption">${waiting ? '' : all.length}</span>
       <span class="grow"></span>
       <span class="seg" role="group" aria-label="Filter recordings"
         >${FILTERS.map(
@@ -55,6 +65,6 @@ export function recordings(s, browse) {
         ).join('')}
       </select>
     </header>
-    ${shown.length ? `<div class="tiles">${shown.map(tile).join('')}</div>` : empty}
+    ${waiting || (shown.length ? `<div class="tiles">${shown.map(tile).join('')}</div>` : empty)}
   </section>`;
 }

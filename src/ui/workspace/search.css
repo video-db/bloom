@@ -1,0 +1,66 @@
+/* Search: one box, then moments. */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--soft);
+}
+.search-box:focus-within {
+  border-color: color-mix(in srgb, var(--ink) 26%, var(--line2));
+}
+.search-box .ic {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--ink);
+  font-size: var(--t-body);
+}
+.hit {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  padding: 10px 13px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  text-align: left;
+}
+.hit:first-child {
+  border-top: 0;
+}
+.hit:hover {
+  background: var(--sub);
+}
+.hit-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hit-head b {
+  font-weight: 500;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hit-text {
+  display: -webkit-box;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--mid);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

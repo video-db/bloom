@@ -3,6 +3,7 @@
 //   view(state, browse) -> markup     count(state) -> number shown beside the label
 import { home } from './home.js';
 import { recordings } from './recordings.js';
+import { search } from './search.js';
 
 export const PLACES = [
   { id: 'home', label: 'Home', icon: 'home', view: home },
@@ -13,4 +14,5 @@ export const PLACES = [
     view: recordings,
     count: (s) => s.recordings.length,
   },
+  { id: 'search', label: 'Search', icon: 'search', view: search },
 ];

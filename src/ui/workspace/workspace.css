@@ -124,10 +124,11 @@
 }
 .sidebar-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  flex: none;
+  gap: 8px;
   margin-top: auto;
-  padding: 8px 4px 0 9px;
+  padding: 9px 4px 0;
   border-top: 1px solid var(--line);
 }
 .sidebar-footer .icon-button.on {
@@ -311,4 +312,78 @@ dialog .field {
 .app .btn.pri:hover {
   background: color-mix(in srgb, var(--brand) 70%, #000);
   opacity: 1;
+}
+
+/* ---- sidebar: collections and the balance ---- */
+.sidebar-group {
+  padding: 14px 9px 4px;
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+.collections {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+.collection {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 8px;
+  height: 28px;
+  padding: 0 9px 0 34px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink2);
+  font-size: var(--t-label);
+  text-align: left;
+}
+.collection > span:first-child {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.collection:hover {
+  background: var(--fill);
+}
+.collection.on {
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--line);
+  color: var(--ink);
+  font-weight: 500;
+}
+.balance {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  font-size: var(--t-label);
+  text-align: left;
+}
+.balance:hover {
+  border-color: var(--line2);
+}
+.balance b {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 500;
+}
+.balance small {
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+.sidebar-foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 5px;
 }

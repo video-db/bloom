@@ -234,7 +234,10 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.equal(await main.getByRole('button', { name: 'Recording controls' }).count(), 0);
     assert.equal(await main.getByRole('button', { name: 'New recording', exact: true }).count(), 1);
     // The app shell: places in the sidebar, no recording list beside the page.
-    assert.equal(await main.locator('.sidebar .place').count(), 2);
+    assert.deepEqual(await main.locator('.sidebar .place > span:first-of-type').allInnerTexts(), ['Home', 'Recordings', 'Search']);
+    // The account's collections and balance, from VideoDB.
+    assert.deepEqual(await main.locator('.collection > span:first-child').allInnerTexts(), ['Bloom Recordings', 'Product reviews']);
+    assert.match(await main.locator('.balance').innerText(), /Balance\s*316\.28/);
     assert.equal(await main.locator('.sidebar [aria-current=page]').innerText().then((t) => /Recordings/.test(t)), true, 'an open recording belongs to Recordings');
     assert.equal(await main.locator('.record-row, .browser, [data-query]').count(), 0);
     await main.getByRole('button', { name: 'Home', exact: true }).click();
@@ -251,6 +254,31 @@ fs.mkdirSync(evidence, { recursive: true });
     await main.getByText('Nothing here', { exact: true }).waitFor();
     await main.getByRole('button', { name: 'All', exact: true }).click();
     await main.screenshot({ path: path.join(evidence, `${theme}-recordings.png`) });
+    // Another collection opens read-only: its videos can be played and read, not changed.
+    await main.locator('.collection', { hasText: 'Product reviews' }).click();
+    await main.getByRole('heading', { name: 'Product reviews', exact: true }).waitFor();
+    await main.locator('.tile').nth(1).waitFor();
+    assert.equal(await main.locator('.tile').count(), 2);
+    assert.equal(await main.locator('.sidebar .place.on').count(), 0, 'no place is lit while a collection is browsed');
+    await main.screenshot({ path: path.join(evidence, `${theme}-collection.png`) });
+    await main.locator('.tile', { hasText: 'Design critique' }).click();
+    await main.getByRole('heading', { name: 'Design critique', exact: true }).waitFor();
+    assert.equal(await main.locator('.record-menu').count(), 0);
+    assert.equal(await main.getByRole('button', { name: 'Copy link', exact: true }).count(), 1);
+    assert.match(await main.locator('.crumb').innerText(), /Product reviews/);
+    // Search finds a moment and opens its recording there.
+    await main.locator('.sidebar .place', { hasText: 'Search' }).click();
+    await main.getByRole('heading', { name: 'Search', exact: true }).waitFor();
+    await main.getByLabel('Search what was said').fill('second thought');
+    await main.getByLabel('Search what was said').press('Enter');
+    await main.locator('.hit').first().waitFor();
+    assert.equal(await main.locator('.hit').count(), 1);
+    assert.equal(await main.getByLabel('Search what was said').inputValue(), 'second thought');
+    await main.screenshot({ path: path.join(evidence, `${theme}-search.png`) });
+    await main.locator('.hit').first().click();
+    await main.locator('.para').first().waitFor();
+    await main.locator('.sidebar .place', { hasText: 'Recordings' }).click();
+    await main.getByRole('heading', { name: 'Recordings', exact: true }).waitFor();
     await main.locator('.tile').first().click();
     await main.locator('.para').first().waitFor();
     assert.equal(await main.getByText('What Bloom knows about this recording').count(), 1);

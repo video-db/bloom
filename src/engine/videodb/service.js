@@ -3,6 +3,7 @@ const { ServiceError, request } = require('./errors');
 const { createOperationJournal } = require('./journal');
 const { createOperations } = require('./operations');
 const { createLibrary } = require('./library');
+const { createExplore } = require('./explore');
 const { createSessions } = require('./sessions');
 
 const DEV_API = 'https://api.dev.videodb.io';
@@ -73,6 +74,7 @@ function createVideoDBService({
     },
     ...createLibrary({ account, read, assertCurrent, operations, journal }),
     ...createSessions({ account, read, mutate, operations }),
+    ...createExplore({ account, read }),
     async signIn(apiKey) {
       if (authenticating || operations.busy())
         throw new ServiceError(

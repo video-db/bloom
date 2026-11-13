@@ -25,6 +25,13 @@ function createFixture({
   let clock = 0,
     serial = 0;
   const scopeId = 'a'.repeat(64);
+  const shelf = ['Design critique', 'Sprint demo'].map((title, index) => ({
+    id: `shelf-${index + 1}`,
+    title,
+    duration: 300 + index * 60,
+    streamUrl: 'https://stream.example/shelf.m3u8',
+    playerUrl: `https://player.example/shelf-${index + 1}`,
+  }));
   const service = {
     apiUrl: 'https://api.dev.videodb.io',
     cachedIdentity: () => null,
@@ -39,7 +46,33 @@ function createFixture({
     ownsSession: async () => true,
     pendingOperations: () => [],
     listRecordings: async () => [...remote.values()],
-    getPlayback: async (id) => remote.get(id),
+    getPlayback: async (id, collectionId) =>
+      collectionId ? shelf.find((video) => video.id === id) : remote.get(id),
+    // A second collection with two videos, to browse read-only.
+    usage: async () => ({ credits: 316.28 }),
+    listCollections: async () => [
+      { id: 'collection-2', name: 'Product reviews', bloom: false },
+      { id: 'collection-1', name: 'Bloom Recordings', bloom: true },
+    ],
+    listCollectionVideos: async (id) => {
+      calls.push(['listCollectionVideos', id]);
+      return shelf;
+    },
+    // Finds the newest recording when asked about "second thought"; nothing otherwise.
+    search: async (query) => {
+      calls.push(['search', query]);
+      const [first] = [...remote.values()];
+      return first && /second thought/i.test(query)
+        ? [
+            {
+              videoId: first.id,
+              start: 4,
+              end: 6,
+              text: 'A second thought after a pause.',
+            },
+          ]
+        : [];
+    },
     transcript: async () => ({
       status: 'ready',
       text: 'Recorded words here. A second thought after a pause.',

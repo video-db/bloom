@@ -2,7 +2,7 @@
 // handler per event: markup names what it does (data-command, data-ui, data-view, …) and
 // this file turns that into a command for the engine or a change to what the window shows.
 import { chooser } from './panel/sources.js';
-import { seek } from './workspace/player.js';
+import { seek, startAt } from './workspace/player.js';
 import { confirmRecordingAction } from './workspace/dialogs.js';
 
 // state: () => latest app state. browse: how Recordings is looked at. go: change view.
@@ -50,7 +50,22 @@ export function bindActions(root, { state, browse, go, render }) {
       chooser.close();
       render(true);
     }
-    if (target.dataset.record) go(`recording/${target.dataset.record}`);
+    if (target.dataset.record) {
+      // A search result opens its recording at the moment it found.
+      if (target.dataset.at !== undefined)
+        startAt(target.dataset.record, Number(target.dataset.at));
+      go(`recording/${target.dataset.record}`);
+    }
+    if (target.dataset.place) {
+      // Recordings is Bloom's own collection; leave any other one being browsed.
+      if (target.dataset.place === 'recordings')
+        window.bloom.command('closeCollection');
+      go(target.dataset.place);
+    }
+    if (target.dataset.collection) {
+      window.bloom.command('openCollection', { id: target.dataset.collection });
+      go('recordings');
+    }
     if (target.dataset.browse) {
       browse[target.dataset.browse] = target.dataset.value;
       render(true);
@@ -81,6 +96,8 @@ export function bindActions(root, { state, browse, go, render }) {
       window.bloom.command('signIn', { key: input.value });
       input.value = '';
     }
+    if (event.target.dataset.form === 'search')
+      window.bloom.command('search', { text: event.target.elements.q.value });
     if (event.target.dataset.form === 'mark') {
       const note = event.target.elements.note;
       window.bloom.command('mark', { text: note.value });

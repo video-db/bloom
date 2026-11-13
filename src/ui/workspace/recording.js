@@ -20,42 +20,46 @@ const head = (r) =>
     >
       Copy link
     </button>
-    <details class="record-menu">
-      <summary aria-label="Recording actions" title="Recording actions">
-        •••
-      </summary>
-      <div>
-        <button
-          data-dialog="rename"
-          data-id="${esc(r.id)}"
-          ${r.pendingOperation ? 'disabled' : ''}
-        >
-          Rename
-        </button>
-        <button
-          data-ui="download"
-          data-id="${esc(r.id)}"
-          ${r.status !== 'ready' ? 'disabled' : ''}
-        >
-          Download
-        </button>
-        <button
-          data-copy-transcript="${esc(r.id)}"
-          ${r.transcript ? '' : 'disabled'}
-        >
-          Copy transcript
-        </button>
-        <button
-          class="destructive"
-          data-dialog="delete"
-          data-id="${esc(r.id)}"
-          ${!r.videoId || r.pendingOperation ? 'disabled' : ''}
-        >
-          Delete…
-        </button>
-      </div>
-    </details>
+    ${r.readOnly ? '' : menu(r)}
   </header>`;
+
+// Changes to a recording. Not offered for a video from another collection.
+const menu = (r) =>
+  /* HTML */ `<details class="record-menu">
+    <summary aria-label="Recording actions" title="Recording actions">
+      •••
+    </summary>
+    <div>
+      <button
+        data-dialog="rename"
+        data-id="${esc(r.id)}"
+        ${r.pendingOperation ? 'disabled' : ''}
+      >
+        Rename
+      </button>
+      <button
+        data-ui="download"
+        data-id="${esc(r.id)}"
+        ${r.status !== 'ready' ? 'disabled' : ''}
+      >
+        Download
+      </button>
+      <button
+        data-copy-transcript="${esc(r.id)}"
+        ${r.transcript ? '' : 'disabled'}
+      >
+        Copy transcript
+      </button>
+      <button
+        class="destructive"
+        data-dialog="delete"
+        data-id="${esc(r.id)}"
+        ${!r.videoId || r.pendingOperation ? 'disabled' : ''}
+      >
+        Delete…
+      </button>
+    </div>
+  </details>`;
 
 const notices = (r) =>
   `${
@@ -80,6 +84,14 @@ const notices = (r) =>
 // What Bloom knows about this recording, in plain words, and how to add to it.
 function knowledge(r, signedIn) {
   const unavailable = !r.videoId || !signedIn;
+  // A video from another collection is read as it is; Bloom does not transcribe it.
+  if (r.readOnly && !r.transcript && r.transcriptStatus !== 'processing')
+    return /* HTML */ `<section class="card knows">
+      <h2 class="label">What Bloom knows about this recording</h2>
+      <div class="knows-row">
+        <span>What was said</span><span class="chip">Not transcribed</span>
+      </div>
+    </section>`;
   const add =
     !r.transcript && !['processing', 'error'].includes(r.transcriptStatus);
   const said = r.transcript
@@ -128,22 +140,27 @@ const player = (r) =>
     }
   </div>`;
 
-const back = /* HTML */ `<button class="crumb" data-view="recordings">
-  ${icon('back')}<span>Recordings</span>
-</button>`;
+const back = (s) =>
+  /* HTML */ `<button class="crumb" data-view="recordings">
+    ${icon('back')}<span
+      >${s.browsing ? esc(s.browsing.name) : 'Recordings'}</span
+    >
+  </button>`;
 
 export function recording(s, id) {
-  const r = s.recordings.find((item) => item.id === id);
+  const r =
+    s.recordings.find((item) => item.id === id) ||
+    s.browsing?.recordings.find((item) => item.id === id);
   if (!r)
     return /* HTML */ `<section class="page">
-      ${back}
+      ${back(s)}
       <div class="page-empty">
         <b>This recording is not here any more</b>
         <p>It may have been deleted. Choose another from Recordings.</p>
       </div>
     </section>`;
   return /* HTML */ `<section class="page recording">
-    ${back}${head(r)}${notices(r)}
+    ${back(s)}${head(r)}${notices(r)}
     <div class="recording-columns">
       ${transcript(r)}
       <aside class="recording-side" aria-label="Playback and marks">

@@ -14,6 +14,11 @@ const { mediaUrl } = require('../engine/videodb/library');
 const copyLink = () =>
   clipboard.writeText('https://example.invalid/sample-recording'); // sample data: there is no real link yet
 
+// One of Bloom's own recordings, or one in the collection being browsed.
+const findRecord = (state, id) =>
+  state.recordings.find((r) => r.id === id) ||
+  state.browsing?.recordings?.find((r) => r.id === id);
+
 function registerIpc({
   engine,
   prefs,
@@ -121,9 +126,7 @@ function registerIpc({
       if (engine.getState().sample) copyLink();
       else {
         const state = engine.getState();
-        const record = state.recordings.find(
-          (r) => r.id === (args.id || state.result?.id),
-        );
+        const record = findRecord(state, args.id || state.result?.id);
         const url = mediaUrl(record?.playerUrl);
         if (url && record.status === 'ready') {
           clipboard.writeText(url);
@@ -134,7 +137,7 @@ function registerIpc({
       }
     }
     if (name === 'copy-transcript' && typeof args.id === 'string') {
-      const record = engine.getState().recordings.find((r) => r.id === args.id);
+      const record = findRecord(engine.getState(), args.id);
       if (record?.transcript) {
         clipboard.writeText(record.transcript);
         engine.notice?.('Transcript copied.');

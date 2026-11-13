@@ -165,7 +165,7 @@ const screenRow = {
     `<span class="setup-stack"><button class="btn pri setup-small" data-ui="relaunch">Reopen Bloom</button><button class="setup-link" data-act="screen">Open Settings</button></span>`,
   ],
   on: [
-    'On. This is what Bloom can see.',
+    'On.',
     `<span class="setup-preview" data-preview="screen" aria-label="Screen recording is on">${icons.check}</span>`,
   ],
 };
@@ -183,7 +183,7 @@ const micRow = {
     `<button class="btn setup-small" data-ui="open-settings" data-key="mic">Open Settings</button>`,
   ],
   on: [
-    'On. Say something to see it move.',
+    'On.',
     `<span class="setup-preview" data-preview="mic" aria-label="Microphone is on">${icons.check}</span>`,
   ],
 };
@@ -212,7 +212,11 @@ export function permissions(s, flow) {
             icon: icons.screen,
             on: screen === 'on',
             title: 'Screen and system audio',
-            hint: screenRow[screen][0],
+            // Only promise a live view when this build can show one.
+            hint:
+              screen === 'on' && s.livePreviews
+                ? 'On. This is what Bloom can see.'
+                : screenRow[screen][0],
             control: screenRow[screen][1],
           })}
           ${row({
@@ -220,7 +224,10 @@ export function permissions(s, flow) {
             on: mic === 'on',
             title: 'Microphone',
             optional: true,
-            hint: micRow[mic][0],
+            hint:
+              mic === 'on' && s.livePreviews
+                ? 'On. Say something to see it move.'
+                : micRow[mic][0],
             control: micRow[mic][1],
           })}
         </div>

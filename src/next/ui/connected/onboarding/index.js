@@ -39,6 +39,7 @@ export function createOnboarding(root) {
       state.recorder,
       state.permissions,
       state.loginSupported,
+      state.livePreviews,
       state.prefs.openAtLogin,
       state.prefError,
     ]);

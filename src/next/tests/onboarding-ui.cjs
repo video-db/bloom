@@ -188,7 +188,12 @@ fs.mkdirSync(evidence, { recursive: true });
       global.__bloomNext.getFixture().recorder.permission.screen = true;
     });
     await comeBack();
-    await page.getByText('On. This is what Bloom can see.').waitFor();
+    await page.locator('.setup-row.on').first().waitFor();
+    assert.equal(
+      await page.getByText('This is what Bloom can see').count(),
+      0,
+      'no live view is promised when none can be shown',
+    );
     assert.equal(await button('Check again').count(), 0);
     assert.equal(await button('Continue').isEnabled(), true);
 

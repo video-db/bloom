@@ -1,6 +1,6 @@
 {
   "name": "bloom",
-  "version": "2.3.6",
+  "version": "2.3.7",
   "description": "Bloom — Screen recorder powered by VideoDB",
   "main": "src/main/index.js",
   "scripts": {

@@ -2,7 +2,14 @@
 
 ## Unreleased
 
+## [2.3.7] - 2026-11-14
+
+- Recordings finish processing: 2.3.6 sent the recording's folder instead of its video, so every recording ended as "Needs recovery". A recording kept by 2.3.6 recovers with Recover.
+- While recording, the microphone and system audio icons in the tray mute and unmute that source.
+
 ## [2.3.6] - 2026-11-14
+
+Not distributed: recordings did not finish processing.
 
 - A floating camera: the camera icon in the tray shows a round, mirrored picture of your camera on screen, bottom left. Drag it anywhere; three sizes appear under the pointer. It can be turned on or off while recording. It is part of a display recording because it is on that screen; it is not part of a single-window recording, and the tray says so.
 - Muting a source from the floating control no longer races with Pause and Resume, a pause no longer asks again for a source that is already muted, and a mute that fails is said.

@@ -48,7 +48,7 @@ For a change that must not alter any screen, set `BLOOM_STYLE_SNAPSHOT=1` and a 
 
 ## Build and install locally
 
-1. Confirm the branch and `package.json` version. The current internal build is 2.3.7; main can have a different version.
+1. Confirm the branch and `package.json` version. The current internal build is 2.3.8; main can have a different version.
 2. Install dependencies with `npm ci`.
 3. Build an unpacked app with `npm run pack`, or DMGs with `npm run dist`. The macOS installer configuration builds arm64 and x64. Output is under `dist/`, with DMGs named `bloom-<version>-mac-<arch>.dmg`.
 4. Select the artifact matching the Mac architecture (`uname -m`: arm64 for Apple Silicon, x86_64 for Intel; x64 and AMD64 mean x86_64).

@@ -2,7 +2,13 @@
 
 ## Unreleased
 
+## [2.3.8] - 2026-11-14
+
+- Dragging the camera picture to the left or top edge of the screen no longer stops Bloom with a JavaScript error.
+
 ## [2.3.7] - 2026-11-14
+
+Not distributed: dragging the camera could stop the app.
 
 - Recordings finish processing: 2.3.6 sent the recording's folder instead of its video, so every recording ended as "Needs recovery". A recording kept by 2.3.6 recovers with Recover.
 - While recording, the microphone and system audio icons in the tray mute and unmute that source.

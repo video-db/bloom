@@ -32,6 +32,13 @@ function cameraDisplay(state, displays, primary) {
 // Top-left corner for a window of `size` on `display`: where it was last put if that is
 // still on this display; otherwise the left edge at mid-height for the control, or the
 // bottom-left corner for the camera, where Loom keeps its own.
+// A number a window position can take. Electron refuses anything that is not a plain whole
+// number: a fraction, NaN, a number out of range, and negative zero, which is what rounding
+// gives for a spot a fraction left of or above zero.
+const LIMIT = 100000;
+const whole = (value) =>
+  Math.round(Math.max(-LIMIT, Math.min(LIMIT, Number(value) || 0))) || 0;
+
 function placeOn(display, size, saved, corner = false) {
   const area = display.workArea;
   const inside =
@@ -40,14 +47,12 @@ function placeOn(display, size, saved, corner = false) {
     saved.y >= area.y &&
     saved.x + size.width <= area.x + area.width &&
     saved.y + size.height <= area.y + area.height;
-  return inside
-    ? { x: Math.round(saved.x), y: Math.round(saved.y) }
+  const at = inside
+    ? saved
     : corner
       ? { x: area.x + 24, y: area.y + area.height - size.height - 24 }
-      : {
-          x: area.x + 16,
-          y: Math.round(area.y + (area.height - size.height) / 2),
-        };
+      : { x: area.x + 16, y: area.y + (area.height - size.height) / 2 };
+  return { x: whole(at.x), y: whole(at.y) };
 }
 
-module.exports = { safeDisplay, cameraDisplay, placeOn };
+module.exports = { safeDisplay, cameraDisplay, placeOn, whole };

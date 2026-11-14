@@ -79,6 +79,23 @@ fs.mkdirSync(evidence, { recursive: true });
     await cam.locator('.cam-sizes button.on[data-size="l"]').waitFor({
       state: 'attached',
     });
+    // Dragged to a fraction left of the screen's edge: Electron refuses that position as
+    // it stands (it rounds to negative zero), which used to stop the app with an error.
+    const camAt = () =>
+      app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .find((w) => w.webContents.getURL().includes('surface=camera'))
+          .getPosition(),
+      );
+    const [fromX] = await camAt();
+    await cam.evaluate(
+      (dx) => window.bloom.ui('camera-drag', { dx, dy: 0 }),
+      -fromX - 0.3,
+    );
+    await cam.evaluate(() => window.bloom.ui('camera-drop'));
+    for (let i = 0; i < 40 && (await camAt())[0] !== 0; i++)
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.equal((await camAt())[0], 0);
     await cam.screenshot({
       path: path.join(evidence, `camera-${theme}.png`),
       omitBackground: true,
@@ -182,7 +199,7 @@ fs.mkdirSync(evidence, { recursive: true });
     );
     assert.deepEqual(errors, []);
     console.log(
-      `Window ${theme} walkthrough passes: camera, named, switched, hidden, shown, floating control, paused, stopped.`,
+      `Window ${theme} walkthrough passes: camera sized and dragged, named, switched, hidden, shown, floating control, paused, stopped.`,
     );
   } finally {
     await app

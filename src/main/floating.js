@@ -2,7 +2,12 @@
 // camera picture. Neither takes focus from the app being recorded and both stay above other
 // windows. The control is shown only where it cannot end up in the recording; the camera
 // picture is meant to be seen, so on a display recording it is part of it.
-const { safeDisplay, cameraDisplay, placeOn } = require('./float-placement');
+const {
+  safeDisplay,
+  cameraDisplay,
+  placeOn,
+  whole,
+} = require('./float-placement');
 
 const CONTROL = { width: 56, height: 220 };
 const CAMERA = { s: 140, m: 200, l: 280 }; // the round picture's width and height
@@ -163,7 +168,7 @@ function createFloating({
       if (!alive(camera) || !Number.isFinite(dx) || !Number.isFinite(dy))
         return;
       const [x, y] = camera.getPosition();
-      camera.setPosition(Math.round(x + dx), Math.round(y + dy));
+      camera.setPosition(whole(x + dx), whole(y + dy));
     },
     dropCamera() {
       if (!alive(camera)) return;
@@ -181,8 +186,8 @@ function createFloating({
       const within = (value, from, length) =>
         Math.max(from, Math.min(value, from + length - side));
       camera.setBounds({
-        x: within(was.x, area.x, area.width),
-        y: within(was.y + was.height - side, area.y, area.height),
+        x: whole(within(was.x, area.x, area.width)),
+        y: whole(within(was.y + was.height - side, area.y, area.height)),
         width: side,
         height: side,
       });

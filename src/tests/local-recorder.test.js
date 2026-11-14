@@ -15,6 +15,7 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
   const uploads = []; // one deferred per upload attempt
   let serial = 0;
   let stopError = null;
+  let stopFiles = (folder) => [`${folder}/recording.mp4`];
   class Client extends EventEmitter {
     constructor(options) {
       super();
@@ -83,7 +84,9 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
       }
       return {
         recordingId: `rec-${serial}`,
-        path: `/private/media/rec-${serial}.mp4`,
+        // As the real recorder answers: the recording's folder, and the files in it.
+        path: `/private/media/rec-${serial}`,
+        files: stopFiles(`/private/media/rec-${serial}`),
         durationSeconds: 12.5,
       };
     }
@@ -120,6 +123,10 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
     events,
     failStop(error) {
       stopError = error;
+    },
+    // What the recorder says its folder holds, when a test needs another answer.
+    stopFiles(list) {
+      stopFiles = list;
     },
   };
 }
@@ -164,7 +171,7 @@ test('Stop finalises the file, says so, sends it, and reports completion without
     },
   ]);
   assert.deepEqual(f.uploads[0].file, {
-    path: '/private/media/rec-1.mp4',
+    path: '/private/media/rec-1/recording.mp4',
     title: 'Demo',
   });
   const waiting = f.recorder.wait({ sessionId: 'rec-a' });
@@ -184,7 +191,7 @@ test('Stop finalises the file, says so, sends it, and reports completion without
   );
   assert.match(
     fs.readFileSync(journalFile, 'utf8'),
-    /private\/media\/rec-1\.mp4/,
+    /private\/media\/rec-1\/recording\.mp4/,
   );
 });
 
@@ -203,7 +210,7 @@ test('a failed send is reported, and Recover sends the same file again', async (
 
   await f.recorder.relay('rec-1');
   assert.equal(f.uploads.length, 2);
-  assert.equal(f.uploads[1].file.path, '/private/media/rec-1.mp4');
+  assert.equal(f.uploads[1].file.path, '/private/media/rec-1/recording.mp4');
   f.uploads[1].resolve({ id: 'm-2' });
   await flush();
   assert.deepEqual((await f.recorder.recover())[0], {
@@ -215,6 +222,60 @@ test('a failed send is reported, and Recover sends the same file again', async (
   await assert.rejects(f.recorder.relay('made-by-an-older-bloom'), {
     code: 'not-found',
   });
+});
+
+test('what is sent is the video in the recording folder, however the recorder names it', async (t) => {
+  // File names relative to the folder.
+  const named = fixture();
+  named.stopFiles(() => ['media.json', 'recording.mp4']);
+  await named.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
+  await named.recorder.stop();
+  assert.equal(
+    named.uploads[0].file.path,
+    path.join('/private/media/rec-1', 'recording.mp4'),
+  );
+
+  // No list at all, and a list kept by an earlier Bloom that stored the folder: the folder
+  // is looked into. Recover then sends the video, not the folder.
+  const journalFile = tempJournal(t);
+  const folder = path.join(path.dirname(journalFile), 'rec-old');
+  fs.mkdirSync(folder);
+  fs.writeFileSync(path.join(folder, 'media.json'), '{}');
+  fs.writeFileSync(path.join(folder, 'recording.mp4'), 'video');
+  fs.writeFileSync(
+    journalFile,
+    JSON.stringify({
+      version: 1,
+      entries: {
+        'rec-old': {
+          sessionId: 'rec-b',
+          scopeId: 'a'.repeat(64),
+          title: 'Kept',
+          stage: 'failed',
+          path: folder,
+        },
+      },
+    }),
+  );
+  const later = fixture({ journalFile });
+  later.recorder.relay('rec-old').catch(() => {});
+  await flush();
+  assert.equal(later.uploads[0].file.path, path.join(folder, 'recording.mp4'));
+  later.uploads[0].resolve({ id: 'm-9' });
+  await flush();
+  assert.equal(
+    JSON.parse(fs.readFileSync(journalFile, 'utf8')).entries['rec-old'].path,
+    path.join(folder, 'recording.mp4'),
+  );
+
+  // A folder with no video in it is never sent: the recording needs recovery instead.
+  const empty = fixture();
+  empty.stopFiles(() => []);
+  await empty.recorder.start({ sessionId: 'rec-c', channels, title: 'Demo' });
+  await empty.recorder.stop();
+  await flush();
+  assert.equal(empty.uploads.length, 0);
+  assert.equal(empty.events.at(-1)[0], 'recording-relay-failed');
 });
 
 test('after a restart an unfinished file is found again and sent, for its own account only', async (t) => {
@@ -315,7 +376,7 @@ test('quitting while capturing finishes the file first, and no account means no 
   );
   assert.match(
     fs.readFileSync(journalFile, 'utf8'),
-    /"path":"\/private\/media\/rec-1\.mp4"/,
+    /"path":"\/private\/media\/rec-1\/recording\.mp4"/,
   );
 
   const signedOut = fixture();

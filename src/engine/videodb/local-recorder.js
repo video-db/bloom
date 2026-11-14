@@ -4,11 +4,36 @@
 // a restart. File paths stay in this module; the engine and the windows only ever see ids.
 // All SDK recorder calls and native event names are confined to this file (ADR 0005).
 const fs = require('node:fs');
+const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const { ServiceError, request } = require('./errors');
 const { atomicWrite } = require('./files');
 
 // What standalone capture accepts for sound: the system's default devices only.
+// The recorder keeps each recording in a folder of its own: the stop result's `path` is
+// that folder and the video is one of its `files`. Returns the video file itself, or ''
+// when there is none. A stored folder (from before this was known) resolves the same way.
+function videoFile(folder, files = []) {
+  const isVideo = (name) => /\.mp4$/i.test(name);
+  const listed = (Array.isArray(files) ? files : [])
+    .filter((name) => typeof name === 'string' && isVideo(name))
+    .map((name) =>
+      path.isAbsolute(name) ? name : path.join(folder || '', name),
+    );
+  if (listed.length) return listed[0];
+  if (!folder || isVideo(folder)) return folder || '';
+  try {
+    if (!fs.statSync(folder).isDirectory()) return folder;
+    const videos = fs.readdirSync(folder).filter(isVideo);
+    const video = videos.includes('recording.mp4')
+      ? 'recording.mp4'
+      : videos[0];
+    return video ? path.join(folder, video) : '';
+  } catch {
+    return '';
+  }
+}
+
 const MIC = { id: 'mic:default', name: 'Microphone' };
 const SYSTEM_AUDIO = { id: 'system_audio:default', name: 'System audio' };
 const NATIVE_EVENTS = ['shutdown', 'error', 'window-closed', 'window-switched'];
@@ -79,8 +104,14 @@ function createLocalRecorder({
 
   // Send a finished file to VideoDB. One attempt at a time per recording.
   function send(recordingId) {
-    const entry = entries[recordingId];
-    if (!entry?.path) {
+    let entry = entries[recordingId];
+    // What is sent is the video itself, never the folder it is kept in.
+    const file = entry?.path ? videoFile(entry.path) : '';
+    if (entry?.path && file && file !== entry.path) {
+      update(recordingId, { path: file });
+      entry = entries[recordingId];
+    }
+    if (!file) {
       if (entry) {
         update(recordingId, { stage: 'failed' });
         events.emit('event', 'recording-relay-failed', identity(recordingId));
@@ -259,7 +290,10 @@ function createLocalRecorder({
       }
       const id = recordingId || result.recordingId;
       active = null;
-      update(id, { path: result.path, stage: 'ready' });
+      update(id, {
+        path: videoFile(result.path, result.files) || result.path,
+        stage: 'ready',
+      });
       events.emit('event', 'local-recording-ready', {
         ...identity(id),
         stage: 'processing',

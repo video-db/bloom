@@ -296,13 +296,24 @@ fs.mkdirSync(evidence, { recursive: true });
 
     await recorder.locator('[data-command=start]').click();
     await phase('recording');
-    // Recording: the state is in the header, a typed note becomes a mark, sources are locked.
+    // Recording: the state is in the header, a typed note becomes a mark. A sound source
+    // that is being recorded can be muted and brought back; the choice of sources is locked.
     await recorder.locator('.ph .timer').waitFor();
-    assert.equal(
-      await recorder
-        .getByRole('button', { name: 'Microphone: On' })
-        .isDisabled(),
-      true,
+    await recorder.getByRole('button', { name: 'Mute microphone' }).click();
+    await recorder.getByRole('button', { name: 'Unmute microphone' }).click();
+    await recorder.getByRole('button', { name: 'Mute microphone' }).waitFor();
+    assert.deepEqual(
+      await app.evaluate(() =>
+        global.__bloom
+          .getFixture()
+          .calls.filter(
+            ([name, tracks]) =>
+              ['pause', 'resume'].includes(name) &&
+              JSON.stringify(tracks) === '["mic"]',
+          )
+          .map(([name]) => name),
+      ),
+      ['pause', 'resume'],
     );
     await recorder.getByLabel('Mark a moment').fill('First point');
     await recorder.getByLabel('Mark a moment').press('Enter');

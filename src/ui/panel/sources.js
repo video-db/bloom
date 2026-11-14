@@ -83,16 +83,30 @@ function toggle({ key, glyph, label, on, detail = '', locked = false }) {
   </button>`;
 }
 
+// While a recording runs, a sound source that is part of it can be muted and brought back
+// without stopping. One that was off at the start stays off: the recorder cannot add it.
+function sound(s, { key, glyph, label, locked }) {
+  if (!locked || !s.sources[key])
+    return toggle({ key, glyph, label, on: s.sources[key], locked });
+  const muted = !!s.muted?.[key];
+  const name = label.toLowerCase();
+  return /* HTML */ `<button
+    class="capture-option ${muted ? '' : 'on'}"
+    data-command="setMuted"
+    data-key="${key}"
+    data-value="${!muted}"
+    aria-pressed="${!muted}"
+    aria-label="${muted ? `Unmute ${name}` : `Mute ${name}`}"
+    title="${muted ? `Unmute ${name}` : `Mute ${name}`}"
+  >
+    ${icon(glyph)}${muted ? '<span class="source-slash"></span>' : ''}
+  </button>`;
+}
+
 // Recording uses the Mac's default microphone, so there is nothing to choose: on or off.
 function microphone(s, locked) {
   return /* HTML */ `<span class="source ${s.sources.mic ? 'on' : ''}">
-    ${toggle({
-      key: 'mic',
-      glyph: 'microphone',
-      label: 'Microphone',
-      on: s.sources.mic,
-      locked,
-    })}
+    ${sound(s, { key: 'mic', glyph: 'microphone', label: 'Microphone', locked })}
   </span>`;
 }
 
@@ -258,11 +272,10 @@ export function sources(s, { locked = false } = {}) {
     !s.windows.supported
   )
     open = null;
-  const systemAudio = toggle({
+  const systemAudio = sound(s, {
     key: 'systemAudio',
     glyph: 'audio',
     label: 'System audio',
-    on: s.sources.systemAudio,
     locked,
   });
   return /* HTML */ `<div class="source-group">

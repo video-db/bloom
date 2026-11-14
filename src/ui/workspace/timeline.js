@@ -3,9 +3,19 @@
 // video plays; clicking or dragging along it moves through the recording.
 import { esc, clock } from '../shared/dom.js';
 
+// How long the recording is taken to be before the video says: its stored length, and
+// never shorter than its last chapter or mark.
+const length = (r) =>
+  Math.max(
+    r.duration || 0,
+    ...(r.summary?.chapters || []).map((c) => c.at + 1),
+    ...(r.marks || []).map((m) => m.at),
+    1,
+  );
+
 // The recording as parts: its chapters when the summary has them, otherwise one part.
 export function parts(r) {
-  const total = Math.max(r.duration || 0, 1);
+  const total = length(r);
   const chapters = (r.summary?.chapters || []).filter((c) => c.at < total);
   const list = chapters.length > 1 ? chapters : [{ title: '', at: 0 }];
   return list.map((chapter, index) => ({
@@ -16,7 +26,7 @@ export function parts(r) {
 }
 
 export function timeline(r) {
-  const total = Math.max(r.duration || 0, 1);
+  const total = length(r);
   const list = parts(r);
   const span = (p) =>
     `style="flex:${p.to - p.from} 1 0" data-from="${p.from}" data-to="${p.to}"`;

@@ -26,8 +26,14 @@ const firstRun = surface === 'onboarding' ? createOnboarding(root) : null;
 // The camera picture is put up once and never redrawn, so the camera stays open.
 const cameraView = surface === 'camera' ? mountCamera(root) : null;
 
+let redrawAfterFullScreen = false;
 function render(force = false) {
   if (!state) return;
+  // A redraw would take the video out of full screen; it waits until full screen ends.
+  if (document.fullscreenElement) {
+    redrawAfterFullScreen = true;
+    return;
+  }
   const next = JSON.stringify({
     ...state,
     elapsed: 0,
@@ -165,3 +171,8 @@ const syncMotion = () =>
 motion.addEventListener('change', syncMotion);
 syncMotion();
 window.addEventListener('beforeunload', releasePlayer);
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement || !redrawAfterFullScreen) return;
+  redrawAfterFullScreen = false;
+  render(true);
+});

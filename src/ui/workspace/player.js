@@ -6,12 +6,20 @@ import { clock } from '../shared/dom.js';
 const RATES = [1, 1.25, 1.5, 2];
 const positions = new Map(); // recording id -> seconds, for when it is opened again
 let rate = 1;
-let kept = null; // { id, url, video, hls } between a redraw and the next mount
+let kept = null; // { id, url, video, hls, ready } between a redraw and the next mount
 let bound = null; // listeners of the current page, dropped at the next redraw
+
+// Remember where the video is for the next time it is opened. Before it has loaded there
+// is nothing to remember (and a place asked for must not be lost); after it has ended, the
+// next time starts from the beginning.
+function remember() {
+  if (!kept?.ready) return;
+  positions.set(kept.id, kept.video.ended ? 0 : kept.video.currentTime || 0);
+}
 
 function drop() {
   if (!kept) return;
-  positions.set(kept.id, kept.video.currentTime || 0);
+  remember();
   kept.hls?.destroy();
   kept.video.removeAttribute('src');
   kept.video.load();
@@ -22,7 +30,7 @@ function drop() {
 export function releasePlayer() {
   bound?.abort();
   bound = null;
-  if (kept) positions.set(kept.id, kept.video.currentTime || 0);
+  remember();
 }
 
 function load(record, video) {
@@ -39,6 +47,7 @@ function load(record, video) {
         positions.get(record.id) || 0,
         video.duration || 0,
       );
+      if (kept?.video === video) kept.ready = true;
     },
     { once: true },
   );
@@ -68,7 +77,13 @@ export function mountPlayer(record) {
     video = kept.video;
     placeholder.replaceWith(video); // same element: it keeps playing
   } else {
-    kept = { id: record.id, url: record.streamUrl, video, hls: null };
+    kept = {
+      id: record.id,
+      url: record.streamUrl,
+      video,
+      hls: null,
+      ready: false,
+    };
     kept.hls = load(record, video);
   }
   video.playbackRate = rate;
@@ -102,14 +117,20 @@ function wire(record, video) {
     line.setAttribute('aria-valuenow', String(Math.round(at)));
     line.setAttribute('aria-valuetext', `${clock(at)} of ${clock(length)}`);
     line.style.setProperty('--at', `${Math.min(100, (at / length) * 100)}%`);
-    // Each chapter fills as the video passes through it.
+    // The timeline follows the video's real length, which the recording's stored length
+    // can differ from: the last chapter ends where the video does, and marks sit by it.
+    const all = [...document.querySelectorAll('.tl-part')];
     for (const part of document.querySelectorAll('[data-from]')) {
       const from = Number(part.dataset.from);
-      const to = Number(part.dataset.to) || length;
+      const last = part.dataset.to === all.at(-1)?.dataset.to;
+      const to = last ? Math.max(length, from + 1) : Number(part.dataset.to);
+      part.style.flexGrow = String(Math.max(to - from, 0.001));
       const done = Math.max(0, Math.min(1, (at - from) / (to - from || 1)));
       part.style.setProperty('--done', `${done * 100}%`);
-      part.classList.toggle('now', at >= from && at < to);
+      part.classList.toggle('now', at >= from && (last || at < to));
     }
+    for (const mark of line.querySelectorAll('.tl-mark'))
+      mark.style.left = `${Math.min(100, (Number(mark.dataset.seek) / length) * 100)}%`;
   }
   for (const name of [
     'timeupdate',
@@ -181,22 +202,26 @@ function wire(record, video) {
   line.addEventListener(
     'keydown',
     (event) => {
-      const step = { ArrowLeft: -5, ArrowRight: 5 }[event.key];
-      if (!step) return;
+      if (event.target !== line) return; // a mark on the timeline has its own keys
+      const to = {
+        ArrowLeft: video.currentTime - 5,
+        ArrowRight: video.currentTime + 5,
+        Home: 0,
+        End: total(),
+      }[event.key];
+      if (to === undefined) return;
       event.preventDefault();
-      video.currentTime = Math.max(
-        0,
-        Math.min(total(), video.currentTime + step),
-      );
+      video.currentTime = Math.max(0, Math.min(total(), to));
     },
     { signal },
   );
 }
 
 export function seek(seconds) {
-  const video = kept?.video;
-  if (video && Number.isFinite(seconds) && seconds >= 0)
-    video.currentTime = seconds;
+  if (!kept || !Number.isFinite(seconds) || seconds < 0) return;
+  // Before the video has loaded, the place is kept for when it has.
+  if (kept.ready) kept.video.currentTime = seconds;
+  else positions.set(kept.id, seconds);
 }
 
 // Open this recording at a moment: the next time it is mounted it starts there.

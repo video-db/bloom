@@ -102,6 +102,46 @@ test('title is part of the summary request and is bounded and single-line', asyn
   assert(!result.title.includes('\n'));
 });
 
+test('chapters come with the summary: in order, from the start, inside the recording', async () => {
+  const answer = (chapters) =>
+    createUnderstand({
+      account: () => ({
+        collection: {
+          generateText: async (prompt) => {
+            assert.match(prompt, /"chapters"/);
+            return { output: { summary: 'Summary', chapters } };
+          },
+        },
+      }),
+      read: (_, work) => work(),
+    }).summarise([
+      { at: 0, text: 'Plans' },
+      { at: 98, text: 'Seats' },
+      { at: 185, text: 'Invoices' },
+    ]);
+  assert.deepEqual(
+    (
+      await answer([
+        { title: 'Invoices', at: 185 },
+        { title: 'Plans\nand prices', at: 4.4 },
+        { title: 'Seats', at: 98 },
+        { title: 'Seats again', at: 98 },
+        { title: 'After the end', at: 900 },
+        { title: '', at: 120 },
+        { title: 'No time' },
+      ])
+    ).chapters,
+    [
+      { title: 'Plans and prices', at: 0 },
+      { title: 'Seats', at: 98 },
+      { title: 'Invoices', at: 185 },
+    ],
+  );
+  // One part is not chapters, and neither is an answer without the field.
+  assert.deepEqual((await answer([{ title: 'All of it', at: 0 }])).chapters, []);
+  assert.deepEqual((await answer(undefined)).chapters, []);
+});
+
 test('a user rename waits for an in-flight automatic rename and wins', async () => {
   const { createLibraryCommands } = require('../engine/videodb/library-commands');
   const f = setup();

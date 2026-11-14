@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The recording page is rebuilt for watching: the video is large with its own playbar (play, time, speed, full screen); under it a timeline shows chapters, your marks and the playhead; Summary, Transcript and a new Marks tab sit beside the video and every time in them jumps the video. Chapters are made with the summary; regenerate an older summary to get them. Playback carries on when the page updates instead of restarting. "Add transcript" is now in the Transcript and Summary tabs.
+
 ## [2.3.8] - 2026-11-14
 
 - Dragging the camera picture to the left or top edge of the screen no longer stops Bloom with a JavaScript error.

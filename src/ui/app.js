@@ -73,8 +73,13 @@ function render(force = false) {
     shape = next;
     drawn = view;
     if (scrolled) root.querySelector('.view')?.scrollTo(0, scrolled);
-    if (route().place === 'recording')
-      mountPlayer(state.recordings.find((r) => r.id === activeId));
+    // The video is put back on a recording's page, and let go anywhere else.
+    mountPlayer(
+      route().place === 'recording' && surface === 'workspace'
+        ? state.recordings.find((r) => r.id === activeId) ||
+            state.browsing?.recordings.find((r) => r.id === activeId)
+        : null,
+    );
     // The floating control's window is exactly as tall as its buttons.
     if (surface === 'control')
       window.bloom.ui('float-size', {

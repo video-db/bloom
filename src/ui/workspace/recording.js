@@ -1,15 +1,18 @@
-// One recording in focus: the only recording on screen once opened. Its transcript is the
-// reading column; the player, what Bloom knows about it and its marks sit beside it.
+// One recording in focus, for watching: the video is the main thing, with its playbar and
+// a timeline of chapters and marks under it; the summary, transcript and marks are a column
+// beside it, and every time in them jumps the video.
 import { esc, clock, button } from '../shared/dom.js';
 import { icon } from '../shared/icons.js';
 import { meta, status } from './format.js';
 import { transcript } from './transcript.js';
 import { summary } from './summary.js';
+import { timeline } from './timeline.js';
 
 // What can be done with a recording, as tabs. Adding one is an entry here and its view.
 export const TABS = [
   { id: 'summary', label: 'Summary', view: summary },
   { id: 'transcript', label: 'Transcript', view: transcript },
+  { id: 'marks', label: 'Marks', view: marks },
 ];
 const tabs = (current) =>
   /* HTML */ `<div class="tabs" role="tablist">
@@ -19,8 +22,9 @@ const tabs = (current) =>
     ).join('')}
   </div>`;
 
-const head = (r) =>
-  /* HTML */ `<header class="page-head">
+const head = (s, r) =>
+  /* HTML */ `<header class="page-head watch-head">
+    ${back(s)}
     <h1 title="${esc(r.title)}">${esc(r.title)}</h1>
     <span class="caption"
       >${esc([meta(r), status(r)].filter(Boolean).join(' · '))}</span
@@ -111,44 +115,9 @@ const notices = (r) =>
       : ''
   }`;
 
-// What Bloom knows about this recording, in plain words, and how to add to it.
-function knowledge(r, signedIn) {
-  const unavailable = !r.videoId || !signedIn;
-  // A video from another collection is read as it is; Bloom does not transcribe it.
-  if (r.readOnly && !r.transcript && r.transcriptStatus !== 'processing')
-    return /* HTML */ `<section class="card knows">
-      <h2 class="label">What Bloom knows about this recording</h2>
-      <div class="knows-row">
-        <span>What was said</span><span class="chip">Not transcribed</span>
-      </div>
-    </section>`;
-  const add =
-    !r.transcript &&
-    !r.transcriptRequested &&
-    !['processing', 'error'].includes(r.transcriptStatus);
-  const said = r.transcript
-    ? '<span class="chip ok">Ready</span>'
-    : r.transcriptStatus === 'processing'
-      ? '<span class="chip">Preparing…</span>'
-      : r.transcriptStatus === 'error' || r.transcriptRequested
-        ? `<button class="btn sm" data-command="openRecording" data-id="${esc(r.id)}" ${unavailable ? 'disabled' : ''}>Try again</button>`
-        : `<button class="btn sm" data-command="requestTranscript" data-id="${esc(r.id)}" ${unavailable ? 'disabled' : ''}>Add</button>`;
-  return /* HTML */ `<section class="card knows">
-    <h2 class="label">What Bloom knows about this recording</h2>
-    <div class="knows-row"><span>What was said</span>${said}</div>
-    ${
-      add
-        ? '<p class="caption">Preparing a transcript may use VideoDB credits.</p>'
-        : ''
-    }
-  </section>`;
-}
-
-const marks = (r) =>
-  /* HTML */ `<section class="card" aria-label="Your marks">
-    <header class="card-head">
-      <span>Your marks</span><span class="caption">${r.marks.length}</span>
-    </header>
+// The person's marks, as their own tab. A function, so TABS above can name it.
+function marks(r) {
+  return /* HTML */ `<section class="reading" aria-label="Your marks">
     ${
       r.marks
         .map(
@@ -159,17 +128,42 @@ const marks = (r) =>
             </button>`,
         )
         .join('') ||
-      '<p class="caption card-note">No marks. Press ⇧⌘M while recording to save a moment.</p>'
+      '<p class="reading-empty">No marks. Press ⇧⌘M while recording to save a moment.</p>'
     }
   </section>`;
+}
 
+// The video with its own playbar: play, the time, speed and full screen.
 const player = (r) =>
-  /* HTML */ `<div class="player-card">
-    ${
-      r.streamUrl
-        ? '<video controls preload="metadata" data-player aria-label="Recorded video"></video><p class="caption" data-player-error role="status"></p>'
-        : '<div class="player-empty">Playback is not ready yet.</div>'
-    }
+  r.streamUrl
+    ? /* HTML */ `<div class="player">
+          <video
+            preload="metadata"
+            data-player
+            aria-label="Recorded video"
+          ></video>
+          <div class="player-bar">
+            <button data-player-toggle aria-label="Play">
+              ${icon('play')}${icon('pause')}
+            </button>
+            <span data-player-time>0:00 / ${clock(r.duration)}</span>
+            <span class="grow"></span>
+            <button data-player-speed aria-label="Playback speed">1×</button>
+            <button data-player-full aria-label="Full screen">
+              ${icon('expand')}
+            </button>
+          </div>
+        </div>
+        <p class="caption player-error" data-player-error role="status"></p>`
+    : '<div class="player player-empty">Playback is not ready yet.</div>';
+
+// What is playing. Versions made from this recording will join the original here.
+const playing = (r) =>
+  /* HTML */ `<div class="playing">
+    <span class="label">Playing</span>
+    <span class="version on"
+      ><b>Original</b><span class="caption">${clock(r.duration)}</span></span
+    >
   </div>`;
 
 const back = (s) =>
@@ -194,11 +188,16 @@ export function recording(s, id, tab) {
     </section>`;
   const current = TABS.find((t) => t.id === tab) || TABS[0];
   return /* HTML */ `<section class="page recording">
-    ${back(s)}${head(r)}${notices(r)}${tabs(current.id)}
-    <div class="recording-columns">
-      ${current.view(r)}
-      <aside class="recording-side" aria-label="Playback and marks">
-        ${player(r)}${knowledge(r, s.account.status === 'signed-in')}${marks(r)}
+    ${head(s, r)}${notices(r)}
+    <div class="watch">
+      <div class="watch-stage">
+        <div class="watch-video">${player(r)}${timeline(r)}${playing(r)}</div>
+      </div>
+      <aside class="watch-read" aria-label="Summary, transcript and marks">
+        ${tabs(current.id)}
+        <div class="watch-text">
+          ${current.view(r, s.account.status === 'signed-in')}
+        </div>
       </aside>
     </div>
   </section>`;

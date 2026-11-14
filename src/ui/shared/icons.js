@@ -24,6 +24,7 @@ const SHAPES = {
   play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/>',
   stop: '<rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor" stroke="none"/>',
   mark: '<path d="M6.5 4h11v16.5L12 16.6l-5.5 3.9z"/>',
+  expand: '<path d="M5 9.5V5h4.5M19 9.5V5h-4.5M5 14.5V19h4.5M19 14.5V19h-4.5"/>',
   warning: '<path d="M12 4.5l8.5 15h-17zM12 10.5v4M12 17.3v.1"/>',
 };
 

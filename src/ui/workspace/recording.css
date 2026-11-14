@@ -1,11 +1,10 @@
-/* One recording in focus: a reading column, with the player, what Bloom knows and the marks
-   beside it. */
+/* One recording in focus, for watching: the video with its playbar and timeline takes most
+   of the width; the summary, transcript and marks are a column beside it. */
 .crumb {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  align-self: flex-start;
-  margin-bottom: -6px;
+  flex: none;
   padding: 0;
   border: 0;
   background: none;
@@ -72,27 +71,263 @@
 .destructive {
   color: var(--bad);
 }
-.recording-columns {
-  display: grid;
-  /* The player is worth watching: it takes close to half the page, within limits. */
-  grid-template-columns: minmax(0, 1fr) clamp(380px, 45%, 560px);
-  align-items: start;
-  gap: 24px;
+/* ---- the page: a header row, then the video beside the reading column ---- */
+.view:has(> .recording) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
-.recording-side {
-  position: sticky;
-  top: 22px;
-  display: grid;
-  gap: 12px;
+.page.recording {
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+  padding: 0;
 }
-@media (max-width: 980px) {
-  .recording-columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .recording-side {
-    position: static;
-    order: -1;
-  }
+.watch-head {
+  padding: 12px 20px;
+}
+.watch-head h1 {
+  font-size: var(--t-read);
+  letter-spacing: -0.02em;
+}
+.recording > .processing-banner {
+  margin: 0 20px 12px;
+}
+.watch {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 32%, 340px);
+  border-top: 1px solid var(--line);
+}
+.watch-stage {
+  min-width: 0;
+  padding: 14px 18px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+/* As wide as the column, but never so tall that the timeline leaves the window. */
+.watch-video {
+  display: grid;
+  gap: 8px;
+  width: min(100%, calc((100vh - 250px) * 16 / 9));
+  min-width: 280px;
+  margin: 0 auto;
+}
+.watch-read {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid var(--line);
+}
+.watch-read .tabs {
+  flex: none;
+  padding: 0 14px;
+}
+.watch-text {
+  flex: 1;
+  min-height: 0;
+  padding: 12px 14px 20px;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+
+/* ---- the video and its playbar ---- */
+.player {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #101014;
+}
+.player video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.player-bar {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 8px 5px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.62));
+  color: #fff;
+  font: 500 var(--t-caption) / 1 var(--mono);
+  transition: opacity 0.15s;
+}
+/* While it plays the bar steps aside until the pointer or the keyboard comes back. */
+.player.playing:not(:hover):not(:focus-within) .player-bar {
+  opacity: 0;
+}
+.player-bar .grow {
+  flex: 1;
+}
+.player-bar button {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.player-bar button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.player-bar button:focus-visible {
+  outline: 2px solid #fff;
+}
+.player-bar .ic {
+  width: 16px;
+  height: 16px;
+}
+.player [data-player-toggle] .ic:last-child,
+.player.playing [data-player-toggle] .ic:first-child {
+  display: none;
+}
+.player.playing [data-player-toggle] .ic:last-child {
+  display: block;
+}
+.player:fullscreen {
+  border-radius: 0;
+}
+.player:fullscreen .player-bar {
+  display: none;
+}
+.player-empty {
+  display: grid;
+  place-items: center;
+  background: var(--fill);
+  color: var(--soft);
+  font-size: var(--t-label);
+}
+.player-error {
+  margin: 0;
+}
+.player-error:empty {
+  display: none;
+}
+
+/* ---- the timeline: chapters, marks, playhead ---- */
+.tl {
+  --at: 0%;
+  --deep: color-mix(in srgb, var(--brand) 78%, #000);
+  position: relative;
+  height: 34px;
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: none;
+}
+.tl:focus-visible {
+  outline: 2px solid var(--ev);
+  outline-offset: 2px;
+}
+.tl-track {
+  position: absolute;
+  inset: 13px 0 auto;
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.tl-part {
+  --done: 0%;
+  min-width: 0;
+  background: linear-gradient(
+    to right,
+    var(--deep) var(--done),
+    var(--line2) var(--done)
+  );
+}
+.tl-mark {
+  position: absolute;
+  top: 2px;
+  width: 9px;
+  height: 9px;
+  margin-left: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 1.5px;
+  background: var(--ev);
+  transform: rotate(45deg);
+}
+.tl-mark:hover {
+  transform: rotate(45deg) scale(1.3);
+}
+.tl-pin {
+  position: absolute;
+  top: 3px;
+  left: var(--at);
+  width: 2px;
+  height: 28px;
+  margin-left: -1px;
+  background: var(--ink);
+  pointer-events: none;
+}
+.tl-pin::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.tl-chapters {
+  display: flex;
+  gap: 2px;
+  margin-top: -6px;
+}
+.tl-chapter {
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font-size: var(--t-caption);
+  color: var(--soft);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tl-chapter b {
+  font-weight: 500;
+}
+.tl-chapter:hover,
+.tl-chapter.now {
+  color: var(--ink);
+}
+
+/* ---- what is playing ---- */
+.playing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.version {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.version.on {
+  border-color: color-mix(in srgb, var(--brand) 78%, #000);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 78%, #000);
+}
+.version b {
+  font-weight: 500;
 }
 
 /* ---- reading column ---- */
@@ -100,9 +335,8 @@
   margin: 0 0 8px;
 }
 #transcript {
-  max-width: 68ch;
-  font-size: var(--t-read);
-  line-height: 1.65;
+  font-size: var(--t-body);
+  line-height: 1.55;
   color: var(--ink2);
   overflow-wrap: anywhere;
   user-select: text;
@@ -124,72 +358,27 @@
   background: var(--evbg);
 }
 .reading-empty {
-  margin: 0;
+  margin: 0 0 8px;
   color: var(--mid);
 }
+.reading .caption {
+  margin: 0;
+}
 
-/* ---- beside it ---- */
-.player-card {
-  border: 1px solid var(--line2);
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--paper);
-}
-.player-card video {
-  display: block;
-  width: 100%;
-  /* Holds its shape before the video loads, then follows the video's own. */
-  aspect-ratio: auto 16 / 9;
-  max-height: 420px;
-  background: #000;
-}
-.player-card .caption {
-  margin: 0;
-  padding: 0 12px;
-}
-.player-card .caption:not(:empty) {
-  padding: 8px 12px;
-}
-.player-empty {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 16 / 9;
-  background: var(--fill);
-  color: var(--soft);
-  font-size: var(--t-label);
-}
-.knows {
-  display: grid;
-  gap: 7px;
-  padding: 10px 13px;
-}
-.knows .label,
-.knows .caption {
-  margin: 0;
-}
-.knows-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 26px;
-}
+/* ---- marks ---- */
 .mark-row {
   display: flex;
   align-items: center;
   gap: 9px;
   width: 100%;
-  padding: 8px 13px;
+  padding: 8px 6px;
   border: 0;
-  border-top: 1px solid var(--line);
+  border-radius: 7px;
   background: none;
   text-align: left;
 }
-.card-head + .mark-row {
-  border-top: 0;
-}
 .mark-row:hover {
-  background: var(--sub);
+  background: var(--fill);
 }
 
 /* ---- tabs: what can be done with the recording ---- */
@@ -217,9 +406,8 @@
 
 /* ---- summary ---- */
 #summary {
-  max-width: 68ch;
-  font-size: var(--t-read);
-  line-height: 1.65;
+  font-size: var(--t-body);
+  line-height: 1.55;
   color: var(--ink2);
   user-select: text;
 }

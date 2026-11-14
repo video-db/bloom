@@ -77,7 +77,7 @@ On the actual target platform, with a test account and a screen you are content 
 3. Grant permissions, choose a display and microphone, and record a short sample. Check both selected audio sources and that a source turned off is absent.
 4. Pause and resume, add a mark, then Stop. Wait through saving and confirm the tray shows the finished recording.
 5. Turn the camera on from the tray: macOS asks once, then a round picture appears bottom left. Drag it, change its size, record the display and confirm the picture is in the recording; record a single window and confirm it is not.
-6. Open the main window: check playback, the copied link, the transcript for a sample with speech, rename, download and delete.
+6. Open the main window: check that the video plays and keeps playing when you change tab, that the timeline's chapters, marks and playhead follow it and that clicking or dragging the timeline moves the video, then check playback speed and full screen, the copied link, the transcript for a sample with speech, rename, download and delete.
 7. Record a second time. Quit during saving and confirm Bloom asks first; reopen and confirm the recording finishes saving.
 8. Check both themes, native tooltips, the global shortcut and notifications.
 9. Repeat in a packaged build on each supported Mac architecture.

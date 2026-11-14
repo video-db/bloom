@@ -426,7 +426,46 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.deepEqual(await main.locator('.tab').allInnerTexts(), [
       'Summary',
       'Transcript',
+      'Marks',
     ]);
+    // The video is the main thing: wider than the reading column beside it, with its own
+    // playbar, a timeline of the summary's chapters and the marks, and what is playing.
+    const wide = (selector) =>
+      main.locator(selector).evaluate((el) => el.getBoundingClientRect().width);
+    assert.ok((await wide('.player')) > (await wide('.watch-read')) * 1.5);
+    assert.deepEqual(
+      await main
+        .locator('.player-bar button')
+        .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label'))),
+      ['Play', 'Playback speed', 'Full screen'],
+    );
+    assert.deepEqual(await main.locator('.tl-chapter').allInnerTexts(), [
+      'First thought 0:00',
+      'Second thought 0:04',
+    ]);
+    assert.match(
+      await main.locator('.playing').innerText(),
+      /Playing\s+Original/,
+    );
+    // A redraw (here, another tab) puts the same video element back, so playback carries on.
+    await main
+      .locator('[data-player]')
+      .evaluate((el) => (el.dataset.kept = 'yes'));
+    await main.getByRole('tab', { name: 'Marks' }).click();
+    assert.equal(
+      await main.locator('.player video').getAttribute('data-kept'),
+      'yes',
+    );
+    // The timeline is a slider: the arrow keys move through the recording.
+    assert.equal(await main.locator('.tl').getAttribute('role'), 'slider');
+    assert.equal(
+      await main.locator('.watch-text .mark-row').count(),
+      await main.locator('.tl-mark').count(),
+    );
+    await main.screenshot({
+      path: path.join(evidence, `${theme}-marks.png`),
+    });
+    await main.getByRole('tab', { name: 'Summary' }).click();
     assert.match(
       await main.locator('#summary').innerText(),
       /A short walk through two thoughts\./,
@@ -668,10 +707,7 @@ fs.mkdirSync(evidence, { recursive: true });
       .waitFor();
     await main.locator('.tile').first().click();
     await main.locator('.para').first().waitFor();
-    assert.equal(
-      await main.getByText('What Bloom knows about this recording').count(),
-      1,
-    );
+    assert.equal(await main.locator('.watch .player').count(), 1);
     await main
       .getByRole('button', { name: 'Recordings', exact: true })
       .first()

@@ -1,6 +1,7 @@
 // The summary of a recording: a few sentences, key points and action items, each point with
 // the time it comes from. Made from the transcript by the engine.
 import { esc, clock } from '../shared/dom.js';
+import { withoutTranscript } from './transcript.js';
 
 const point = (p) =>
   /* HTML */ `<li>
@@ -16,7 +17,7 @@ const list = (title, points) =>
     ? `<h3 class="label">${title}</h3><ul class="points">${points.map(point).join('')}</ul>`
     : '';
 
-function body(r) {
+function body(r, signedIn) {
   if (r.summary)
     return /* HTML */ `<p class="para">${esc(r.summary.text)}</p>
       ${list('Key points', r.summary.keyPoints)}${list(
@@ -42,10 +43,10 @@ function body(r) {
     </p>`;
   return r.transcript
     ? '<p class="reading-empty" role="status">Writing the summary…</p>'
-    : '<p class="reading-empty">A summary needs a transcript. Add one under “What Bloom knows about this recording”.</p>';
+    : `<p class="reading-empty">A summary needs a transcript.</p>${withoutTranscript(r, signedIn)}`;
 }
 
-export const summary = (r) =>
+export const summary = (r, signedIn) =>
   /* HTML */ `<section class="reading" aria-label="Summary">
-    <div id="summary">${body(r)}</div>
+    <div id="summary">${body(r, signedIn)}</div>
   </section>`;

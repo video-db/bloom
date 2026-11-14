@@ -65,6 +65,10 @@ function createFixture({
         text: 'A short walk through two thoughts.',
         keyPoints: [{ text: 'The first thought is recorded.', at: 0 }],
         actionItems: [{ text: 'Follow up on the second thought.', at: 4 }],
+        chapters: [
+          { title: 'First thought', at: 0 },
+          { title: 'Second thought', at: 4 },
+        ],
       };
     },
     usage: async () => ({ credits: 316.28 }),

@@ -54,15 +54,12 @@ export function confirmRecordingAction(action, record) {
 export function confirmRemoveVersion(record, version, done) {
   const modal = document.createElement('dialog');
   modal.innerHTML = /* HTML */ `<form method="dialog">
-    <h2>Remove this version from this Mac?</h2>
+    <h2>Remove this version?</h2>
     <p>
-      “${esc(version.name)}” will no longer be listed with
-      “${esc(record.title)}”. The original recording is not affected.
+      “${esc(version.name)}” will be removed from “${esc(record.title)}”. The
+      original recording is not affected.
     </p>
-    <p>
-      Its video stays in VideoDB, so a link you already shared keeps working,
-      but Bloom will not show it again.
-    </p>
+    <p>A link to this version that you already shared keeps working.</p>
     <div class="dialog-actions">
       <button class="btn" value="cancel" formnovalidate>Cancel</button
       ><button class="btn danger" value="confirm">Remove</button>

@@ -116,7 +116,7 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
           kind,
           message: record.videoId
             ? 'Processing finished, but playback needs another check.'
-            : 'Processing did not finish. The recording is kept on this Mac; recover it to try again.',
+            : 'Processing did not finish. Recover the recording to try again.',
         },
       });
     ctx.update(record.id, {

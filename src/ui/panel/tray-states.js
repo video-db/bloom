@@ -89,7 +89,8 @@ const paused = (s) =>
     </div>`;
 
 // A recording that is not ready yet: being processed, waiting its turn, or needing recovery.
-const card = ({ id, title, duration, failed, waiting }) =>
+// under: the card sits under a heading that already says what state it is in.
+const card = ({ id, title, duration, failed, waiting, under = false }) =>
   /* HTML */ `<div class="tray-card">
     <span class="shot"></span>
     <span class="rc-copy"
@@ -97,7 +98,9 @@ const card = ({ id, title, duration, failed, waiting }) =>
       ><small
         >${
           failed
-            ? 'Kept on this Mac'
+            ? under
+              ? clock(duration)
+              : 'Needs recovery'
             : `${clock(duration)} · ${waiting ? 'Waiting' : 'Processing'}`
         }</small
       ></span
@@ -183,6 +186,7 @@ export function pending(s) {
               ...p,
               failed: p.status === 'failed',
               waiting: p.status === 'waiting',
+              under: true,
             }),
           )
           .join('')}`

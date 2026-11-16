@@ -15,7 +15,7 @@ function recordingQuitPrompt(state) {
     cancelId: 0,
     message: 'A recording is still in progress',
     detail:
-      'Bloom will stop recording and finish saving the file before it quits. The recording is processed the next time you open Bloom. A file that has not finished saving may not be recoverable.',
+      'Bloom will stop recording and finish it before it quits. The recording is processed the next time you open Bloom. Quitting before it has finished may lose it.',
   };
 }
 
@@ -59,7 +59,7 @@ function createQuitGuard({ engine, ask }) {
           cancelId: 0,
           message: 'Bloom is still processing a recording',
           detail:
-            'If you quit now, the recording stays on this Mac and processing continues the next time you open Bloom.',
+            'If you quit now, processing continues the next time you open Bloom.',
         }) === 1;
       return confirmed;
     },

@@ -320,7 +320,7 @@ test('a version that cannot be made says so and leaves nothing behind', async (t
   assert.equal(f.calls.filter(([n]) => n === 'makeVersion').length, asked);
 });
 
-test('versions are kept on this Mac with the recording, across a restart', async (t) => {
+test('versions are kept with the recording across a restart', async (t) => {
   const { createRecordingCache } = require('../engine/videodb/cache');
   const fs = require('node:fs');
   const os = require('node:os');

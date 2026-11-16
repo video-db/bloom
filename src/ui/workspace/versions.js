@@ -1,5 +1,5 @@
 // Versions of a recording on the recording page: which one is playing, the "Playing" row
-// that lists them, and the plain-words account of where they are kept.
+// that lists them, and the plain-words account of what a version is.
 import { esc, clock } from '../shared/dom.js';
 
 // A moment of the original as a moment of a version: the cuts before it are gone, and a
@@ -45,26 +45,27 @@ export const timed = (r, version) =>
       }
     : r;
 
-// Where versions live, said once and in full for whoever wants to know.
-export const versionsNote = (lead) =>
+// What a version is, in full for whoever wants to know. It says nothing of where anything
+// is kept: that is never the person's concern.
+export const versionsNote = () =>
   /* HTML */ `<details class="versions-note" data-keep="versions-note">
-    <summary>${lead} <u>What this means</u></summary>
+    <summary><u>What is a version?</u></summary>
     <ul>
       <li>
-        A version is a new video made from this recording. The original is never
-        changed.
+        A version is a new video made from this recording, for example a tighter
+        walkthrough with subtitles.
       </li>
       <li>
-        The video is stored in VideoDB, so its link works from anywhere, not
-        only on this Mac.
+        The original is never changed. Choose Original to watch it as it was
+        recorded.
       </li>
       <li>
-        The list of versions is kept by Bloom on this Mac. On another Mac, or if
-        Bloom’s data is reset, this recording shows only the original.
+        Each version has its own link. Copy link copies whichever one is
+        playing.
       </li>
       <li>
-        Removing a version takes it off this list. A link you already shared
-        keeps working.
+        Removing a version leaves the original as it is. A link to the version
+        that you already shared keeps working.
       </li>
     </ul>
   </details>`;
@@ -118,12 +119,12 @@ export function playingRow(r, page) {
                   data-remove-version="${esc(current.id)}"
                   data-id="${esc(r.id)}"
                 >
-                  Remove from this Mac…
+                  Remove version…
                 </button>
               </div>
             </details>`
           : ''
       }
     </div>
-    ${versions.length ? versionsNote('Versions are kept on this Mac.') : ''}`;
+    ${versions.length ? versionsNote() : ''}`;
 }

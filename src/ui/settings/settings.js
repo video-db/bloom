@@ -92,7 +92,7 @@ const privacy = (s) =>
     <div class="card">
       ${row(
         'Where recordings go',
-        'Recordings are kept in your VideoDB account. Each one is saved on this Mac first and processed when you stop.',
+        'Recordings are kept in your VideoDB account.',
         `<span class="soft">${esc(s.environment || 'VideoDB')}</span>`,
       )}
       ${row(

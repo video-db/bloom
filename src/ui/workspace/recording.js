@@ -124,7 +124,7 @@ const notices = (r) =>
               ${
                 r.videoId
                   ? 'It is in VideoDB; playback still has to be confirmed.'
-                  : 'It is kept on this Mac. Recover it to finish processing.'
+                  : 'Recover it to finish processing.'
               }
             </p>
           </div>

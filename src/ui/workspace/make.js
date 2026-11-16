@@ -178,6 +178,6 @@ export function makePanel(r, page, signedIn) {
         ? '<p class="caption" role="status">This can take a minute. You can keep using Bloom; the page comes back to Watch when it is ready.</p>'
         : '<p class="caption">Nothing changes the original.</p>'
     }
-    ${versionsNote('The new version is kept with this recording on this Mac.')}
+    ${versionsNote()}
   </aside>`;
 }

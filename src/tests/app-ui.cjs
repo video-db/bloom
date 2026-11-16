@@ -365,7 +365,7 @@ fs.mkdirSync(evidence, { recursive: true });
       fake.emit('recording-relay-failed', { sessionId: fake.active });
     });
     await phase('processing-error');
-    await recorder.getByText('Kept on this Mac', { exact: true }).waitFor();
+    await recorder.getByText('Needs recovery', { exact: true }).waitFor();
     assert.equal(
       await recorder
         .getByRole('button', { name: 'Recover', exact: true })
@@ -536,15 +536,20 @@ fs.mkdirSync(evidence, { recursive: true });
       /\/ 0:03/,
       "the player and timeline are the version's",
     );
-    // Where versions are kept is said in plain words for whoever opens it.
+    // What a version is, in plain words for whoever opens it. Nowhere does the window
+    // say where a recording or a version is kept.
     await main.locator('.versions-note summary').click();
     assert.match(
       await main.locator('.versions-note').innerText(),
-      /kept by Bloom on this Mac[\s\S]*shows only the original/,
+      /A version is a new video made from this recording[\s\S]*The original is never changed/,
     );
     await main.screenshot({
       path: path.join(evidence, `${theme}-version.png`),
     });
+    assert.doesNotMatch(
+      await main.locator('body').innerText(),
+      /this Mac|your Mac|the file\b/i,
+    );
     // Copy link copies what is playing.
     await main
       .getByRole('button', { name: 'Copy link', exact: true })
@@ -562,10 +567,10 @@ fs.mkdirSync(evidence, { recursive: true });
     // Removing a version says what goes and what stays, and leaves the original.
     await main.getByRole('button', { name: /Walkthrough/ }).click();
     await main.locator('.version-menu summary').click();
-    await main.getByRole('button', { name: 'Remove from this Mac…' }).click();
+    await main.getByRole('button', { name: 'Remove version…' }).click();
     assert.match(
       await main.locator('dialog').innerText(),
-      /stays in VideoDB[\s\S]*keeps working/,
+      /original recording is not affected[\s\S]*keeps working/,
     );
     await main
       .locator('dialog')

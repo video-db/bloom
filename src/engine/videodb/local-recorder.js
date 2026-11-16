@@ -119,7 +119,7 @@ function createLocalRecorder({
       return Promise.reject(
         new ServiceError(
           'not-found',
-          'This recording’s file is not on this Mac, so it cannot be recovered.',
+          'This recording can no longer be recovered.',
         ),
       );
     }

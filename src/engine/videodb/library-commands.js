@@ -1,5 +1,6 @@
 const { newRecord } = require('./model');
 const { paragraphs } = require('./paragraphs');
+const { quiet } = require('./make');
 
 function createLibraryCommands(
   ctx,
@@ -59,6 +60,8 @@ function createLibraryCommands(
         transcript: transcript.value.text,
         transcriptStatus: transcript.value.status,
         paragraphs: paragraphs(transcript.value.words),
+        // Where nothing is said: what a tighter version would cut.
+        quiet: quiet(transcript.value.words, ctx.find(id)?.duration),
       });
     else
       ctx.update(id, {

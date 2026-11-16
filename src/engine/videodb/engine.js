@@ -7,6 +7,7 @@ const { createAccess } = require('./access');
 const { createLibraryCommands } = require('./library-commands');
 const { createExploreCommands } = require('./explore-commands');
 const { createUnderstandCommands } = require('./understand-commands');
+const { createMakeCommands } = require('./make-commands');
 const { createWindowSource } = require('./window-source');
 const { validCommand } = require('./validate');
 
@@ -142,6 +143,7 @@ function createVideoDBEngine({
     refresh: library.refresh,
     ...explore.commands,
     ...understand.commands,
+    ...createMakeCommands(ctx, service).commands,
     ...windowSource.commands,
     // Opening a recording, or getting its transcript, also makes its summary when it can.
     async openRecording({ id }) {

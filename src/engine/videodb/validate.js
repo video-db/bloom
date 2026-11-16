@@ -52,6 +52,13 @@ const commandArgs = {
   reconcileRecording: (a) => id(a.id),
   requestTranscript: (a) => id(a.id),
   summarise: (a) => id(a.id),
+  makeVersion: (a) =>
+    id(a.id) &&
+    ['silences', 'subtitles', 'title', 'chapters'].every(
+      (key) => typeof a[key] === 'boolean',
+    ) &&
+    (a.text === undefined || text(a.text, 80)),
+  removeVersion: (a) => id(a.id) && id(a.version),
   retryRecording: (a) => id(a.id),
   resumeUpload: (a) => id(a.id),
 };

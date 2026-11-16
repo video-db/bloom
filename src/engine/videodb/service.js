@@ -6,6 +6,7 @@ const { createLibrary } = require('./library');
 const { createCollectionActions } = require('./collection-actions');
 const { createExplore } = require('./explore');
 const { createUnderstand } = require('./understand');
+const { createEditing } = require('./editing');
 const { createSessions } = require('./sessions');
 
 const DEV_API = 'https://api.dev.videodb.io';
@@ -18,6 +19,7 @@ const UPLOAD_DEADLINE_MS = 30 * 60 * 1000;
 function createVideoDBService({
   connect,
   CaptureClient,
+  editor, // the SDK's editor classes, for making versions
   credentials,
   journal = createOperationJournal(),
   apiUrl = DEV_API,
@@ -80,6 +82,7 @@ function createVideoDBService({
     ...createExplore({ account, read }),
     ...createCollectionActions({ account, read, operations }),
     ...createUnderstand({ account, read }),
+    ...createEditing({ account, assertCurrent, editor }),
     async signIn(apiKey) {
       if (authenticating || operations.busy())
         throw new ServiceError(

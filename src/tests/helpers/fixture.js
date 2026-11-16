@@ -71,6 +71,18 @@ function createFixture({
         ],
       };
     },
+    // A version is a new stream; the fake says what it was asked to make.
+    makeVersion: async (args) => {
+      calls.push(['makeVersion', args]);
+      if (service.failNextVersion) {
+        service.failNextVersion = false;
+        throw new Error('render failed');
+      }
+      return {
+        streamUrl: `https://stream.example/version-${++serial}.m3u8`,
+        playerUrl: `https://player.example/version-${serial}`,
+      };
+    },
     usage: async () => ({ credits: 316.28 }),
     listCollections: async () => structuredClone(collections),
     renameCollection: async (id, title) => {

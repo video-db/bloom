@@ -19,6 +19,8 @@ const fields = [
   'transcriptStatus',
   'transcriptRequested',
   'paragraphs',
+  'quiet',
+  'versions',
   'summary',
   'requestedTitle',
   'continueLater',

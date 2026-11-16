@@ -21,11 +21,13 @@ function createVideoDBBoundary({
     dataDir,
     apiUrl === DEV_API ? 'videodb-dev' : 'videodb-prod',
   );
-  const { connect } = sdk || require('videodb-capture');
+  const main = sdk || require('videodb-capture');
+  const { connect } = main;
   const { CaptureClient } = captureSdk || require('videodb-capture/capture');
   return createVideoDBService({
     connect,
     CaptureClient,
+    editor: main,
     credentials: createCredentialStore({
       file: path.join(directory, 'credentials.json'),
       legacyFile: path.join(directory, 'key.enc'),

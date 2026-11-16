@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Recordings are grouped by date as Finder does: Today, Yesterday, Previous 7 Days, Previous 30 Days, then by month and year. Filter and sort are behind one icon in the header, with the same options.
+- The "Make it a" recipe in the Make panel is one compact line.
+
 - Make a video from a recording: the recording page has a Watch and Make switch. Make shows what a Walkthrough would change (silences cut, subtitles, a title card, chapters), on the timeline and in lanes under it, with the new length, and "Make video" produces a new version. The original is never changed. The page returns to Watch with the version playing; the Original is one click away and Copy link copies what is playing.
 - The page explains what a version is (a new video made from the recording; the original is never changed; each has its own link) and a version can be removed without touching the original.
 - Wording: nothing in Bloom says where a recording is kept. "Kept on this Mac", "saved on this Mac" and mentions of the file are gone from the tray, the recording page, Settings, the quit questions and error messages.

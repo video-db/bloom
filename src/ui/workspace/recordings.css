@@ -44,3 +44,46 @@
   font-size: var(--t-caption);
   color: var(--soft);
 }
+
+/* Filter and sort, behind one icon in the header. */
+.browse-menu summary {
+  position: relative;
+  border: 1px solid var(--line2);
+  background: var(--paper);
+}
+.browse-menu summary .ic {
+  width: 16px;
+  height: 16px;
+}
+.browse-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ev);
+}
+.browse-menu .menu-label {
+  display: block;
+  padding: 6px 9px 3px;
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+/* More specific than the menu's own rule, which is in a stylesheet loaded later. */
+.record-menu.browse-menu button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.menu-tick {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  color: var(--ev);
+}
+.menu-tick .ic {
+  width: 13px;
+  height: 13px;
+}

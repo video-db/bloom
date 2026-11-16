@@ -2,6 +2,7 @@ import { thumbnail } from '../shared/thumbnail.js';
 // Recordings: everything you have recorded, as tiles grouped by date, with a filter and a
 // sort.
 import { esc } from '../shared/dom.js';
+import { icon } from '../shared/icons.js';
 import { meta, status, newestFirst, period } from './format.js';
 
 const FILTERS = [
@@ -35,6 +36,9 @@ const tile = (r) =>
 // The tiles, under a heading for each stretch of time when they are in date order.
 function tiles(shown, byDate) {
   if (!byDate) return `<div class="tiles">${shown.map(tile).join('')}</div>`;
+  // Videos with no date (another collection's) are one plain grid, with no heading.
+  if (!shown.some((r) => r.createdAt))
+    return `<div class="tiles">${shown.map(tile).join('')}</div>`;
   const groups = [];
   for (const r of shown) {
     const name = period(r.createdAt);
@@ -50,6 +54,35 @@ function tiles(shown, byDate) {
         </section>`,
     )
     .join('');
+}
+
+// What to show and in what order, behind one icon. A dot on it says a filter is on.
+function options(filter, order) {
+  const choice =
+    (kind, current) =>
+    ([id, label]) =>
+      /* HTML */ `<button
+        role="menuitemradio"
+        aria-checked="${id === current}"
+        data-browse="${kind}"
+        data-value="${id}"
+      >
+        <span class="menu-tick">${id === current ? icon('check') : ''}</span
+        >${label}
+      </button>`;
+  const filtered = filter !== FILTERS[0][0];
+  const label = `Filter and sort${filtered ? `: showing ${pick(FILTERS, filter)[1]}` : ''}`;
+  return /* HTML */ `<details class="record-menu browse-menu">
+    <summary aria-label="${label}" title="${label}">
+      ${icon('filter')}${filtered ? '<span class="browse-dot"></span>' : ''}
+    </summary>
+    <div role="menu">
+      <span class="menu-label">Show</span>
+      ${FILTERS.map(choice('filter', filter)).join('')}
+      <span class="menu-label">Sort</span>
+      ${ORDERS.map(choice('order', order)).join('')}
+    </div>
+  </details>`;
 }
 
 // browse: { filter, order } — how this window is looking at its recordings.
@@ -75,18 +108,7 @@ export function recordings(s, browse) {
       <h1>${s.browsing ? esc(s.browsing.name) : 'Recordings'}</h1>
       <span class="caption">${waiting ? '' : all.length}</span>
       <span class="grow"></span>
-      <span class="seg" role="group" aria-label="Filter recordings"
-        >${FILTERS.map(
-          ([id, label]) =>
-            `<button class="${id === filter ? 'on' : ''}" aria-pressed="${id === filter}" data-browse="filter" data-value="${id}">${label}</button>`,
-        ).join('')}</span
-      >
-      <select data-browse="order" aria-label="Sort recordings">
-        ${ORDERS.map(
-          ([id, label]) =>
-            `<option value="${id}" ${id === order ? 'selected' : ''}>${label}</option>`,
-        ).join('')}
-      </select>
+      ${options(filter, order)}
     </header>
     ${waiting || (shown.length ? tiles(shown, byDate) : empty)}
   </section>`;

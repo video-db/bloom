@@ -703,11 +703,54 @@ fs.mkdirSync(evidence, { recursive: true });
         .then((t) => /Ready/.test(t)),
       false,
     );
-    await main.locator('[data-browse=order]').selectOption('name');
-    await main.locator('[data-browse=order]').selectOption('newest');
-    await main.getByRole('button', { name: 'Processing', exact: true }).click();
+    // In date order the tiles are grouped as Finder names them.
+    assert.deepEqual(await main.locator('.tile-group .label').allInnerTexts(), [
+      'Today',
+    ]);
+    // Filter and sort sit behind one icon, with the same options as before.
+    const browse = async (name) => {
+      await main.locator('.browse-menu summary').click();
+      await main.getByRole('menuitemradio', { name, exact: true }).click();
+    };
+    await main.locator('.browse-menu summary').click();
+    assert.deepEqual(
+      await main
+        .locator('.browse-menu [role=menuitemradio]')
+        .evaluateAll((els) =>
+          els.map((el) => [
+            el.innerText.trim(),
+            el.getAttribute('aria-checked'),
+          ]),
+        ),
+      [
+        ['All', 'true'],
+        ['Processing', 'false'],
+        ['Needs attention', 'false'],
+        ['Newest', 'true'],
+        ['Oldest', 'false'],
+        ['A–Z', 'false'],
+        ['Longest', 'false'],
+      ],
+    );
+    await main.screenshot({
+      path: path.join(evidence, `${theme}-recordings-menu.png`),
+    });
+    await main.getByRole('menuitemradio', { name: 'A–Z', exact: true }).click();
+    assert.equal(
+      await main.locator('.tile-group').count(),
+      0,
+      'no date groups',
+    );
+    await browse('Newest');
+    await browse('Processing');
     await main.getByText('Nothing here', { exact: true }).waitFor();
-    await main.getByRole('button', { name: 'All', exact: true }).click();
+    assert.equal(
+      await main.locator('.browse-dot').count(),
+      1,
+      'a filter is on',
+    );
+    await browse('All');
+    assert.equal(await main.locator('.browse-dot').count(), 0);
     await main.screenshot({
       path: path.join(evidence, `${theme}-recordings.png`),
     });

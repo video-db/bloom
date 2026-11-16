@@ -85,6 +85,42 @@ test('rejected Start is visible, no fake success appears, and no overlapping sta
   assert.equal(f.engine.getState().result, null);
 });
 
+test('a Start the recorder refuses leaves nothing behind and Start available', async (t) => {
+  const f = await setup(t);
+  f.recorder.start = async () => {
+    throw Object.assign(new Error('Recording could not start.'), {
+      refused: true,
+    });
+  };
+  await f.command('start');
+  assert.equal(f.engine.getState().phase, 'idle');
+  assert.equal(
+    f.engine.getState().recordings.length,
+    0,
+    'nothing was recorded',
+  );
+  assert.ok(f.engine.getState().problem);
+  // Nothing stands in the way of trying again, quitting or signing out.
+  delete f.recorder.start;
+  await f.command('signOut');
+  assert.equal(f.engine.getState().account.status, 'signed-out');
+});
+
+test('Stop after a Start that never took ends in idle, not in a state nothing leaves', async (t) => {
+  const f = await setup(t);
+  f.recorder.start = async () => {
+    throw new Error('no answer');
+  };
+  await f.command('start');
+  assert.equal(f.engine.getState().phase, 'stopped');
+  // The recorder, asked to stop, says nothing was being recorded.
+  f.recorder.stop = async () => ({ nothing: true });
+  await f.command('stop');
+  assert.equal(f.engine.getState().phase, 'idle');
+  assert.equal(f.engine.getState().recordings.length, 0);
+  assert.equal(f.engine.getState().problem.kind, 'nothing-recorded');
+});
+
 test('a failed preflight leaves Start available after the permission is corrected', async (t) => {
   const f = await setup(t);
   f.recorder.permission.screen = false;
@@ -116,6 +152,10 @@ test('Stop and relay acceptance do not imply playback; completion makes the same
   assert.equal(ready.paragraphs.length, 2);
   assert.equal(ready.summary.keyPoints[0].at, 0);
   assert.equal(ready.summaryStatus, 'ready');
+  // Playable from VideoDB: the file that got it there is cleared away, and only then.
+  const discarded = f.calls.filter(([name]) => name === 'discard');
+  assert.ok(discarded.length >= 1);
+  assert.ok(discarded.every(([, id]) => id === ready.recordingId));
 });
 
 test('with automatic transcription off, a new recording is left untranscribed', async (t) => {
@@ -207,6 +247,11 @@ test('a recording that needs recovery does not stand in the way of signing out',
   await flush();
   assert.equal(f.engine.getState().phase, 'processing-error');
   assert.equal(f.engine.getState().pending[0].status, 'failed');
+  assert.equal(
+    f.calls.some(([name]) => name === 'discard'),
+    false,
+    'a recording that needs recovery keeps its file',
+  );
   await f.command('signOut');
   assert.equal(f.engine.getState().account.status, 'signed-out');
   assert.equal(f.engine.getState().problem, null);

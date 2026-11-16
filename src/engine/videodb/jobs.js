@@ -16,11 +16,15 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
   async function complete(payload) {
     if (!payload?.result?.videoId || completing.has(payload.sessionId)) return;
     const record = forSession(payload.sessionId);
+    if (!record) return;
     if (
-      !record ||
-      (record.videoId === payload.result.videoId && record.status === 'ready')
-    )
+      record.videoId === payload.result.videoId &&
+      record.status === 'ready'
+    ) {
+      // Already playable: only its file may still be waiting to be cleared away.
+      recorder.discard?.(payload.recordingId);
       return;
+    }
     completing.add(payload.sessionId);
     const scope = ctx.scope();
     try {
@@ -41,6 +45,8 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
         title: record.requestedTitle || video.title,
         duration: video.duration || record.duration,
       });
+      // It plays from VideoDB now, so the file that got it there is deleted (ADR 0006).
+      recorder.discard?.(payload.recordingId);
       if (ctx.get().sessionId === payload.sessionId) {
         const ready = ctx.find(record.id);
         ctx.set({

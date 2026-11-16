@@ -10,11 +10,16 @@ const { createLocalRecorder } = require('../engine/videodb/local-recorder');
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
+function fixture({
+  journalFile,
+  scopeId = 'a'.repeat(64),
+  recorderHome = '/nowhere',
+} = {}) {
   const calls = [];
   const uploads = []; // one deferred per upload attempt
   let serial = 0;
   let stopError = null;
+  let startError = null;
   let stopFiles = (folder) => [`${folder}/recording.mp4`];
   class Client extends EventEmitter {
     constructor(options) {
@@ -73,6 +78,11 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
     }
     async startLocalRecording(options) {
       calls.push(['start', options]);
+      if (startError) {
+        const error = startError;
+        startError = null;
+        throw error;
+      }
       return { recordingId: `rec-${++serial}`, mode: 'deferred' };
     }
     async stopLocalRecording() {
@@ -111,6 +121,7 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
     CaptureClient: Client,
     service,
     journalFile,
+    recorderHome,
     permissionStatus: () => true,
   });
   const events = [];
@@ -123,6 +134,9 @@ function fixture({ journalFile, scopeId = 'a'.repeat(64) } = {}) {
     events,
     failStop(error) {
       stopError = error;
+    },
+    failStart(error) {
+      startError = error;
     },
     // What the recorder says its folder holds, when a test needs another answer.
     stopFiles(list) {
@@ -276,6 +290,165 @@ test('what is sent is the video in the recording folder, however the recorder na
   await flush();
   assert.equal(empty.uploads.length, 0);
   assert.equal(empty.events.at(-1)[0], 'recording-relay-failed');
+});
+
+test('a recording that is ready in VideoDB has its file deleted, and nothing else is', async (t) => {
+  const journalFile = tempJournal(t);
+  const dir = path.dirname(journalFile);
+  // As the recorder keeps them: a folder named by the recording's id.
+  const folder = (id) => {
+    const at = path.join(dir, 'recordings', id);
+    fs.mkdirSync(at, { recursive: true });
+    fs.writeFileSync(path.join(at, 'recording.mp4'), 'video');
+    fs.writeFileSync(path.join(at, 'media.json'), '{}');
+    return at;
+  };
+  const sent = folder('rec-sent');
+  const failed = folder('rec-failed');
+  const capturing = folder('rec-capturing');
+  // A video kept somewhere that is not the recorder's own folder for it.
+  const elsewhere = path.join(dir, 'Movies');
+  fs.mkdirSync(elsewhere);
+  fs.writeFileSync(path.join(elsewhere, 'mine.mp4'), 'video');
+  fs.writeFileSync(path.join(elsewhere, 'holiday.mov'), 'not ours');
+  const entry = (extra) => ({
+    sessionId: 's',
+    scopeId: 'a'.repeat(64),
+    title: 'Demo',
+    ...extra,
+  });
+  fs.writeFileSync(
+    journalFile,
+    JSON.stringify({
+      version: 1,
+      entries: {
+        'rec-sent': entry({ stage: 'complete', videoId: 'm-1', path: sent }),
+        'rec-failed': entry({ stage: 'failed', path: failed }),
+        'rec-capturing': entry({ stage: 'ready', path: capturing }),
+        'rec-elsewhere': entry({
+          stage: 'complete',
+          videoId: 'm-2',
+          path: path.join(elsewhere, 'mine.mp4'),
+        }),
+        'rec-nolink': entry({ stage: 'complete', path: sent }),
+      },
+    }),
+  );
+  const f = fixture({ journalFile });
+  const known = () =>
+    Object.keys(JSON.parse(fs.readFileSync(journalFile, 'utf8')).entries);
+
+  // Sent and confirmed: its folder goes, and it is forgotten.
+  assert.equal(f.recorder.discard('rec-sent'), true);
+  assert.equal(fs.existsSync(sent), false);
+  assert.equal(known().includes('rec-sent'), false);
+  // Not finished, or failed: kept, so Recover has something to send.
+  assert.equal(f.recorder.discard('rec-failed'), false);
+  assert.equal(f.recorder.discard('rec-capturing'), false);
+  assert.equal(
+    f.recorder.discard('rec-nolink'),
+    false,
+    'no video id, no delete',
+  );
+  assert.equal(fs.existsSync(path.join(failed, 'recording.mp4')), true);
+  assert.equal(fs.existsSync(path.join(capturing, 'recording.mp4')), true);
+  // Not in the recorder's own folder: only the video file itself is removed.
+  assert.equal(f.recorder.discard('rec-elsewhere'), true);
+  assert.equal(fs.existsSync(path.join(elsewhere, 'mine.mp4')), false);
+  assert.equal(fs.existsSync(path.join(elsewhere, 'holiday.mov')), true);
+  // Unknown, or already gone: nothing to do, and that is fine.
+  assert.equal(f.recorder.discard('rec-sent'), true);
+  assert.equal(f.recorder.discard('never-heard-of-it'), true);
+  assert.deepEqual(known().sort(), [
+    'rec-capturing',
+    'rec-failed',
+    'rec-nolink',
+  ]);
+});
+
+// What the SDK throws when the recorder answers a command with a failure.
+const refusal = (code, message = 'Recorder command failed') =>
+  Object.assign(new Error(message), { name: 'CaptureCommandError', code });
+
+test('a Start the recorder refuses is a plain no; a Stop with nothing recording has nothing to wait for', async () => {
+  const f = fixture();
+  f.failStart(refusal('NATIVE_START_FAILED'));
+  await assert.rejects(
+    f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' }),
+    (error) => error.refused === true && error.code === 'recorder-refused',
+  );
+  assert.deepEqual(await f.recorder.recover(), [], 'no recording was begun');
+  // A window that has gone is said as such.
+  f.failStart(refusal('TARGET_NOT_FOUND'));
+  await assert.rejects(
+    f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' }),
+    /no longer available/,
+  );
+  // No answer at all is different: capture may have begun, so it is not a refusal.
+  f.failStart(new Error('socket closed'));
+  await assert.rejects(
+    f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' }),
+    (error) => !error.refused,
+  );
+  // Stop, when the recorder says nothing is being recorded and Bloom knew of nothing.
+  f.failStop(refusal('NOT_RECORDING', 'No standalone recording is active'));
+  assert.deepEqual(await f.recorder.stop(), { nothing: true });
+});
+
+test('Recover never sends a finished recording again, and finds one whose Stop never answered', async (t) => {
+  const journalFile = tempJournal(t);
+  const home = path.join(path.dirname(journalFile), 'recordings');
+  const keep = (id, media) => {
+    const at = path.join(home, id);
+    fs.mkdirSync(at, { recursive: true });
+    fs.writeFileSync(path.join(at, 'recording.mp4'), 'video');
+    fs.writeFileSync(path.join(at, 'media.json'), JSON.stringify(media));
+    return at;
+  };
+  keep('rec-finished', { complete: true });
+  keep('rec-cut-short', { complete: false });
+  const entry = (extra) => ({
+    sessionId: 's',
+    scopeId: 'a'.repeat(64),
+    title: 'Demo',
+    ...extra,
+  });
+  fs.writeFileSync(
+    journalFile,
+    JSON.stringify({
+      version: 1,
+      entries: {
+        'rec-done': entry({
+          stage: 'complete',
+          videoId: 'm-1',
+          path: '/x/y.mp4',
+        }),
+        // Being made when Bloom closed: no file was ever written down.
+        'rec-finished': entry({ stage: 'recording' }),
+        'rec-cut-short': entry({ stage: 'recording' }),
+      },
+    }),
+  );
+  const f = fixture({ journalFile, recorderHome: home });
+  // Already in VideoDB: said again, nothing sent.
+  await f.recorder.relay('rec-done');
+  assert.equal(f.uploads.length, 0);
+  assert.deepEqual(f.events.at(-1), [
+    'processing-complete',
+    { recordingId: 'rec-done', sessionId: 's', result: { videoId: 'm-1' } },
+  ]);
+  // The recorder had finished this one all the same: it is found and sent.
+  await f.recorder.relay('rec-finished');
+  await flush();
+  assert.equal(
+    f.uploads[0].file.path,
+    path.join(home, 'rec-finished', 'recording.mp4'),
+  );
+  // A file the recorder never finished is not sent as if it were whole.
+  await f.recorder.relay('rec-cut-short');
+  await flush();
+  assert.equal(f.uploads.length, 1);
+  assert.equal(f.events.at(-1)[0], 'recording-relay-failed');
 });
 
 test('after a restart an unfinished file is found again and sent, for its own account only', async (t) => {

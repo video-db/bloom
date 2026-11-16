@@ -147,6 +147,18 @@ function createCapture(
         ctx.update(record.id, { jobStage: 'recording' });
       } catch (error) {
         const safe = safeError(error);
+        // The recorder said no: nothing is being recorded, so there is nothing to stop and
+        // nothing to keep. Start is simply available again.
+        if (error?.refused && !started) {
+          if (record)
+            ctx.records(ctx.get().recordings.filter((r) => r.id !== record.id));
+          ctx.set({
+            phase: 'idle',
+            sessionId: null,
+            problem: { kind: safe.code, message: safe.message },
+          });
+          throw error;
+        }
         ctx.set({
           phase: started ? 'recording' : attempted ? 'stopped' : 'idle',
           problem: {
@@ -182,7 +194,30 @@ function createCapture(
       let confirmed = false;
       ctx.set({ phase: 'stopping', problem: null });
       try {
-        await recorder.stop();
+        const stopped = await recorder.stop();
+        // Asked to stop when nothing was being recorded (a Start that never took): there
+        // is no file to wait for. The recording that never began is dropped.
+        if (stopped?.nothing) {
+          freeze();
+          const session = ctx.get().sessionId;
+          ctx.records(
+            ctx
+              .get()
+              .recordings.filter(
+                (r) => r.sessionId !== session || r.recordingId || r.videoId,
+              ),
+          );
+          ctx.set({
+            phase: 'idle',
+            sessionId: null,
+            upload: null,
+            problem: {
+              kind: 'nothing-recorded',
+              message: 'Nothing was recorded. Start again when you are ready.',
+            },
+          });
+          return;
+        }
         confirmed = true;
         closePause(); // stopped while paused: the pause runs to the end
         freeze();

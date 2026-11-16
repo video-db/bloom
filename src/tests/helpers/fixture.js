@@ -261,6 +261,10 @@ function createFixture({
       waits.get(sessionId)?.resolve(payload);
       return payload;
     },
+    discard(recordingId) {
+      calls.push(['discard', recordingId]);
+      return true;
+    },
     emit: (name, payload) => events.emit('event', name, payload),
   };
   const engine = createVideoDBEngine({

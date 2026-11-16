@@ -4,6 +4,7 @@
 // a restart. File paths stay in this module; the engine and the windows only ever see ids.
 // All SDK recorder calls and native event names are confined to this file (ADR 0005).
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const { ServiceError, request } = require('./errors');
@@ -34,6 +35,28 @@ function videoFile(folder, files = []) {
   }
 }
 
+// Where the recorder keeps its recordings when nothing else says: one folder each, named
+// by the recording's id, with media.json marking a file that was finished.
+const RECORDER_HOME = path.join(
+  os.homedir(),
+  'Library',
+  'Application Support',
+  'videodb-recorder',
+  'recordings',
+);
+// A finished recording's video in `root`, or '' when there is none that is complete.
+function finishedIn(root, recordingId) {
+  const folder = path.join(root, recordingId);
+  try {
+    const media = JSON.parse(
+      fs.readFileSync(path.join(folder, 'media.json'), 'utf8'),
+    );
+    return media?.complete === true ? videoFile(folder) : '';
+  } catch {
+    return '';
+  }
+}
+
 const MIC = { id: 'mic:default', name: 'Microphone' };
 const SYSTEM_AUDIO = { id: 'system_audio:default', name: 'System audio' };
 const NATIVE_EVENTS = ['shutdown', 'error', 'window-closed', 'window-switched'];
@@ -44,6 +67,7 @@ function createLocalRecorder({
   journalFile,
   permissionStatus,
   permissionDecided = () => true,
+  recorderHome = RECORDER_HOME, // where a recording is looked for when its path is unknown
 }) {
   const events = new EventEmitter();
   const sending = new Map(); // recordingId -> promise of the completion payload
@@ -105,6 +129,26 @@ function createLocalRecorder({
   // Send a finished file to VideoDB. One attempt at a time per recording.
   function send(recordingId) {
     let entry = entries[recordingId];
+    // A recording whose Stop never answered, or that was being made when Bloom closed,
+    // has no known file. The recorder may have finished it all the same: look where it
+    // keeps them, beside the other recordings and in its usual place.
+    if (entry && !entry.path) {
+      const roots = [
+        ...Object.values(entries)
+          .filter((other) => other.path)
+          .map((other) =>
+            path.dirname(path.dirname(videoFile(other.path) || other.path)),
+          ),
+        recorderHome,
+      ];
+      const found = roots
+        .map((root) => finishedIn(root, recordingId))
+        .find(Boolean);
+      if (found) {
+        update(recordingId, { path: found });
+        entry = entries[recordingId];
+      }
+    }
     // What is sent is the video itself, never the folder it is kept in.
     const file = entry?.path ? videoFile(entry.path) : '';
     if (entry?.path && file && file !== entry.path) {
@@ -212,6 +256,36 @@ function createLocalRecorder({
       }),
     setWindowEnabled: (enabled) =>
       request(() => ensure().setWindowEnabled({ enabled }), { mutation: true }),
+    // Delete a recording's file once it is ready in VideoDB (ADR 0006), and forget it.
+    // Only a recording that was sent and confirmed is ever discarded; only Bloom's own
+    // folder for it is removed. True when nothing of it is left here.
+    discard(recordingId) {
+      const entry = entries[recordingId];
+      if (!entry) return true;
+      if (entry.stage !== 'complete' || !entry.videoId) return false;
+      try {
+        const file = entry.path ? videoFile(entry.path) || entry.path : '';
+        if (file) {
+          const folder = fs
+            .statSync(file, { throwIfNoEntry: false })
+            ?.isDirectory()
+            ? file
+            : path.dirname(file);
+          // The recorder keeps each recording in a folder named by its id. Anything else
+          // is not ours to remove whole: there, only the video file itself goes.
+          if (path.basename(folder) === recordingId)
+            fs.rmSync(folder, { recursive: true, force: true });
+          else if (/\.mp4$/i.test(file)) fs.rmSync(file, { force: true });
+        }
+      } catch {
+        return false; // tried again the next time this recording is seen
+      }
+      const rest = { ...entries };
+      delete rest[recordingId];
+      entries = rest;
+      save();
+      return true;
+    },
     // Recordings of this account that are not finished: found again after a restart.
     async recover() {
       const current = scope();
@@ -239,16 +313,38 @@ function createLocalRecorder({
           'signed-out',
           'Connect your VideoDB account first.',
         );
-      const started = await request(
-        () =>
-          ensure().startLocalRecording({
-            channels: channels.map(({ channelId, type }) => ({
-              channelId,
-              type,
-            })),
-          }),
-        { timeoutMs: 315000, mutation: true },
-      );
+      let refusal = null; // the recorder answered, and the answer was no
+      let started;
+      try {
+        started = await request(
+          async () => {
+            try {
+              return await ensure().startLocalRecording({
+                channels: channels.map(({ channelId, type }) => ({
+                  channelId,
+                  type,
+                })),
+              });
+            } catch (error) {
+              if (error?.name === 'CaptureCommandError') refusal = error;
+              throw error;
+            }
+          },
+          { timeoutMs: 315000, mutation: true },
+        );
+      } catch (error) {
+        if (!refusal) throw error; // no answer: capture may or may not have begun
+        // Nothing is being recorded, so Start can simply be pressed again.
+        throw Object.assign(
+          new ServiceError(
+            'recorder-refused',
+            refusal.code === 'TARGET_NOT_FOUND'
+              ? 'That window or display is no longer available. Choose what to record again.'
+              : 'Recording could not start. Check that Bloom may record the screen in System Settings, then try again.',
+          ),
+          { refused: true },
+        );
+      }
       active = { recordingId: started.recordingId, sessionId };
       update(started.recordingId, {
         sessionId,
@@ -282,7 +378,10 @@ function createLocalRecorder({
           { timeoutMs: 160000, mutation: true },
         );
       } catch (error) {
-        if (!ended || !recordingId) throw error;
+        // The recorder says nothing is being recorded, and Bloom knew of nothing either:
+        // there is no capture to stop and no file to wait for.
+        if (ended && !recordingId) return { nothing: true };
+        if (!ended) throw error;
         // The engine learns of it when it waits for this recording, once Stop has returned.
         active = null;
         update(recordingId, { stage: 'failed' });
@@ -312,6 +411,14 @@ function createLocalRecorder({
           'not-found',
           'This recording was made by an earlier version of Bloom and cannot be recovered here.',
         );
+      // Already in VideoDB: say so again and send nothing.
+      if (
+        entries[recordingId].stage === 'complete' &&
+        entries[recordingId].videoId
+      ) {
+        events.emit('event', 'processing-complete', completion(recordingId));
+        return;
+      }
       if (entries[recordingId].path) update(recordingId, { stage: 'ready' });
       send(recordingId).catch(() => {});
     },

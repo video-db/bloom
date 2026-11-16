@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [2.3.9] - 2026-11-17
+
 - A recording's file is deleted from the Mac once the recording is ready to play; one that is still being processed or needs recovery keeps its file.
 - A Start that the recorder refuses no longer leaves Bloom in a state that Stop, Start and Quit could not leave. Recover finds a recording whose Stop never answered, and never sends again a recording that is already ready.
 - Signed in but unable to reach VideoDB now says so, with Try again, instead of asking you to sign in or finish setup.

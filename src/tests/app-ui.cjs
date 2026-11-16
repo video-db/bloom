@@ -470,6 +470,12 @@ fs.mkdirSync(evidence, { recursive: true });
     // and the lanes under the timeline show it.
     await main.getByRole('button', { name: 'Make', exact: true }).click();
     await main.locator('.make-panel .recipe.on').waitFor();
+    // The recipe is one compact line.
+    assert.ok(
+      (await main
+        .locator('.recipe.on')
+        .evaluate((el) => el.getBoundingClientRect().height)) < 32,
+    );
     const options = () =>
       main
         .locator('.opt-row')

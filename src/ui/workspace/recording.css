@@ -456,21 +456,27 @@
   margin: 0;
 }
 .recipes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 6px;
 }
+/* One line: the name, then what it is for. */
 .recipe {
-  padding: 7px 9px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 9px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--paper);
-  font-size: var(--t-label);
-  color: var(--mid);
+  font-size: var(--t-caption);
+  color: var(--soft);
+  white-space: nowrap;
 }
 .recipe b {
-  display: block;
+  font-size: var(--t-label);
   font-weight: 500;
   color: var(--ink);
 }

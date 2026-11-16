@@ -9,18 +9,21 @@ const round = (seconds) => Math.round(seconds * 100) / 100;
 // [{ from, to }], already narrowed by KEEP on each side that touches speech.
 function quiet(words, duration) {
   if (!Array.isArray(words) || !words.length) return [];
-  const length = Math.max(duration || 0, words.at(-1).end);
+  // In order of when they start; a word can overlap the ones after it, so what counts is
+  // the latest end heard so far, not the previous word's.
+  const said = [...words].sort((a, b) => a.start - b.start);
   const out = [];
   const add = (from, to) => {
     if (to - from > 0.05) out.push({ from: round(from), to: round(to) });
   };
-  if (words[0].start >= MIN_SILENCE) add(0, words[0].start - KEEP);
-  for (let i = 1; i < words.length; i++) {
-    const gap = words[i].start - words[i - 1].end;
-    if (gap >= MIN_SILENCE) add(words[i - 1].end + KEEP, words[i].start - KEEP);
+  if (said[0].start >= MIN_SILENCE) add(0, said[0].start - KEEP);
+  let heard = said[0].end;
+  for (const next of said.slice(1)) {
+    if (next.start - heard >= MIN_SILENCE) add(heard + KEEP, next.start - KEEP);
+    heard = Math.max(heard, next.end);
   }
-  if (length - words.at(-1).end >= MIN_SILENCE)
-    add(words.at(-1).end + KEEP, length);
+  const length = Math.max(duration || 0, heard);
+  if (length - heard >= MIN_SILENCE) add(heard + KEEP, length);
   return out;
 }
 
@@ -79,4 +82,66 @@ function chaptersFor(record, cuts) {
     .filter((c, index, all) => !index || c.at > all[index - 1].at);
 }
 
-module.exports = { quiet, plan, remap, chaptersFor, MIN_SILENCE, KEEP };
+// What was kept on disk, read back: only stretches and versions that are what they should
+// be reach the window. A version must have a secure link to play.
+const spans = (list) =>
+  (Array.isArray(list) ? list : [])
+    .filter(
+      (span) =>
+        Number.isFinite(span?.from) &&
+        Number.isFinite(span?.to) &&
+        span.from >= 0 &&
+        span.to > span.from,
+    )
+    .map(({ from, to }) => ({ from, to }));
+const link = (value) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+};
+function storedVersions(list) {
+  return (Array.isArray(list) ? list : [])
+    .filter(
+      (v) =>
+        v &&
+        typeof v.id === 'string' &&
+        typeof v.name === 'string' &&
+        Number.isFinite(v.duration) &&
+        v.duration > 0 &&
+        link(v.streamUrl),
+    )
+    .map((v) => ({
+      id: v.id,
+      recipe: 'walkthrough',
+      name: v.name.slice(0, 60),
+      streamUrl: link(v.streamUrl),
+      playerUrl: link(v.playerUrl),
+      duration: v.duration,
+      createdAt: Number.isFinite(v.createdAt) ? v.createdAt : 0,
+      cuts: spans(v.cuts),
+      subtitles: !!v.subtitles,
+      titled: !!v.titled,
+      chapters: (Array.isArray(v.chapters) ? v.chapters : [])
+        .filter(
+          (c) =>
+            typeof c?.title === 'string' && Number.isFinite(c.at) && c.at >= 0,
+        )
+        .map(({ title, at }) => ({ title: title.slice(0, 40), at })),
+    }));
+}
+
+module.exports = {
+  quiet,
+  plan,
+  remap,
+  chaptersFor,
+  spans,
+  storedVersions,
+  MIN_SILENCE,
+  KEEP,
+};

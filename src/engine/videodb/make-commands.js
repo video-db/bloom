@@ -47,6 +47,8 @@ function createMakeCommands(ctx, service) {
     const made = plan(record, { silences });
     if (!made.ranges.length)
       return fail('Nothing would be left of this recording.');
+    // A title card with no words is not a title card.
+    if (title && text !== undefined && !text.trim()) title = false;
     if (!silences && !subtitles && !title)
       return fail('Choose at least one change to make.');
     ctx.update(id, { making: { status: 'working' } });
@@ -56,12 +58,18 @@ function createMakeCommands(ctx, service) {
         videoId: record.videoId,
         ranges: made.ranges,
         subtitles: !!subtitles,
-        title: title ? (text || record.title).trim().slice(0, 80) : '',
+        title: title ? (text ?? record.title).trim().slice(0, 80) : '',
       });
     } catch (error) {
+      // Said once, on the page it happened on. When VideoDB may have got the request,
+      // "nothing was changed" would not be true of VideoDB, only of this recording.
       if (scope === ctx.scope())
-        fail('The video could not be made. Nothing was changed; try again.');
-      throw error;
+        fail(
+          error?.uncertain || error?.code === 'timeout'
+            ? 'VideoDB did not answer in time, so Bloom has no video to show. This recording is unchanged; try again.'
+            : 'The video could not be made. This recording is unchanged; try again.',
+        );
+      return;
     }
     if (scope !== ctx.scope()) return;
     const current = ctx.find(id);
@@ -94,7 +102,8 @@ function createMakeCommands(ctx, service) {
         if (!record?.versions?.some((v) => v.id === version)) return;
         ctx.update(id, {
           versions: record.versions.filter((v) => v.id !== version),
-          making: null,
+          // A version still being made stays in hand; only a finished note is cleared.
+          ...(record.making?.status === 'working' ? {} : { making: null }),
         });
       },
     },

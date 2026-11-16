@@ -25,12 +25,13 @@ const chapterSource = (r) =>
 // What the choices come to for this recording: a choice with nothing to act on is off.
 export function chosen(r, page) {
   const c = page.choices;
+  const text = (page.titleText ?? r.title).trim().slice(0, 80);
   return {
     silences: c.silences && silences(r).list.length > 0,
     subtitles: c.subtitles,
-    title: c.title,
+    title: c.title && !!text, // a title card with no words is not one
     chapters: c.chapters && chapterSource(r).count > 0,
-    text: (page.titleText ?? r.title).trim().slice(0, 80),
+    text,
   };
 }
 
@@ -133,9 +134,9 @@ export function makePanel(r, page, signedIn) {
         disabled: !quiet.list.length,
       })}
       ${option({ key: 'subtitles', on: on.subtitles, label: 'Subtitles' })}
-      ${option({ key: 'title', on: on.title, label: 'Title card' })}
+      ${option({ key: 'title', on: page.choices.title, label: 'Title card' })}
       ${
-        on.title
+        page.choices.title
           ? /* HTML */ `<label class="opt-field"
               ><span class="caption">Shown over the first seconds</span
               ><input

@@ -138,8 +138,9 @@ function go(name) {
   view = name;
   const [, id] = name.split('/');
   if (id) {
-    // Another recording starts in Watch, on its original, with the usual choices.
-    if (id !== activeId) Object.assign(page, freshPage());
+    // A recording that is opened, as against one already on screen, starts in Watch on
+    // its original with the usual choices.
+    if (id !== activeId || drawn !== name) Object.assign(page, freshPage());
     activeId = id;
     window.bloom.command('openRecording', { id });
   }

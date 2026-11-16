@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const { randomUUID } = require('node:crypto');
 const { atomicWrite } = require('./files');
 const { ServiceError } = require('./errors');
+const { spans, storedVersions } = require('./make');
 
 const fields = [
   'id',
@@ -68,7 +69,14 @@ function createRecordingCache(file) {
   return {
     warning,
     load(id) {
-      return structuredClone(scopes[id] || []);
+      // Versions and silences are kept only here, so they are checked as they are read.
+      return structuredClone(scopes[id] || []).map((record) => ({
+        ...record,
+        ...(record.quiet !== undefined ? { quiet: spans(record.quiet) } : {}),
+        ...(record.versions !== undefined
+          ? { versions: storedVersions(record.versions) }
+          : {}),
+      }));
     },
     save(id, records) {
       if (!/^[a-f0-9]{64}$/.test(id))

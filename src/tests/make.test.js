@@ -20,6 +20,12 @@ test('silences are the stretches of 0.8 s or more without a word, less a margin'
     [],
     'short gaps stay',
   );
+  // A long word overlapping the ones after it, and words out of order: what counts is the
+  // latest end heard so far.
+  assert.deepEqual(
+    quiet([word(2, 2.2), word(0, 3), word(2.5, 2.7), word(6, 6.5)], 6.5),
+    [{ from: 3.15, to: 5.85 }],
+  );
   assert.deepEqual(quiet([], 10), []);
   assert.deepEqual(quiet(undefined, 10), []);
 });
@@ -296,6 +302,8 @@ test('a version that cannot be made says so and leaves nothing behind', async (t
   await f.command('makeVersion', { id, ...all });
   assert.equal(f.record().making.status, 'error');
   assert.equal((f.record().versions || []).length, 0);
+  assert.match(f.record().making.message, /This recording is unchanged/);
+  assert.equal(f.engine.getState().problem, null, 'said once, on the page');
   // Nothing chosen is not a version, and nothing is asked of VideoDB for it.
   const asked = f.calls.filter(([n]) => n === 'makeVersion').length;
   await f.command('makeVersion', {
@@ -327,18 +335,97 @@ test('versions are kept on this Mac with the recording, across a restart', async
       title: 'Demo',
       marks: [],
       quiet: [{ from: 1, to: 2 }],
-      versions: [{ id: 'v-1', name: 'Walkthrough', duration: 9 }],
+      versions: [
+        {
+          id: 'v-1',
+          name: 'Walkthrough',
+          duration: 9,
+          streamUrl: 'https://stream.example/v.m3u8',
+        },
+      ],
       making: { status: 'working' },
     },
   ]);
   const [kept] = createRecordingCache(file).load(scope);
-  assert.deepEqual(kept.versions, [
-    { id: 'v-1', name: 'Walkthrough', duration: 9 },
-  ]);
+  assert.equal(kept.versions.length, 1);
+  assert.equal(kept.versions[0].name, 'Walkthrough');
+  assert.equal(kept.versions[0].streamUrl, 'https://stream.example/v.m3u8');
   assert.deepEqual(kept.quiet, [{ from: 1, to: 2 }]);
   assert.equal(
     kept.making,
     undefined,
     'work under way is not something to restore',
   );
+});
+
+test('removing a version while another is being made does not let a second one start', async (t) => {
+  const { deferred } = require('./helpers/fixture');
+  const f = await recorded(t);
+  const id = f.record().id;
+  await f.command('makeVersion', { id, ...all });
+  const first = f.record().versions[0];
+  const gate = deferred();
+  const render = f.service.makeVersion;
+  f.service.makeVersion = async (args) => {
+    await gate.promise;
+    return render(args);
+  };
+  // Straight to the engine: the fixture's command waits for everything under way.
+  f.engine.command('makeVersion', { id, ...all });
+  await flush();
+  assert.equal(f.record().making.status, 'working');
+  f.engine.command('removeVersion', { id, version: first.id });
+  await flush();
+  assert.equal(f.record().making.status, 'working', 'still in hand');
+  const before = f.calls.filter(([n]) => n === 'makeVersion').length;
+  f.engine.command('makeVersion', { id, ...all });
+  await flush();
+  assert.equal(f.calls.filter(([n]) => n === 'makeVersion').length, before);
+  gate.resolve();
+  await f.engine.whenIdle();
+  assert.deepEqual(
+    f.record().versions.map((v) => v.name),
+    ['Walkthrough'],
+  );
+});
+
+test('what is read back from disk is checked before it reaches the window', () => {
+  const { storedVersions, spans } = require('../engine/videodb/make');
+  assert.deepEqual(spans([{ from: 1, to: 2 }, { from: 3, to: 3 }, 'x', null]), [
+    { from: 1, to: 2 },
+  ]);
+  assert.deepEqual(spans('nonsense'), []);
+  const good = {
+    id: 'v-1',
+    name: 'Walkthrough',
+    streamUrl: 'https://stream.example/v.m3u8',
+    playerUrl: 'javascript:alert(1)',
+    duration: 9,
+    cuts: 'not a list',
+    chapters: [{ title: 'One', at: 0 }, { title: 4 }],
+  };
+  assert.deepEqual(
+    storedVersions([
+      good,
+      { ...good, id: 'v-2', streamUrl: 'http://insecure.example/v.m3u8' },
+      { ...good, id: 'v-3', duration: 'long' },
+      null,
+    ]),
+    [
+      {
+        id: 'v-1',
+        recipe: 'walkthrough',
+        name: 'Walkthrough',
+        streamUrl: 'https://stream.example/v.m3u8',
+        playerUrl: null,
+        duration: 9,
+        createdAt: 0,
+        cuts: [],
+        subtitles: false,
+        titled: false,
+        chapters: [{ title: 'One', at: 0 }],
+      },
+    ],
+  );
+  assert.deepEqual(storedVersions({ not: 'a list' }), []);
 });

@@ -100,14 +100,22 @@ export function bindActions(
         !page.choices[target.dataset.choice];
       render(true);
     }
+    if (target.dataset.titleStyle) {
+      page.titleStyle = target.dataset.titleStyle;
+      render(true);
+    }
     if (target.dataset.make) {
       const record = openRecord();
       if (record) {
-        const { text, ...choices } = chosen(record, page);
+        const on = chosen(record, page);
         window.bloom.command('makeVersion', {
           id: record.id,
-          ...choices,
-          ...(choices.title && text ? { text } : {}),
+          silences: on.silences,
+          subtitles: on.subtitles,
+          title: on.title,
+          chapters: on.chapters,
+          ...(on.title ? { text: on.text, titleStyle: on.titleStyle } : {}),
+          ...(on.end ? { end: true, endText: on.endText } : {}),
         });
       }
     }
@@ -169,10 +177,12 @@ export function bindActions(
       note.value = ''; // the note became a mark
     }
   });
-  // The title card's words are kept as they are typed; nothing is redrawn for it.
+  // The title's and the end card's words are kept as they are typed; nothing is redrawn.
   root.addEventListener('input', (event) => {
     if (event.target.dataset.titleText !== undefined)
       page.titleText = event.target.value;
+    if (event.target.dataset.endText !== undefined)
+      page.endText = event.target.value;
   });
   root.addEventListener('change', (event) => {
     const el = event.target;

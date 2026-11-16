@@ -2,7 +2,7 @@
 // VideoDB and stays there; the list of a recording's versions is kept with the recording
 // on this Mac. The original is never changed.
 const { randomUUID } = require('node:crypto');
-const { plan, chaptersFor } = require('./make');
+const { plan, chaptersFor, CARD_SECONDS } = require('./make');
 
 const RECIPES = { walkthrough: 'Walkthrough' };
 const MAX_VERSIONS = 20;
@@ -15,7 +15,8 @@ function createMakeCommands(ctx, service) {
     for (let n = 2; ; n++)
       if (!taken.has(`${base} ${n}`)) return `${base} ${n}`;
   };
-  // choices: silences, subtitles, title, chapters (each on or off); text: the title card.
+  // choices: silences, subtitles, title, chapters, end (each on or off). text: the title's
+  // words; titleStyle: 'over' | 'card' | 'third'; endText: the end card's words.
   async function makeVersion({
     id,
     silences,
@@ -23,6 +24,9 @@ function createMakeCommands(ctx, service) {
     title,
     chapters,
     text,
+    titleStyle = 'over',
+    end = false,
+    endText = '',
   }) {
     const scope = ctx.scope();
     const record = ctx.find(id);
@@ -49,7 +53,10 @@ function createMakeCommands(ctx, service) {
       return fail('Nothing would be left of this recording.');
     // A title card with no words is not a title card.
     if (title && text !== undefined && !text.trim()) title = false;
-    if (!silences && !subtitles && !title)
+    // The same goes for an end card.
+    const closing = end ? endText.trim().slice(0, 80) : '';
+    const lead = title && titleStyle === 'card' ? CARD_SECONDS : 0;
+    if (!silences && !subtitles && !title && !closing)
       return fail('Choose at least one change to make.');
     ctx.update(id, { making: { status: 'working' } });
     let result;
@@ -59,6 +66,8 @@ function createMakeCommands(ctx, service) {
         ranges: made.ranges,
         subtitles: !!subtitles,
         title: title ? (text ?? record.title).trim().slice(0, 80) : '',
+        titleStyle,
+        endText: closing,
       });
     } catch (error) {
       // Said once, on the page it happened on. When VideoDB may have got the request,
@@ -80,12 +89,14 @@ function createMakeCommands(ctx, service) {
       name: nameFor(current, 'walkthrough'),
       streamUrl: result.streamUrl,
       playerUrl: result.playerUrl,
-      duration: made.length,
+      // Cards add their own seconds before and after the recording.
+      duration: made.length + lead + (closing ? CARD_SECONDS : 0),
+      lead,
       createdAt: Date.now(),
       cuts: made.cuts,
       subtitles: !!subtitles,
       titled: !!title,
-      chapters: chapters ? chaptersFor(current, made.cuts) : [],
+      chapters: chapters ? chaptersFor(current, made.cuts, lead) : [],
     };
     ctx.update(id, {
       versions: [...(current.versions || []), version],

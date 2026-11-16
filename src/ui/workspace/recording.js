@@ -9,7 +9,7 @@ import { transcript } from './transcript.js';
 import { summary } from './summary.js';
 import { timeline } from './timeline.js';
 import { playingRow, playingVersion, timed } from './versions.js';
-import { lanes, makePanel, silences, chosen } from './make.js';
+import { lanes, makePanel, silences, chosen, titlePreview } from './make.js';
 
 // What can be done with a recording, as tabs. Adding one is an entry here and its view.
 export const TABS = [
@@ -156,8 +156,9 @@ function marks(r) {
 }
 
 // The video with its own playbar: play, the time, speed and full screen.
-// playing: { streamUrl, duration } of the original or of a version.
-const player = (playing) =>
+// playing: { streamUrl, duration } of the original or of a version. over: markup drawn
+// on top of the picture (Make's title preview).
+const player = (playing, over = '') =>
   playing.streamUrl
     ? /* HTML */ `<div class="player">
           <video
@@ -165,6 +166,7 @@ const player = (playing) =>
             data-player
             aria-label="Recorded video"
           ></video>
+          ${over}
           <div class="player-bar">
             <button data-player-toggle aria-label="Play">
               ${icon('play')}${icon('pause')}
@@ -208,7 +210,7 @@ export function recording(s, id, tab, page) {
       <div class="watch make">
         <div class="watch-stage">
           <div class="watch-video">
-            ${player(r)}${timeline(r, {
+            ${player(r, titlePreview(r, page))}${timeline(r, {
               cuts: chosen(r, page).silences ? silences(r).list : [],
             })}${lanes(r, page)}
           </div>

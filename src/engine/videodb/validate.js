@@ -57,7 +57,11 @@ const commandArgs = {
     ['silences', 'subtitles', 'title', 'chapters'].every(
       (key) => typeof a[key] === 'boolean',
     ) &&
-    (a.text === undefined || text(a.text, 80)),
+    (a.text === undefined || text(a.text, 80)) &&
+    (a.titleStyle === undefined ||
+      ['over', 'card', 'third'].includes(a.titleStyle)) &&
+    (a.end === undefined || typeof a.end === 'boolean') &&
+    (a.endText === undefined || text(a.endText, 80)),
   removeVersion: (a) => id(a.id) && id(a.version),
   retryRecording: (a) => id(a.id),
   resumeUpload: (a) => id(a.id),

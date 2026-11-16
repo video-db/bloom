@@ -6,7 +6,15 @@ import { esc, clock } from '../shared/dom.js';
 import { withoutTranscript } from './transcript.js';
 import { versionsNote } from './versions.js';
 
-const TITLE_SECONDS = 2.5; // how long the title card shows; the engine's editing.js agrees
+// How long each title shows; the engine's editing.js and make.js agree.
+const TITLE_SECONDS = 2.5; // over the first seconds
+const THIRD_SECONDS = 4; // a label in the corner
+const CARD_SECONDS = 3; // an opening or end card, which adds its own time
+export const TITLE_STYLES = [
+  ['over', 'Over video'],
+  ['card', 'Opening card'],
+  ['third', 'Lower third'],
+];
 
 // The silences that would be cut, and what cutting them saves.
 export const silences = (r) => {
@@ -26,13 +34,27 @@ const chapterSource = (r) =>
 export function chosen(r, page) {
   const c = page.choices;
   const text = (page.titleText ?? r.title).trim().slice(0, 80);
+  const endText = (page.endText || '').trim().slice(0, 80);
   return {
     silences: c.silences && silences(r).list.length > 0,
     subtitles: c.subtitles,
-    title: c.title && !!text, // a title card with no words is not one
+    title: c.title && !!text, // a title with no words is not one
+    titleStyle: TITLE_STYLES.some(([id]) => id === page.titleStyle)
+      ? page.titleStyle
+      : 'over',
     chapters: c.chapters && chapterSource(r).count > 0,
+    end: !!c.end && !!endText, // nor is an end card
     text,
+    endText,
   };
+}
+
+// The chosen title, drawn over the picture while the video is at its start: a preview of
+// what "Make video" will ask for.
+export function titlePreview(r, page) {
+  const on = chosen(r, page);
+  if (!on.title) return '';
+  return `<div class="title-preview ${on.titleStyle}" aria-hidden="true"><span>${esc(on.text)}</span></div>`;
 }
 
 // Blocks along a lane, placed on the original's time.
@@ -70,10 +92,26 @@ export function lanes(r, page) {
       on.subtitles && r.transcript ? blocks('s', said, total) : '',
     )}
     ${lane(
-      'Title',
-      on.title
-        ? blocks('t', [{ from: 0, to: Math.min(TITLE_SECONDS, total) }], total)
-        : '',
+      'Titles',
+      `${
+        on.title
+          ? on.titleStyle === 'card'
+            ? '<i class="t card" style="left:0"></i>'
+            : blocks(
+                't',
+                [
+                  {
+                    from: 0,
+                    to: Math.min(
+                      on.titleStyle === 'third' ? THIRD_SECONDS : TITLE_SECONDS,
+                      total,
+                    ),
+                  },
+                ],
+                total,
+              )
+          : ''
+      }${on.end ? '<i class="t card" style="right:0"></i>' : ''}`,
     )}
   </div>`;
 }
@@ -110,12 +148,21 @@ export function makePanel(r, page, signedIn) {
   const on = chosen(r, page);
   const quiet = silences(r);
   const chapters = chapterSource(r);
-  const length = Math.max(
-    0,
-    (r.duration || 0) - (on.silences ? quiet.saves : 0),
-  );
+  // Cards add their own seconds before and after the recording.
+  const opening = on.title && on.titleStyle === 'card';
+  const added = (opening ? CARD_SECONDS : 0) + (on.end ? CARD_SECONDS : 0);
+  const length =
+    Math.max(0, (r.duration || 0) - (on.silences ? quiet.saves : 0)) + added;
+  const includes =
+    opening && on.end
+      ? ' · includes the opening and end cards'
+      : opening
+        ? ' · includes the opening card'
+        : on.end
+          ? ' · includes the end card'
+          : '';
   const working = r.making?.status === 'working';
-  const nothing = !on.silences && !on.subtitles && !on.title;
+  const nothing = !on.silences && !on.subtitles && !on.title && !on.end;
   return /* HTML */ `<aside class="make-panel" aria-label="Make a video">
     <div>
       <span class="label">Make it a</span>
@@ -134,19 +181,27 @@ export function makePanel(r, page, signedIn) {
         disabled: !quiet.list.length,
       })}
       ${option({ key: 'subtitles', on: on.subtitles, label: 'Subtitles' })}
-      ${option({ key: 'title', on: page.choices.title, label: 'Title card' })}
+      ${option({ key: 'title', on: page.choices.title, label: 'Title' })}
       ${
         page.choices.title
-          ? /* HTML */ `<label class="opt-field"
-              ><span class="caption">Shown over the first seconds</span
+          ? /* HTML */ `<div class="opt-field">
+              <span
+                class="seg title-styles"
+                role="group"
+                aria-label="Title style"
+                >${TITLE_STYLES.map(
+                  ([id, label]) =>
+                    `<button class="${id === on.titleStyle ? 'on' : ''}" aria-pressed="${id === on.titleStyle}" data-title-style="${id}">${label}</button>`,
+                ).join('')}</span
               ><input
                 class="field"
                 data-title-text
                 data-focus="title-text"
                 maxlength="80"
                 value="${esc(page.titleText ?? r.title)}"
-                aria-label="Title card text"
-            /></label>`
+                aria-label="Title text"
+              />
+            </div>`
           : ''
       }
       ${option({
@@ -156,10 +211,26 @@ export function makePanel(r, page, signedIn) {
         detail: chapters.count ? `${chapters.count} ${chapters.word}` : 'none',
         disabled: !chapters.count,
       })}
+      ${option({ key: 'end', on: !!page.choices.end, label: 'End card' })}
+      ${
+        page.choices.end
+          ? /* HTML */ `<div class="opt-field">
+              <input
+                class="field"
+                data-end-text
+                data-focus="end-text"
+                maxlength="80"
+                value="${esc(page.endText || '')}"
+                placeholder="Closing words"
+                aria-label="End card text"
+              />
+            </div>`
+          : ''
+      }
     </div>
     <div class="make-length">
       <b>${clock(length)}</b>
-      <span class="caption">from ${clock(r.duration)}</span>
+      <span class="caption">from ${clock(r.duration)}${includes}</span>
     </div>
     ${
       r.making?.status === 'error'

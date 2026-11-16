@@ -26,8 +26,16 @@ let state = null,
 const freshPage = () => ({
   mode: 'watch', // 'watch' | 'make'
   playing: 'original', // or a version's id
-  choices: { silences: true, subtitles: true, title: true, chapters: true },
-  titleText: null, // the title card's words; null means the recording's title
+  choices: {
+    silences: true,
+    subtitles: true,
+    title: true,
+    chapters: true,
+    end: false,
+  },
+  titleText: null, // the title's words; null means the recording's title
+  titleStyle: 'over', // 'over' | 'card' | 'third'
+  endText: '', // the end card's words
 });
 const page = freshPage();
 // Onboarding runs its own flow; the panel and workspace share the renderer below.

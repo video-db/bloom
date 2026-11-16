@@ -2,15 +2,16 @@
 // that lists them, and the plain-words account of what a version is.
 import { esc, clock } from '../shared/dom.js';
 
-// A moment of the original as a moment of a version: the cuts before it are gone, and a
-// moment inside a cut lands where the cut was. The same sum as the engine's make.js.
-export function remap(at, cuts = []) {
+// A moment of the original as a moment of a version: the cuts before it are gone, a moment
+// inside a cut lands where the cut was, and an opening card (lead) comes first. The same
+// sum as the engine's make.js.
+export function remap(at, cuts = [], lead = 0) {
   let gone = 0;
   for (const cut of cuts) {
     if (at <= cut.from) break;
     gone += Math.min(at, cut.to) - cut.from;
   }
-  return Math.max(0, at - gone);
+  return Math.max(0, at - gone) + lead;
 }
 
 // The version being watched, or null for the original. Make always works on the original.
@@ -27,6 +28,7 @@ export function playable(r, page) {
         streamUrl: version.streamUrl,
         duration: version.duration,
         cuts: version.cuts,
+        lead: version.lead || 0,
       }
     : r;
 }
@@ -40,7 +42,7 @@ export const timed = (r, version) =>
         summary: { chapters: version.chapters || [] },
         marks: (r.marks || []).map((m) => ({
           ...m,
-          at: remap(m.at, version.cuts),
+          at: remap(m.at, version.cuts, version.lead || 0),
         })),
       }
     : r;

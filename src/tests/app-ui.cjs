@@ -488,8 +488,9 @@ fs.mkdirSync(evidence, { recursive: true });
     assert.deepEqual(await options(), [
       ['✓ Remove 2 silences saves 0:06', 'true'],
       ['✓ Subtitles', 'true'],
-      ['✓ Title card', 'true'],
+      ['✓ Title', 'true'],
       ['✓ Chapters 2 chapters', 'true'],
+      ['End card', 'false'],
     ]);
     assert.match(
       await main.locator('.make-length').innerText(),
@@ -514,7 +515,41 @@ fs.mkdirSync(evidence, { recursive: true });
       /0:10\s+from 0:10/,
     );
     await main.getByRole('checkbox', { name: /Remove 2 silences/ }).click();
-    await main.getByLabel('Title card text').fill('Two thoughts');
+    // The title has three styles. The chosen one is drawn over the picture at the start,
+    // and a card says in the length that it adds time.
+    assert.deepEqual(
+      await main.locator('.title-styles button').allInnerTexts(),
+      ['Over video', 'Opening card', 'Lower third'],
+    );
+    assert.equal(await main.locator('.title-preview.over').count(), 1);
+    await main.getByRole('button', { name: 'Lower third' }).click();
+    assert.equal(await main.locator('.title-preview.third').count(), 1);
+    await main.getByRole('button', { name: 'Opening card' }).click();
+    assert.equal(await main.locator('.title-preview.card').count(), 1);
+    assert.equal(await main.locator('.lane i.t.card').count(), 1);
+    assert.match(
+      await main.locator('.make-length').innerText(),
+      /0:06\s+from 0:10 · includes the opening card/,
+    );
+    await main.getByLabel('Title text').fill('Two thoughts');
+    // An end card is off until asked for, and has its own words.
+    await main.getByRole('checkbox', { name: 'End card' }).click();
+    await main.getByLabel('End card text').fill('Thanks for watching');
+    await main.getByRole('checkbox', { name: 'Subtitles' }).click();
+    await main.getByRole('checkbox', { name: 'Subtitles' }).click();
+    assert.match(
+      await main.locator('.make-length').innerText(),
+      /0:09\s+from 0:10 · includes the opening and end cards/,
+    );
+    assert.equal(await main.locator('.lane i.t.card').count(), 2);
+    assert.equal(
+      await main.getByLabel('End card text').inputValue(),
+      'Thanks for watching',
+      'typed words survive a redraw',
+    );
+    await main.screenshot({
+      path: path.join(evidence, `${theme}-make-titles.png`),
+    });
     await main.getByRole('button', { name: 'Make video' }).click();
     // The version is made: back in Watch with it playing, the original one click away.
     await main
@@ -526,7 +561,7 @@ fs.mkdirSync(evidence, { recursive: true });
         .evaluateAll((els) =>
           els.map((el) => el.innerText.replace(/\s+/g, ' ').trim()),
         ),
-      ['Original 0:10', 'Walkthrough 0:03 Ready'],
+      ['Original 0:10', 'Walkthrough 0:09 Ready'],
     );
     const asked = await app.evaluate(
       () =>
@@ -535,11 +570,13 @@ fs.mkdirSync(evidence, { recursive: true });
           .calls.find(([name]) => name === 'makeVersion')[1],
     );
     assert.equal(asked.title, 'Two thoughts');
+    assert.equal(asked.titleStyle, 'card');
+    assert.equal(asked.endText, 'Thanks for watching');
     assert.equal(asked.subtitles, true);
     assert.equal(asked.ranges.length, 2);
     assert.match(
       await main.locator('[data-player-time]').innerText(),
-      /\/ 0:03/,
+      /\/ 0:09/,
       "the player and timeline are the version's",
     );
     // What a version is, in plain words for whoever opens it. Nowhere does the window

@@ -10,6 +10,7 @@ let rate = 1;
 let kept = null; // { id, url, video, hls, ready } between a redraw and the next mount
 let bound = null; // listeners of the current page, dropped at the next redraw
 let cuts = []; // what the version being played left out of the original, if it is one
+let lead = 0; // seconds of opening card before the recording begins in that version
 
 // Remember where the video is for the next time it is opened. Before it has loaded there
 // is nothing to remember (and a place asked for must not be lost); after it has ended, the
@@ -73,6 +74,7 @@ function load(record, video) {
 export function mountPlayer(record) {
   const placeholder = document.querySelector('[data-player]');
   cuts = record?.cuts || [];
+  lead = record?.lead || 0;
   if (!placeholder || !record?.streamUrl) return drop();
   if (kept && (kept.id !== record.id || kept.url !== record.streamUrl)) drop();
   let video = placeholder;
@@ -112,6 +114,8 @@ function wire(record, video) {
     const length = total();
     if (time) time.textContent = `${clock(at)} / ${clock(length)}`;
     box?.classList.toggle('playing', !video.paused && !video.ended);
+    // At the very start, Make shows the chosen title over the picture as a preview.
+    box?.classList.toggle('at-start', at < 2.5);
     if (toggle)
       toggle.setAttribute('aria-label', video.paused ? 'Play' : 'Pause');
     if (speed) speed.textContent = `${rate}×`;
@@ -240,7 +244,7 @@ function seekPlaying(seconds) {
 
 // Move to a moment of the original recording, wherever that now is in what is playing.
 export function seek(seconds) {
-  if (Number.isFinite(seconds)) seekPlaying(remap(seconds, cuts));
+  if (Number.isFinite(seconds)) seekPlaying(remap(seconds, cuts, lead));
 }
 
 // Open this recording at a moment: the next time it is mounted it starts there.

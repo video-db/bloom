@@ -4,6 +4,10 @@
 const MIN_SILENCE = 0.8; // seconds without a word before a stretch counts as a silence
 const KEEP = 0.15; // seconds kept either side of a cut, so words are not clipped
 const round = (seconds) => Math.round(seconds * 100) / 100;
+// Down to the hundredth: VideoDB refuses a clip that runs past the end of its source, so a
+// length is never rounded up.
+const floor = (seconds) => Math.floor(seconds * 100 + 1e-6) / 100;
+const CARD_SECONDS = 3; // an opening or end card: the words alone, before or after
 
 // words: [{ word, start, end }] in order, duration: seconds -> the stretches to cut,
 // [{ from, to }], already narrowed by KEEP on each side that touches speech.
@@ -30,7 +34,7 @@ function quiet(words, duration) {
 // What a version keeps. record: { duration, quiet }, silences: cut them or not ->
 // { ranges: [{ start, end }] kept in order, cuts: [{ from, to }], length }.
 function plan(record, { silences = true } = {}) {
-  const duration = round(Math.max(record.duration || 0, 0));
+  const duration = floor(Math.max(record.duration || 0, 0));
   const cuts = (silences ? record.quiet || [] : [])
     .map((cut) => ({
       from: Math.max(0, cut.from),
@@ -52,19 +56,19 @@ function plan(record, { silences = true } = {}) {
   };
 }
 
-// A moment of the original, as a moment of the version: the cuts before it are gone, and
-// a moment inside a cut lands where that cut was.
-function remap(at, cuts) {
+// A moment of the original, as a moment of the version: the cuts before it are gone, a
+// moment inside a cut lands where that cut was, and an opening card (lead) comes first.
+function remap(at, cuts, lead = 0) {
   let gone = 0;
   for (const cut of cuts || []) {
     if (at <= cut.from) break;
     gone += Math.min(at, cut.to) - cut.from;
   }
-  return round(Math.max(0, at - gone));
+  return round(Math.max(0, at - gone) + lead);
 }
 
 // The version's chapters: the summary's when it has them, otherwise the person's marks.
-function chaptersFor(record, cuts) {
+function chaptersFor(record, cuts, lead = 0) {
   const fromSummary = record.summary?.chapters || [];
   const source =
     fromSummary.length > 1
@@ -73,13 +77,19 @@ function chaptersFor(record, cuts) {
           title: m.text || 'Marked moment',
           at: m.at,
         }));
-  return source
-    .map((c) => ({
-      title: String(c.title).slice(0, 40),
-      at: remap(c.at, cuts),
-    }))
-    .sort((a, b) => a.at - b.at)
-    .filter((c, index, all) => !index || c.at > all[index - 1].at);
+  return (
+    source
+      .map((c) => ({
+        title: String(c.title).slice(0, 40),
+        at: remap(c.at, cuts, lead),
+      }))
+      .sort((a, b) => a.at - b.at)
+      .filter((c, index, all) => !index || c.at > all[index - 1].at)
+      // The first chapter runs from the start, an opening card included.
+      .map((c, index) =>
+        index === 0 && fromSummary.length > 1 ? { ...c, at: 0 } : c,
+      )
+  );
 }
 
 // What was kept on disk, read back: only stretches and versions that are what they should
@@ -126,6 +136,7 @@ function storedVersions(list) {
       cuts: spans(v.cuts),
       subtitles: !!v.subtitles,
       titled: !!v.titled,
+      lead: Number.isFinite(v.lead) && v.lead > 0 ? v.lead : 0,
       chapters: (Array.isArray(v.chapters) ? v.chapters : [])
         .filter(
           (c) =>
@@ -142,6 +153,7 @@ module.exports = {
   chaptersFor,
   spans,
   storedVersions,
+  CARD_SECONDS,
   MIN_SILENCE,
   KEEP,
 };

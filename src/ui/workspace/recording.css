@@ -533,8 +533,54 @@
 }
 .opt-field {
   display: grid;
-  gap: 4px;
-  padding: 0 10px 9px 34px;
+  gap: 6px;
+  padding: 0 10px 9px;
+}
+.title-styles {
+  display: flex;
+}
+.title-styles button {
+  flex: 1;
+  padding: 4px 0;
+  font-size: var(--t-caption);
+  white-space: nowrap;
+}
+/* A card adds time outside the recording, so it is a block at the lane's very end. */
+.lane i.t.card {
+  width: 8px;
+}
+/* The chosen title over the picture while the video is at its start. */
+.title-preview {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding: 0 8%;
+  color: #fff;
+  font-weight: 600;
+  font-size: clamp(14px, 2.2vw, 26px);
+  letter-spacing: -0.01em;
+  text-align: center;
+  pointer-events: none;
+}
+.player.at-start:not(.playing) .title-preview {
+  display: grid;
+}
+.title-preview.over span {
+  padding: 0.25em 0.6em;
+  background: rgba(23, 23, 28, 0.85);
+}
+.title-preview.card {
+  background: #17171c;
+}
+.title-preview.third {
+  place-items: end start;
+  padding: 0 0 12% 4%;
+  font-size: clamp(11px, 1.4vw, 17px);
+}
+.title-preview.third span {
+  padding: 0.3em 0.7em;
+  background: rgba(23, 23, 28, 0.88);
 }
 .make-length {
   padding: 8px 10px;

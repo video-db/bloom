@@ -114,6 +114,7 @@ test('the editor is asked for the kept ranges joined up, with subtitles and a ti
         clip.asset.kind,
         clip.duration,
         clip.asset.config,
+        clip.position,
       ]);
     }
   }
@@ -136,6 +137,8 @@ test('the editor is asked for the kept ranges joined up, with subtitles and a ti
     EditorTextAsset: asset('text'),
     Font: asset('font'),
     Background: asset('background'),
+    Position: { bottomLeft: 'bottom_left' },
+    Offset: asset('offset'),
     EditorTimeline: class {
       constructor(conn) {
         this.conn = conn;
@@ -221,6 +224,72 @@ test('the editor is asked for the kept ranges joined up, with subtitles and a ti
     { code: 'invalid-input' },
   );
   assert.equal(made.length, 2);
+  // An opening card: the words alone for three seconds, then everything else after it.
+  // An end card follows the recording. Both sit on the timeline's own background.
+  await editing.makeVersion({
+    videoId: 'm-1',
+    ranges: [{ start: 0, end: 5 }],
+    subtitles: true,
+    title: 'Opening',
+    titleStyle: 'card',
+    endText: 'Thanks',
+  });
+  const carded = made.at(-1);
+  assert.equal(carded.background, '#17171C');
+  const [cardVideo, cardCaptions, cardTitles] = carded.tracks.map(
+    (t) => t.clips,
+  );
+  assert.deepEqual(
+    cardVideo.map((c) => c.slice(0, 3)),
+    [[3, 'video', 5]],
+  );
+  assert.deepEqual(
+    cardCaptions.map((c) => c.slice(0, 3)),
+    [[3, 'caption', 5]],
+  );
+  assert.deepEqual(
+    cardTitles.map(([start, kind, duration, config]) => [
+      start,
+      kind,
+      duration,
+      config.text,
+      !!config.background,
+    ]),
+    [
+      [0, 'text', 3, 'Opening', false],
+      [8, 'text', 3, 'Thanks', false],
+    ],
+  );
+  // A lower third: a small boxed label, anchored bottom-left, for four seconds.
+  await editing.makeVersion({
+    videoId: 'm-1',
+    ranges: [{ start: 0, end: 5 }],
+    subtitles: false,
+    title: 'Corner',
+    titleStyle: 'third',
+  });
+  const [, thirdTitles] = made.at(-1).tracks.map((t) => t.clips);
+  assert.deepEqual(
+    thirdTitles.map(([start, , duration, config, position]) => [
+      start,
+      duration,
+      config.text,
+      config.font.config.size,
+      !!config.background,
+      position,
+    ]),
+    [[0, 4, 'Corner', 28, true, 'bottom_left']],
+  );
+  assert.equal(made.at(-1).background, undefined, 'no card, no background set');
+  // A clip is never longer than its source: lengths are cut, not rounded up.
+  await editing.makeVersion({
+    videoId: 'm-1',
+    ranges: [{ start: 0, end: 4.999 }],
+    subtitles: false,
+    title: '',
+  });
+  assert.equal(made.at(-1).tracks[0].clips[0][2], 4.99);
+
   // A stream that is not a link is not a version.
   editor.EditorTimeline.prototype.generateStream = async () => 'not a link';
   await assert.rejects(
@@ -423,9 +492,57 @@ test('what is read back from disk is checked before it reaches the window', () =
         cuts: [],
         subtitles: false,
         titled: false,
+        lead: 0,
         chapters: [{ title: 'One', at: 0 }],
       },
     ],
   );
   assert.deepEqual(storedVersions({ not: 'a list' }), []);
+});
+
+test('an opening card and an end card add their seconds, and the version is re-timed', async (t) => {
+  const f = await recorded(t);
+  const before = f.record();
+  await f.command('makeVersion', {
+    id: before.id,
+    ...all,
+    text: 'Opening',
+    titleStyle: 'card',
+    end: true,
+    endText: 'Thanks for watching',
+  });
+  const asked = f.calls.filter(([n]) => n === 'makeVersion').at(-1)[1];
+  assert.equal(asked.titleStyle, 'card');
+  assert.equal(asked.endText, 'Thanks for watching');
+  const [version] = f.record().versions;
+  assert.equal(version.lead, 3);
+  const cut = remap(before.duration, version.cuts); // the recording, less its silences
+  assert.ok(
+    Math.abs(version.duration - (cut + 6)) < 0.05,
+    'both cards counted',
+  );
+  assert.equal(
+    version.chapters[0].at,
+    0,
+    'the first chapter includes the card',
+  );
+  assert.ok(version.chapters[1].at >= 3, 'later chapters come after the card');
+  // An end card with no words is not one; a style nobody offers is refused.
+  await f.command('makeVersion', {
+    id: before.id,
+    ...all,
+    end: true,
+    endText: '   ',
+  });
+  assert.equal(
+    f.calls.filter(([n]) => n === 'makeVersion').at(-1)[1].endText,
+    '',
+  );
+  const made = f.calls.filter(([n]) => n === 'makeVersion').length;
+  await f.command('makeVersion', {
+    id: before.id,
+    ...all,
+    titleStyle: 'banner',
+  });
+  assert.equal(f.calls.filter(([n]) => n === 'makeVersion').length, made);
 });

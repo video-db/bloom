@@ -56,7 +56,17 @@ fs.mkdirSync(evidence, { recursive: true });
       page = await reopened;
       await page.waitForURL(/surface=onboarding/);
       await page.getByLabel('VideoDB API key').waitFor();
-      assert.equal(await main(({ BrowserWindow }) => BrowserWindow.getAllWindows().filter(w => w.isVisible() && w.webContents.getURL().includes('surface=onboarding')).length), 1);
+      assert.equal(
+        await main(
+          ({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows().filter(
+              (w) =>
+                w.isVisible() &&
+                w.webContents.getURL().includes('surface=onboarding'),
+            ).length,
+        ),
+        1,
+      );
     }
     const key = page.getByLabel('VideoDB API key');
     const heading = (name) => page.getByRole('heading', { name });
@@ -100,6 +110,17 @@ fs.mkdirSync(evidence, { recursive: true });
     await key.waitFor();
     await page.evaluate(() => document.fonts.ready);
     assert.equal(await button('Connect to VideoDB').isDisabled(), true);
+    // The two buttons are apart, not touching.
+    const edges = (selector) =>
+      page
+        .locator(selector)
+        .evaluate((el) => el.getBoundingClientRect().toJSON());
+    assert.ok(
+      (await edges('.setup-create')).top -
+        (await edges('.setup-form .btn')).bottom >=
+        10,
+      'space between Connect and Create account',
+    );
     assert.equal(await button('Next').count(), 0);
     await page.waitForTimeout(600);
     await shot(page, '1-connect-empty');
@@ -226,7 +247,10 @@ fs.mkdirSync(evidence, { recursive: true });
     await comeBack();
     await page.waitForTimeout(1200);
     await page.getByText('Answer the macOS question.').waitFor();
-    assert.equal(await page.getByText('Off. You can record without it').count(), 0);
+    assert.equal(
+      await page.getByText('Off. You can record without it').count(),
+      0,
+    );
     // The answer arrives with no focus change; setup notices it by itself.
     await main(() => {
       global.__bloom.getFixture().recorder.permission.micDecided = true;
@@ -242,10 +266,7 @@ fs.mkdirSync(evidence, { recursive: true });
 
     // ---- 3 · Ready, and the hand-off to the menu bar ----
     await heading('A click away.').waitFor();
-    assert.equal(
-      await main(() => global.__bloom.getPrefs().defaultMic),
-      false,
-    );
+    assert.equal(await main(() => global.__bloom.getPrefs().defaultMic), false);
     assert.equal(
       await main(() => global.__bloom.hasTray()),
       false,
@@ -269,7 +290,10 @@ fs.mkdirSync(evidence, { recursive: true });
     await panel.getByText('Start your first recording here').waitFor();
     await panel.getByRole('button', { name: 'Choose what to record' }).click();
     await panel.locator('[data-pick=screen][data-id="display:2"]').click();
-    assert.equal(await main(() => global.__bloom.getEngine().getState().sources.screen), 'display:2');
+    assert.equal(
+      await main(() => global.__bloom.getEngine().getState().sources.screen),
+      'display:2',
+    );
     await shot(panel, '4-panel-hint');
     await main(() => global.__bloom.getEngine().command('start'));
     await panel

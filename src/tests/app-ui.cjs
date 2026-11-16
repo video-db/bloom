@@ -952,6 +952,12 @@ fs.mkdirSync(evidence, { recursive: true });
       await app.evaluate(() => global.__bloom.getPrefs().defaultMic),
       false,
     );
+    // Settings says nothing about where recordings are kept.
+    assert.equal(await main.getByText('Where recordings go').count(), 0);
+    assert.equal(
+      await main.getByRole('heading', { name: 'Permissions' }).count(),
+      1,
+    );
     await main.screenshot({
       path: path.join(evidence, `${theme}-settings.png`),
     });

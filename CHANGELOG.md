@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Sign out is no longer greyed out by a recording that needs recovery; it waits only while a recording is being made or processed.
+- Settings: the "Where recordings go" row is removed.
+
 - Make: the title has three styles (over the video, an opening card before the recording, or a small label in the lower left) and there is an optional end card with your own closing words. The chosen title is previewed over the picture, the Titles lane shows each one, and the length says when cards add time.
 
 - Recordings are grouped by date as Finder does: Today, Yesterday, Previous 7 Days, Previous 30 Days, then by month and year. Filter and sort are behind one icon in the header, with the same options.

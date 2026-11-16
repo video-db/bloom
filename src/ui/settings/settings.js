@@ -87,14 +87,9 @@ const notifications = (s) =>
       )}
     </div>`;
 
-const privacy = (s) =>
-  /* HTML */ `<h2>Privacy and storage</h2>
+const permissions = (s) =>
+  /* HTML */ `<h2>Permissions</h2>
     <div class="card">
-      ${row(
-        'Where recordings go',
-        'Recordings are kept in your VideoDB account.',
-        `<span class="soft">${esc(s.environment || 'VideoDB')}</span>`,
-      )}
       ${row(
         'Screen and system audio',
         'macOS permission. Needed to record.',
@@ -168,6 +163,6 @@ export function settings(s) {
       <h1>Settings</h1>
     </div>
     <span class="soft set-note">Preferences are saved on this Mac.</span>
-    ${recording(s)}${notifications(s)}${privacy(s)}${account(s)}${general(s)}
+    ${recording(s)}${notifications(s)}${permissions(s)}${account(s)}${general(s)}
   </section>`;
 }

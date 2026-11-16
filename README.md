@@ -38,7 +38,8 @@
 Bloom is a desktop screen recorder built for agentic workflows. It lives in the menu bar, records locally and saves every recording to your VideoDB account.
 
 - **Capture from your desktop** — Screen, microphone and system audio
-- **Upload to VideoDB** — Automatic cloud sync with AI processing.
+- **Saved to VideoDB** — Each recording is processed in your account, with a transcript, a summary and chapters.
+- **Make a video from a recording** — Cut the silences, add subtitles and titles. The original is never changed.
 - **Find recordings** — Search titles and transcripts, play back and share a link.
 - **Let agents work on your recordings** — Query via APIs or agent frameworks like Claude Code and access your recordings data.
 
@@ -62,10 +63,10 @@ curl -fsSL https://artifacts.videodb.io/bloom/install | bash
 
 This detects your Mac architecture and installs the published build to `/Applications`. For the version in this checkout, follow the [local build and installation runbook](docs/runbook.md#build-and-install-locally).
 
-The published build is an earlier release. This checkout is the rebuilt 2.3.5 app, which has not been published yet; run it from source with `npm ci` then `npm start`.
+The published build is an earlier release than this checkout. Run this one from source with `npm ci` then `npm start`, or build it with the runbook.
 
 <details>
-<summary>Manual install — v2.2.0 artifact URLs</summary>
+<summary>Manual install — v2.2.0 artifact URLs (the earlier app)</summary>
 
 - **Apple Silicon (M1/M2/M3/M4)**: [bloom-2.2.0-arm64.dmg](https://artifacts.videodb.io/bloom/bloom-2.2.0-arm64.dmg)
 - **Apple Intel**: [bloom-2.2.0-x64.dmg](https://artifacts.videodb.io/bloom/bloom-2.2.0-x64.dmg)
@@ -78,7 +79,7 @@ The published build is an earlier release. This checkout is the rebuilt 2.3.5 ap
 </details>
 
 <p>
-  <em>The repository includes macOS DMG and Windows NSIS packaging. Verify each build on its target platform using the runbook.</em>
+  <em>This version records on macOS. The Windows packaging configuration and the Windows installer above belong to the earlier app and have not been tried with this one.</em>
 </p>
 
 ---
@@ -88,17 +89,19 @@ The published build is an earlier release. This checkout is the rebuilt 2.3.5 ap
 | Feature | Description |
 |---------|-------------|
 | **No subscription** | Pay only for usage |
-| **Desktop recording** | Capture screen and audio into VideoDB-backed sessions |
+| **Desktop recording** | Record a display or a single window, with microphone and system audio, into your VideoDB account |
 | **AI-ready** | Spoken-word indexing and transcripts through VideoDB |
 | **Screen recording** | Capture screen, microphone, and system audio via [VideoDB Capture SDK](https://docs.videodb.io) |
-| **Menu bar recorder** | One small panel from the tray icon; nothing floats over your work |
+| **Menu bar recorder** | One small panel from the tray icon, with an optional floating control and a movable camera picture |
 | **Truthful recording state** | Starting, recording, paused, saving and finished each look different, on the tray and in the main window |
 | **Marks** | Mark a moment or type a note while recording |
-| **Multi-monitor** | Display picker to choose which screen to record |
-| **Library** | Browse, search, play, rename, download and delete recordings |
-| **Transcription** | Transcripts through VideoDB, prepared on request |
+| **Displays and windows** | Choose which display to record, or one window; switch or hide the window without stopping |
+| **Recordings** | Grouped by date; search, play, rename, download and delete |
+| **Watch** | A large player with a timeline of chapters and your marks, beside the summary and transcript |
+| **Make** | Turn a recording into a tighter version: silences cut, subtitles, a title in three styles, an end card |
+| **Transcription and summary** | Prepared after each recording (a setting); key points, action items and chapters with their times |
 | **Share** | One-click shareable link for any recording |
-| **Keyboard shortcut** | `Cmd+Shift+R` to start/stop recording from anywhere |
+| **Keyboard shortcuts** | `Cmd+Shift+R` to start or stop recording from anywhere, `Cmd+Shift+M` to mark a moment |
 | **Open source** | Fully customizable UI layer |
 
 ---
@@ -149,7 +152,7 @@ npm ci
 npm start
 ```
 
-On first launch, enter your VideoDB API key, then grant the required permissions. A network connection and a valid API key are required to start recording.
+On first launch, enter your VideoDB API key, then grant the required permissions. Signing in needs a connection; starting a recording asks nothing of VideoDB, and the recording is processed once VideoDB can be reached.
 
 | Task | Documentation |
 |---|---|
@@ -169,7 +172,7 @@ Run `npm test` for the automated tests; the [runbook](docs/runbook.md#automated-
 | `src/main/` | Electron lifecycle, tray, windows, notifications, preferences and the renderer bridge |
 | `src/engine/` | Capture and VideoDB; the only code that talks to either |
 | `src/preload.js` | Context-isolated renderer bridge |
-| `src/ui/` | Onboarding, tray panel, main window and settings |
+| `src/ui/` | Onboarding, tray panel, main window, settings, the floating control and the camera picture |
 | `src/tests/` | State, engine and notification tests, Electron walkthroughs |
 | `build/` | App icons, macOS entitlements and afterPack signing hook |
 | `docs/` | Configuration reference and operating runbook |
@@ -177,7 +180,7 @@ Run `npm test` for the automated tests; the [runbook](docs/runbook.md#automated-
 ## Troubleshooting
 
 ### Permissions denied
-- **macOS**: System Settings → Privacy & Security → enable Screen Recording (also covers system audio) and Microphone
+- **macOS**: System Settings → Privacy & Security → enable Screen Recording (also covers system audio), Microphone, and Camera if you use the camera picture
 
 ### Reset
 Follow [Reset local state](docs/runbook.md#reset-local-state).

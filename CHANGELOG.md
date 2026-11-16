@@ -2,18 +2,21 @@
 
 ## Unreleased
 
+- A recording's file is deleted from the Mac once the recording is ready to play; one that is still being processed or needs recovery keeps its file.
+- A Start that the recorder refuses no longer leaves Bloom in a state that Stop, Start and Quit could not leave. Recover finds a recording whose Stop never answered, and never sends again a recording that is already ready.
+- Signed in but unable to reach VideoDB now says so, with Try again, instead of asking you to sign in or finish setup.
+- Setup: the Open Bloom at login switch works, and the two buttons on the first step no longer touch.
+- Going to Home or Search leaves a collection that was being browsed. Coming back from Settings keeps the recording page as it was. The page keeps its scroll position and keyboard focus when it updates.
+- A recording cannot be started in the moment Bloom is quitting. Each window may ask only for the permissions it needs. Display changes re-place the floating control and camera. A window whose page crashes is loaded again.
+- The title styles in Make are three small pictures with their names.
 - Sign out is no longer greyed out by a recording that needs recovery; it waits only while a recording is being made or processed.
 - Settings: the "Where recordings go" row is removed.
-
 - Make: the title has three styles (over the video, an opening card before the recording, or a small label in the lower left) and there is an optional end card with your own closing words. The chosen title is previewed over the picture, the Titles lane shows each one, and the length says when cards add time.
-
 - Recordings are grouped by date as Finder does: Today, Yesterday, Previous 7 Days, Previous 30 Days, then by month and year. Filter and sort are behind one icon in the header, with the same options.
 - The "Make it a" recipe in the Make panel is one compact line.
-
 - Make a video from a recording: the recording page has a Watch and Make switch. Make shows what a Walkthrough would change (silences cut, subtitles, a title card, chapters), on the timeline and in lanes under it, with the new length, and "Make video" produces a new version. The original is never changed. The page returns to Watch with the version playing; the Original is one click away and Copy link copies what is playing.
 - The page explains what a version is (a new video made from the recording; the original is never changed; each has its own link) and a version can be removed without touching the original.
 - Wording: nothing in Bloom says where a recording is kept. "Kept on this Mac", "saved on this Mac" and mentions of the file are gone from the tray, the recording page, Settings, the quit questions and error messages.
-
 - The recording page is rebuilt for watching: the video is large with its own playbar (play, time, speed, full screen); under it a timeline shows chapters, your marks and the playhead; Summary, Transcript and a new Marks tab sit beside the video and every time in them jumps the video. Chapters are made with the summary; regenerate an older summary to get them. Playback carries on when the page updates instead of restarting. "Add transcript" is now in the Transcript and Summary tabs.
 
 ## [2.3.8] - 2026-11-14

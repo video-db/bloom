@@ -13,13 +13,13 @@ npm start
 
 `npm start` runs Bloom with the real engine against the dev API; `npm start -- --production` selects production, which a packaged app always uses. First launch opens setup: use **Create a VideoDB account** to open the VideoDB console if you need a key, paste the key, then grant screen recording (which also covers system audio) and, optionally, the microphone. The key is validated and saved locally without Keychain prompts. Updating from encrypted storage requires entering the key once; see the storage details in the configuration reference. Flags and file locations are in the [configuration reference](reference/configuration.md).
 
-Bloom remains in the macOS Dock while it is running. The tray icon appears only after sign-in, required permissions and setup completion. Until then, the recording shortcut opens setup, and recording, library and Settings menu actions are unavailable. Signing out removes the tray, closes the main window and returns to setup. Active capture controls remain available to stop or recover an existing recording.
+Bloom remains in the macOS Dock while it is running. The tray icon appears only after sign-in, required permissions and setup completion. Until then, the recording shortcut opens setup, and the Recordings and Settings menu actions are unavailable. Signing out removes the tray, closes the main window and returns to setup. Active capture controls remain available to stop or recover an existing recording.
 
 Bloom refreshes available displays and audio devices after a permission grant and whenever the tray panel opens. With more than one display, use the arrow beside the screen icon to choose one; with one display, it is selected automatically. If devices were connected or removed, close and reopen the tray to refresh the choices.
 
-Start recording only after choosing the intended screen and audio. Nothing captures automatically. Audio turned off in the tray is omitted from the recording. On Stop the tray shows the recording as Processing and Start is available again at once; when processing ends the recording is ready, then verify playback and the copied link. Transcript readiness is separate. A recording whose processing failed shows under Needs recovery with Recover, and does not block recording or quitting. New recordings are transcribed after upload when “Transcribe new recordings” is enabled (on by default); this can spend credits. The summary request also suggests a short content-based name for date-named Bloom recordings; custom names are kept. Recordings without usable transcript content keep their date names. Existing missing transcripts can be prepared with Add. After an accepted request, Try again reads its result without submitting another indexing request. Downloads use a save dialog. Rename and delete reach VideoDB; delete asks first and has no Undo.
+Start recording only after choosing the intended display or window and audio. Nothing captures automatically. Audio turned off in the tray is omitted from the recording. On Stop the tray shows the recording as Processing and Start is available again at once; when processing ends the recording is ready, then verify playback and the copied link. Transcript readiness is separate. A recording whose processing failed shows under Needs recovery with Recover, and does not block recording or quitting. New recordings are transcribed once processed when “Transcribe new recordings” is enabled (on by default); this can spend credits. The summary request also suggests a short content-based name for date-named Bloom recordings; custom names are kept. Recordings without usable transcript content keep their date names. Existing missing transcripts can be prepared with Add. After an accepted request, Try again reads its result without submitting another indexing request. Downloads use a save dialog. Rename and delete reach VideoDB; delete asks first and has no Undo.
 
-The native recorder owns local MP4s and upload receipts. Complete native jobs are rediscovered on connection and authorised against their original session before a fresh token is issued. The recorder deletes its media after confirmed ingestion, so use Download to keep a permanent copy. There is no server-recording fallback. A forced kill during unfinished MP4 writing is not guaranteed recoverable.
+A recording's file stays on the Mac until the recording is playable in VideoDB, and is then deleted by Bloom; use Download to keep a copy. A recording still waiting, or needing recovery, keeps its file and is found again at the next launch for the account that made it. There is no server-recording fallback. A forced kill while the file is still being written is not guaranteed recoverable.
 
 ## Automated checks
 
@@ -74,13 +74,14 @@ On the actual target platform, with a test account and a screen you are content 
 
 1. Launch and confirm setup appears on first run only, and the tray icon appears when setup completes.
 2. Sign in with a valid API key; confirm an invalid key yields an actionable error in place.
-3. Grant permissions, choose a display and microphone, and record a short sample. Check both selected audio sources and that a source turned off is absent.
+3. Grant permissions, choose a display or a single window, and record a short sample with the microphone and system audio on. Check both are in the recording and that a source turned off is absent.
 4. Pause and resume, add a mark, then Stop. Wait through saving and confirm the tray shows the finished recording.
 5. Turn the camera on from the tray: macOS asks once, then a round picture appears bottom left. Drag it, change its size, record the display and confirm the picture is in the recording; record a single window and confirm it is not.
 6. Open the main window: check that the video plays and keeps playing when you change tab, that the timeline's chapters, marks and playhead follow it and that clicking or dragging the timeline moves the video, then check playback speed and full screen, the copied link, the transcript for a sample with speech, rename, download and delete.
-7. Record a second time. Quit during saving and confirm Bloom asks first; reopen and confirm the recording finishes saving.
-8. Check both themes, native tooltips, the global shortcut and notifications.
-9. Repeat in a packaged build on each supported Mac architecture.
+7. Record a second time. Quit while it is still recording and confirm Bloom asks first; quit while it is being processed and confirm Bloom quits at once; reopen and confirm the recording becomes ready.
+8. Open a recording with speech, switch to Make, and make one version in each title style with an end card. Confirm each plays in Watch, that Original is one click away and that Copy link copies what is playing.
+9. Check both themes, native tooltips, both global shortcuts (start or stop, mark a moment) and notifications.
+10. Repeat in a packaged build on each supported Mac architecture.
 
 Redact keys, tokens and recording URLs before sharing any diagnostic output.
 
@@ -90,7 +91,7 @@ Redact keys, tokens and recording URLs before sharing any diagnostic output.
 2. Remove the `bloom-next` folder under the application-support directory (see the [configuration reference](reference/configuration.md#files)).
 3. Relaunch and complete setup again.
 
-Reset removes the saved key, preferences and cached library metadata. It does not delete recordings from VideoDB. A recording that had not finished uploading is held by the native recorder and is rediscovered after sign-in.
+Reset removes the saved key, preferences and cached library metadata. It does not delete recordings from VideoDB. A recording that had not finished processing is forgotten by the reset: Bloom's list of such files is in the folder being removed, so its file is left in the recorder's folder and no longer shown.
 
 ## Rollback
 

@@ -29,26 +29,35 @@ src/
     state.js          state sent to every surface, preferences applied to the app
     tray.js           tray icon and title
     windows.js        panel, workspace and onboarding windows
+    first-window.js   which window opens at launch
+    access.js         when setup is complete and the recording controls are available
     notifications.js  notifications and reminders
     menu.js           application menu
     shortcuts.js      global shortcuts
     ipc.js            messages from renderers
-    floating.js       windows that float over the screen while recording (the control)
-    float-placement.js  where a floating window may sit so it is not in the recording
+    collection-menu.js  the menu on a collection in the sidebar
+    downloads.js      saving a recording to a file the person chooses
+    screen-preview.js the still of the screen shown in setup
+    quit-guard.js     when quitting asks first, and how long it waits for the recorder
+    floating.js       windows that float over the screen: the recording control and the camera picture
+    float-placement.js  where the control may sit so it is not in the recording, and where the camera goes
     clock.js          mm:ss formatting shared by the tray and notifications
   engine/
     index.js          the engine surface and factory
     videodb/          real state engine, SDK adapter, credentials, receipts and recording cache
     sample/           sample engine: records nothing; backs the main-process tests
   ui/
-    app.html          the one page; ?surface=panel|workspace|onboarding says which window it is
+    app.html          the one page; ?surface=panel|workspace|onboarding|control|camera says which window it is
     app.js            state in, markup out: which view shows, redraw, focus kept across redraws
     actions.js        every click, form and key, turned into an engine command or a view change
     shared/           tokens, base styles, DOM helpers, icons, the Bloom mark
     panel/            the tray panel: sources and their choosers, each recording state
     workspace/        the main window: title bar, sidebar of places (places.js), and one
-                      view and stylesheet per page: home, recordings, recording
+                      view per page: home, recordings, search, and the recording page
+                      (recording.js) with its player, timeline, summary, transcript,
+                      Make panel (make.js) and versions (versions.js)
     control/          the floating recording control
+    camera/           the floating camera picture
     settings/         the Settings view
     onboarding/       first run: Connect, Permissions, Ready
   assets/             tray icons, fonts, the mark
@@ -69,4 +78,4 @@ src/
 - Behaviour changes come with a test. Run the unit tests and the walkthroughs in both themes, then look at the screens.
 - A refactor that must not change how anything looks is checked, not eyeballed: run the walkthroughs with `BLOOM_STYLE_SNAPSHOT=1` before and after and compare with `src/tests/helpers/compare-styles.cjs`.
 
-The real integration uses the public Node SDK from GitHub branch release-0.3.3; the lockfile records its resolved revision. Read [the boundary reference](../docs/reference/videodb-integration.md) before changing the SDK adapter or recovery state. Test fixtures never run in a packaged app.
+The real integration uses the public Node SDK, pinned in `package.json` to one commit on its release-0.3.3 branch. Read [the boundary reference](../docs/reference/videodb-integration.md) before changing the SDK adapter or recovery state. Test fixtures never run in a packaged app.

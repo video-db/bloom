@@ -271,19 +271,8 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
     await recorder.relay(record.recordingId, record.sessionId);
     wait({ recordingId: record.recordingId });
   }
-  // Before a new recording starts: every unfinished earlier recording is set aside. One that
-  // was being processed is marked to continue afterwards; a failed one waits to be recovered.
-  function setAside(startingId) {
-    for (const record of ctx
-      .get()
-      .recordings.filter((r) => r.id !== startingId && unfinished(r)))
-      ctx.update(record.id, {
-        paused: true,
-        continueLater: record.continueLater || record.status !== 'error',
-        jobStage: record.status === 'error' ? 'paused-upload' : 'waiting',
-      });
-  }
-  // When nothing is being captured: pick up the recordings set aside while they were going well.
+  // An earlier build set unfinished recordings aside while a new one was made. Nothing
+  // does that now (ADR 0004), but one set aside then is still picked up here.
   function continueSetAside() {
     if (disposed || CAPTURING.includes(ctx.get().phase)) return;
     for (const record of ctx
@@ -298,7 +287,6 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
     wait,
     recover,
     retry,
-    setAside,
     continueSetAside,
     dispose() {
       disposed = true;

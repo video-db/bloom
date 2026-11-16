@@ -444,7 +444,7 @@ fs.mkdirSync(evidence, { recursive: true });
       'Second thought 0:04',
     ]);
     assert.match(
-      await main.locator('.playing').innerText(),
+      await main.locator('.now-playing').innerText(),
       /Playing\s+Original/,
     );
     // A redraw (here, another tab) puts the same video element back, so playback carries on.
@@ -466,6 +466,115 @@ fs.mkdirSync(evidence, { recursive: true });
       path: path.join(evidence, `${theme}-marks.png`),
     });
     await main.getByRole('tab', { name: 'Summary' }).click();
+    // Make: the same page as a light editor. The choices say what they do in numbers,
+    // and the lanes under the timeline show it.
+    await main.getByRole('button', { name: 'Make', exact: true }).click();
+    await main.locator('.make-panel .recipe.on').waitFor();
+    const options = () =>
+      main
+        .locator('.opt-row')
+        .evaluateAll((els) =>
+          els.map((el) => [
+            el.innerText.replace(/\s+/g, ' ').trim(),
+            el.getAttribute('aria-checked'),
+          ]),
+        );
+    assert.deepEqual(await options(), [
+      ['✓ Remove 2 silences saves 0:06', 'true'],
+      ['✓ Subtitles', 'true'],
+      ['✓ Title card', 'true'],
+      ['✓ Chapters 2 chapters', 'true'],
+    ]);
+    assert.match(
+      await main.locator('.make-length').innerText(),
+      /0:03\s+from 0:10/,
+    );
+    assert.equal(await main.locator('.tl-cut').count(), 2);
+    assert.equal(await main.locator('.lane i.x').count(), 2);
+    assert.equal(await main.locator('.lane i.t').count(), 1);
+    // The lanes start where the timeline does, so a cut sits above its block.
+    const left = (selector) =>
+      main
+        .locator(selector)
+        .first()
+        .evaluate((el) => Math.round(el.getBoundingClientRect().left));
+    assert.equal(await left('.tl-track'), await left('.lane'));
+    await main.screenshot({ path: path.join(evidence, `${theme}-make.png`) });
+    // A choice that is off empties its lane and the length says so.
+    await main.getByRole('checkbox', { name: /Remove 2 silences/ }).click();
+    assert.equal(await main.locator('.tl-cut').count(), 0);
+    assert.match(
+      await main.locator('.make-length').innerText(),
+      /0:10\s+from 0:10/,
+    );
+    await main.getByRole('checkbox', { name: /Remove 2 silences/ }).click();
+    await main.getByLabel('Title card text').fill('Two thoughts');
+    await main.getByRole('button', { name: 'Make video' }).click();
+    // The version is made: back in Watch with it playing, the original one click away.
+    await main
+      .locator('.now-playing .version.on', { hasText: 'Walkthrough' })
+      .waitFor();
+    assert.deepEqual(
+      await main
+        .locator('.now-playing .version')
+        .evaluateAll((els) =>
+          els.map((el) => el.innerText.replace(/\s+/g, ' ').trim()),
+        ),
+      ['Original 0:10', 'Walkthrough 0:03 Ready'],
+    );
+    const asked = await app.evaluate(
+      () =>
+        global.__bloom
+          .getFixture()
+          .calls.find(([name]) => name === 'makeVersion')[1],
+    );
+    assert.equal(asked.title, 'Two thoughts');
+    assert.equal(asked.subtitles, true);
+    assert.equal(asked.ranges.length, 2);
+    assert.match(
+      await main.locator('[data-player-time]').innerText(),
+      /\/ 0:03/,
+      "the player and timeline are the version's",
+    );
+    // Where versions are kept is said in plain words for whoever opens it.
+    await main.locator('.versions-note summary').click();
+    assert.match(
+      await main.locator('.versions-note').innerText(),
+      /kept by Bloom on this Mac[\s\S]*shows only the original/,
+    );
+    await main.screenshot({
+      path: path.join(evidence, `${theme}-version.png`),
+    });
+    // Copy link copies what is playing.
+    await main
+      .getByRole('button', { name: 'Copy link', exact: true })
+      .first()
+      .click();
+    assert.match(
+      await app.evaluate(({ clipboard }) => clipboard.readText()),
+      /^https:\/\/player\.example\/version-/,
+    );
+    await main.getByRole('button', { name: 'Original' }).click();
+    assert.match(
+      await main.locator('[data-player-time]').innerText(),
+      /\/ 0:10/,
+    );
+    // Removing a version says what goes and what stays, and leaves the original.
+    await main.getByRole('button', { name: /Walkthrough/ }).click();
+    await main.locator('.version-menu summary').click();
+    await main.getByRole('button', { name: 'Remove from this Mac…' }).click();
+    assert.match(
+      await main.locator('dialog').innerText(),
+      /stays in VideoDB[\s\S]*keeps working/,
+    );
+    await main
+      .locator('dialog')
+      .getByRole('button', { name: 'Remove' })
+      .click();
+    await main
+      .locator('.now-playing .version.on', { hasText: 'Original' })
+      .waitFor();
+    assert.equal(await main.locator('.now-playing .version').count(), 1);
     assert.match(
       await main.locator('#summary').innerText(),
       /A short walk through two thoughts\./,

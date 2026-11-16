@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Make a video from a recording: the recording page has a Watch and Make switch. Make shows what a Walkthrough would change (silences cut, subtitles, a title card, chapters), on the timeline and in lanes under it, with the new length, and "Make video" produces a new version. The original is never changed. The page returns to Watch with the version playing; the Original is one click away and Copy link copies what is playing.
+- Versions are listed with the recording on this Mac, and the page says what that means: the video and its link are in VideoDB and work anywhere; the list is here, so another Mac shows only the original. A version can be removed from this Mac.
+
 - The recording page is rebuilt for watching: the video is large with its own playbar (play, time, speed, full screen); under it a timeline shows chapters, your marks and the playhead; Summary, Transcript and a new Marks tab sit beside the video and every time in them jumps the video. Chapters are made with the summary; regenerate an older summary to get them. Playback carries on when the page updates instead of restarting. "Add transcript" is now in the Transcript and Summary tabs.
 
 ## [2.3.8] - 2026-11-14

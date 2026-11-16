@@ -9,14 +9,15 @@ import { recording } from './recording.js';
 
 // route: { place, id } — 'home', 'recordings', 'recording' with an id, or 'settings'.
 // browse: { filter, order } — how Recordings is being looked at. tab: the open recording's tab.
-export function workspace(s, route, browse, tab) {
+// page: the open recording's mode, what is playing and the Make choices.
+export function workspace(s, route, browse, tab, page) {
   if (s.account.status !== 'signed-in')
     return '<main class="page-empty"><h1>Sign in to continue</h1><button class="btn" data-ui="open-onboarding">Open setup</button></main>';
-  const page =
+  const content =
     route.place === 'settings'
       ? settings(s)
       : route.place === 'recording'
-        ? recording(s, route.id, tab)
+        ? recording(s, route.id, tab, page)
         : (PLACES.find((p) => p.id === route.place) || PLACES[0]).view(
             s,
             browse,
@@ -30,7 +31,7 @@ export function workspace(s, route, browse, tab) {
     ${titleBar(s)}
     <div class="body">
       ${sidebar(s, known ? current : PLACES[0].id, browsing)}
-      <main class="view">${problems(s)}${page}</main>
+      <main class="view">${problems(s)}${content}</main>
     </div>
   </div>`;
 }

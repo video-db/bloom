@@ -1,12 +1,15 @@
-// One recording in focus, for watching: the video is the main thing, with its playbar and
-// a timeline of chapters and marks under it; the summary, transcript and marks are a column
-// beside it, and every time in them jumps the video.
+// One recording in focus, in one of two modes. Watch: the video is the main thing, with its
+// playbar and a timeline of chapters and marks under it; the summary, transcript and marks
+// are a column beside it, and every time in them jumps the video. Make: the same video and
+// timeline, with lanes showing what would change and a panel of choices beside them.
 import { esc, clock, button } from '../shared/dom.js';
 import { icon } from '../shared/icons.js';
 import { meta, status } from './format.js';
 import { transcript } from './transcript.js';
 import { summary } from './summary.js';
 import { timeline } from './timeline.js';
+import { playingRow, playingVersion, timed } from './versions.js';
+import { lanes, makePanel, silences, chosen } from './make.js';
 
 // What can be done with a recording, as tabs. Adding one is an entry here and its view.
 export const TABS = [
@@ -22,24 +25,43 @@ const tabs = (current) =>
     ).join('')}
   </div>`;
 
-const head = (s, r) =>
-  /* HTML */ `<header class="page-head watch-head">
+// Watch or Make. Only Bloom's own recordings can be made into something.
+const modes = (page) =>
+  /* HTML */ `<span class="seg" role="group" aria-label="Watch or make">
+    ${['watch', 'make']
+      .map(
+        (m) =>
+          `<button class="${page.mode === m ? 'on' : ''}" aria-pressed="${page.mode === m}" data-mode="${m}">${m === 'watch' ? 'Watch' : 'Make'}</button>`,
+      )
+      .join('')}
+  </span>`;
+
+// Copy link copies what is playing: the original, or the version being watched.
+const head = (s, r, page) => {
+  const version = playingVersion(r, page);
+  const ready = version
+    ? !!version.playerUrl
+    : r.playerUrl && r.status === 'ready';
+  return /* HTML */ `<header class="page-head watch-head">
     ${back(s)}
     <h1 title="${esc(r.title)}">${esc(r.title)}</h1>
     <span class="caption"
       >${esc([meta(r), status(r)].filter(Boolean).join(' · '))}</span
     >
     <span class="grow"></span>
+    ${r.readOnly ? '' : modes(page)}
     <button
       class="btn"
       data-ui="copy-link"
       data-id="${esc(r.id)}"
-      ${!r.playerUrl || r.status !== 'ready' ? 'disabled' : ''}
+      ${version ? `data-version="${esc(version.id)}"` : ''}
+      ${ready ? '' : 'disabled'}
     >
       Copy link
     </button>
     ${r.readOnly ? '' : menu(r)}
   </header>`;
+};
 
 // Changes to a recording. Not offered for a video from another collection.
 const menu = (r) =>
@@ -134,8 +156,9 @@ function marks(r) {
 }
 
 // The video with its own playbar: play, the time, speed and full screen.
-const player = (r) =>
-  r.streamUrl
+// playing: { streamUrl, duration } of the original or of a version.
+const player = (playing) =>
+  playing.streamUrl
     ? /* HTML */ `<div class="player">
           <video
             preload="metadata"
@@ -146,7 +169,7 @@ const player = (r) =>
             <button data-player-toggle aria-label="Play">
               ${icon('play')}${icon('pause')}
             </button>
-            <span data-player-time>0:00 / ${clock(r.duration)}</span>
+            <span data-player-time>0:00 / ${clock(playing.duration)}</span>
             <span class="grow"></span>
             <button data-player-speed aria-label="Playback speed">1×</button>
             <button data-player-full aria-label="Full screen">
@@ -157,15 +180,6 @@ const player = (r) =>
         <p class="caption player-error" data-player-error role="status"></p>`
     : '<div class="player player-empty">Playback is not ready yet.</div>';
 
-// What is playing. Versions made from this recording will join the original here.
-const playing = (r) =>
-  /* HTML */ `<div class="playing">
-    <span class="label">Playing</span>
-    <span class="version on"
-      ><b>Original</b><span class="caption">${clock(r.duration)}</span></span
-    >
-  </div>`;
-
 const back = (s) =>
   /* HTML */ `<button class="crumb" data-view="recordings">
     ${icon('back')}<span
@@ -173,8 +187,9 @@ const back = (s) =>
     >
   </button>`;
 
-// tab: which of TABS is showing.
-export function recording(s, id, tab) {
+// tab: which of TABS is showing. page: { mode, playing, choices, titleText } for this
+// recording, kept by the window.
+export function recording(s, id, tab, page) {
   const r =
     s.recordings.find((item) => item.id === id) ||
     s.browsing?.recordings.find((item) => item.id === id);
@@ -186,18 +201,34 @@ export function recording(s, id, tab) {
         <p>It may have been deleted. Choose another from Recordings.</p>
       </div>
     </section>`;
+  const signedIn = s.account.status === 'signed-in';
+  if (page.mode === 'make' && !r.readOnly)
+    return /* HTML */ `<section class="page recording">
+      ${head(s, r, page)}${notices(r)}
+      <div class="watch make">
+        <div class="watch-stage">
+          <div class="watch-video">
+            ${player(r)}${timeline(r, {
+              cuts: chosen(r, page).silences ? silences(r).list : [],
+            })}${lanes(r, page)}
+          </div>
+        </div>
+        ${makePanel(r, page, signedIn)}
+      </div>
+    </section>`;
   const current = TABS.find((t) => t.id === tab) || TABS[0];
+  const version = playingVersion(r, page);
   return /* HTML */ `<section class="page recording">
-    ${head(s, r)}${notices(r)}
+    ${head(s, r, page)}${notices(r)}
     <div class="watch">
       <div class="watch-stage">
-        <div class="watch-video">${player(r)}${timeline(r)}${playing(r)}</div>
+        <div class="watch-video">
+          ${player(version || r)}${timeline(timed(r, version))}${playingRow(r, page)}
+        </div>
       </div>
       <aside class="watch-read" aria-label="Summary, transcript and marks">
         ${tabs(current.id)}
-        <div class="watch-text">
-          ${current.view(r, s.account.status === 'signed-in')}
-        </div>
+        <div class="watch-text">${current.view(r, signedIn)}</div>
       </aside>
     </div>
   </section>`;

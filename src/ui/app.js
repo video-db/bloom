@@ -6,6 +6,7 @@ import { workspace } from './workspace/workspace.js';
 import { control } from './control/control.js';
 import { mountCamera } from './camera/bubble.js';
 import { releasePlayer, mountPlayer } from './workspace/player.js';
+import { playable } from './workspace/versions.js';
 import { bindActions } from './actions.js';
 
 const root = document.querySelector('#root');
@@ -21,6 +22,14 @@ let state = null,
   activeId = null,
   browse = { filter: 'all', order: 'newest' }, // how Recordings is being looked at
   tab = 'summary'; // the open recording's tab
+// The open recording's page: Watch or Make, what is playing, and the Make choices.
+const freshPage = () => ({
+  mode: 'watch', // 'watch' | 'make'
+  playing: 'original', // or a version's id
+  choices: { silences: true, subtitles: true, title: true, chapters: true },
+  titleText: null, // the title card's words; null means the recording's title
+});
+const page = freshPage();
 // Onboarding runs its own flow; the panel and workspace share the renderer below.
 const firstRun = surface === 'onboarding' ? createOnboarding(root) : null;
 // The camera picture is put up once and never redrawn, so the camera stays open.
@@ -41,6 +50,7 @@ function render(force = false) {
     activeId,
     browse,
     tab,
+    page,
   });
   if (force || next !== shape) {
     const focused = root.contains(document.activeElement)
@@ -56,13 +66,19 @@ function render(force = false) {
     // A redraw of the same page keeps its scroll position.
     const scrolled =
       drawn === view ? root.querySelector('.view')?.scrollTop : 0;
+    // An explanation someone has opened stays open through a redraw.
+    const opened = [...root.querySelectorAll('details[open][data-keep]')].map(
+      (el) => el.dataset.keep,
+    );
     releasePlayer();
     root.innerHTML =
       surface === 'panel'
         ? panel(state)
         : surface === 'control'
           ? control(state)
-          : workspace(state, route(), browse, tab);
+          : workspace(state, route(), browse, tab, page);
+    for (const el of root.querySelectorAll('details[data-keep]'))
+      if (opened.includes(el.dataset.keep)) el.open = true;
     if (note !== undefined && root.querySelector('input[name="note"]'))
       root.querySelector('input[name="note"]').value = note;
     if (focusKey) {
@@ -79,13 +95,14 @@ function render(force = false) {
     shape = next;
     drawn = view;
     if (scrolled) root.querySelector('.view')?.scrollTo(0, scrolled);
-    // The video is put back on a recording's page, and let go anywhere else.
-    mountPlayer(
+    // The video is put back on a recording's page, and let go anywhere else. What plays
+    // is the recording or the version of it being watched.
+    const open =
       route().place === 'recording' && surface === 'workspace'
         ? state.recordings.find((r) => r.id === activeId) ||
-            state.browsing?.recordings.find((r) => r.id === activeId)
-        : null,
-    );
+          state.browsing?.recordings.find((r) => r.id === activeId)
+        : null;
+    mountPlayer(open ? playable(open, page) : null);
     // The floating control's window is exactly as tall as its buttons.
     if (surface === 'control')
       window.bloom.ui('float-size', {
@@ -121,6 +138,8 @@ function go(name) {
   view = name;
   const [, id] = name.split('/');
   if (id) {
+    // Another recording starts in Watch, on its original, with the usual choices.
+    if (id !== activeId) Object.assign(page, freshPage());
     activeId = id;
     window.bloom.command('openRecording', { id });
   }
@@ -134,6 +153,8 @@ bindActions(root, {
     tab = name;
     render(true);
   },
+  page,
+  activeId: () => activeId,
   render,
 });
 window.bloom.onView(go);
@@ -141,6 +162,17 @@ const receive = (next) => {
   if (!next) return;
   if (firstRun) return firstRun.receive(next);
   if (cameraView) return cameraView.receive(next);
+  // A version that has just been made: back to Watch, with it playing.
+  const made = (s) =>
+    s?.recordings.find((r) => r.id === activeId)?.making || null;
+  if (
+    made(state)?.status === 'working' &&
+    made(next)?.status === 'ready' &&
+    route().place === 'recording'
+  ) {
+    page.mode = 'watch';
+    page.playing = made(next).version;
+  }
   state = next;
   render();
 };

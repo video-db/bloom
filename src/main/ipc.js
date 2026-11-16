@@ -167,7 +167,14 @@ function registerIpc({
       else {
         const state = engine.getState();
         const record = findRecord(state, args.id || state.result?.id);
-        const url = mediaUrl(record?.playerUrl);
+        // A version of the recording, when that is what is being watched.
+        const version =
+          typeof args.version === 'string'
+            ? record?.versions?.find((v) => v.id === args.version)
+            : null;
+        const url = mediaUrl(
+          args.version ? version?.playerUrl : record?.playerUrl,
+        );
         if (url && record.status === 'ready') {
           clipboard.writeText(url);
           engine.notice?.(

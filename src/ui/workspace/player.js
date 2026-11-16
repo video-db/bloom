@@ -2,12 +2,14 @@
 // redrawn from a template on every change, so the <video> element itself is kept and put
 // back into the new page: playback carries on through a redraw instead of reloading.
 import { clock } from '../shared/dom.js';
+import { remap } from './versions.js';
 
 const RATES = [1, 1.25, 1.5, 2];
 const positions = new Map(); // recording id -> seconds, for when it is opened again
 let rate = 1;
 let kept = null; // { id, url, video, hls, ready } between a redraw and the next mount
 let bound = null; // listeners of the current page, dropped at the next redraw
+let cuts = []; // what the version being played left out of the original, if it is one
 
 // Remember where the video is for the next time it is opened. Before it has loaded there
 // is nothing to remember (and a place asked for must not be lost); after it has ended, the
@@ -70,6 +72,7 @@ function load(record, video) {
 // player, whatever was playing is let go.
 export function mountPlayer(record) {
   const placeholder = document.querySelector('[data-player]');
+  cuts = record?.cuts || [];
   if (!placeholder || !record?.streamUrl) return drop();
   if (kept && (kept.id !== record.id || kept.url !== record.streamUrl)) drop();
   let video = placeholder;
@@ -130,7 +133,7 @@ function wire(record, video) {
       part.classList.toggle('now', at >= from && (last || at < to));
     }
     for (const mark of line.querySelectorAll('.tl-mark'))
-      mark.style.left = `${Math.min(100, (Number(mark.dataset.seek) / length) * 100)}%`;
+      mark.style.left = `${Math.min(100, (Number(mark.dataset.at) / length) * 100)}%`;
   }
   for (const name of [
     'timeupdate',
@@ -171,6 +174,16 @@ function wire(record, video) {
     'fullscreenchange',
     () => {
       video.controls = document.fullscreenElement === box;
+    },
+    { signal },
+  );
+
+  // Marks and chapter names under the video jump to their moment of what is playing.
+  video.closest('.watch-video')?.addEventListener(
+    'click',
+    (event) => {
+      const at = event.target.closest('[data-at]')?.dataset.at;
+      if (at !== undefined) seekPlaying(Number(at));
     },
     { signal },
   );
@@ -217,11 +230,17 @@ function wire(record, video) {
   );
 }
 
-export function seek(seconds) {
+// Move what is playing to one of its own moments.
+function seekPlaying(seconds) {
   if (!kept || !Number.isFinite(seconds) || seconds < 0) return;
   // Before the video has loaded, the place is kept for when it has.
   if (kept.ready) kept.video.currentTime = seconds;
   else positions.set(kept.id, seconds);
+}
+
+// Move to a moment of the original recording, wherever that now is in what is playing.
+export function seek(seconds) {
+  if (Number.isFinite(seconds)) seekPlaying(remap(seconds, cuts));
 }
 
 // Open this recording at a moment: the next time it is mounted it starts there.

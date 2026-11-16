@@ -25,7 +25,8 @@ export function parts(r) {
   }));
 }
 
-export function timeline(r) {
+// cuts: [{ from, to }] to draw as hatched stretches (Make mode).
+export function timeline(r, { cuts = [] } = {}) {
   const total = length(r);
   const list = parts(r);
   const span = (p) =>
@@ -47,8 +48,14 @@ export function timeline(r) {
         .filter((m) => m.at <= total)
         .map((m) => {
           const label = `${clock(m.at)} · ${m.text || 'Marked moment'}`;
-          return `<button class="tl-mark" style="left:${(m.at / total) * 100}%" data-seek="${m.at}" title="${esc(label)}" aria-label="Mark at ${esc(label)}"></button>`;
+          return `<button class="tl-mark" style="left:${(m.at / total) * 100}%" data-at="${m.at}" title="${esc(label)}" aria-label="Mark at ${esc(label)}"></button>`;
         })
+        .join('')}
+      ${cuts
+        .map(
+          (c) =>
+            `<span class="tl-cut" style="left:${(c.from / total) * 100}%;width:${((c.to - c.from) / total) * 100}%"></span>`,
+        )
         .join('')}
       <span class="tl-pin"></span>
     </div>
@@ -58,7 +65,7 @@ export function timeline(r) {
             ${list
               .map(
                 (p) =>
-                  `<button class="tl-chapter" ${span(p)} data-seek="${p.from}" title="${esc(p.title)} · ${clock(p.from)}"><b>${esc(p.title)}</b> ${clock(p.from)}</button>`,
+                  `<button class="tl-chapter" ${span(p)} data-at="${p.from}" title="${esc(p.title)} · ${clock(p.from)}"><b>${esc(p.title)}</b> ${clock(p.from)}</button>`,
               )
               .join('')}
           </div>`

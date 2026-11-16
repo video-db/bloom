@@ -49,3 +49,39 @@ export function confirmRecordingAction(action, record) {
     { once: true },
   );
 }
+
+// Removing a version: said plainly what goes and what stays, before it goes.
+export function confirmRemoveVersion(record, version, done) {
+  const modal = document.createElement('dialog');
+  modal.innerHTML = /* HTML */ `<form method="dialog">
+    <h2>Remove this version from this Mac?</h2>
+    <p>
+      “${esc(version.name)}” will no longer be listed with
+      “${esc(record.title)}”. The original recording is not affected.
+    </p>
+    <p>
+      Its video stays in VideoDB, so a link you already shared keeps working,
+      but Bloom will not show it again.
+    </p>
+    <div class="dialog-actions">
+      <button class="btn" value="cancel" formnovalidate>Cancel</button
+      ><button class="btn danger" value="confirm">Remove</button>
+    </div>
+  </form>`;
+  document.body.append(modal);
+  modal.showModal();
+  modal.addEventListener(
+    'close',
+    () => {
+      if (modal.returnValue === 'confirm') {
+        done();
+        window.bloom.command('removeVersion', {
+          id: record.id,
+          version: version.id,
+        });
+      }
+      modal.remove();
+    },
+    { once: true },
+  );
+}

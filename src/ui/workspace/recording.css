@@ -308,9 +308,10 @@
   color: var(--ink);
 }
 
-/* ---- what is playing ---- */
-.playing {
+/* ---- what is playing: the original and its versions ---- */
+.now-playing {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -321,6 +322,10 @@
   padding: 5px 10px;
   border: 1px solid var(--line);
   border-radius: 9px;
+  background: none;
+}
+.version:hover {
+  border-color: var(--line2);
 }
 .version.on {
   border-color: color-mix(in srgb, var(--brand) 78%, #000);
@@ -328,6 +333,229 @@
 }
 .version b {
   font-weight: 500;
+}
+.version .chip {
+  font-size: var(--t-caption);
+  padding: 1px 7px;
+}
+/* Opens upward: the row sits near the bottom of the window. */
+.version-menu > div {
+  top: auto;
+  bottom: 38px;
+  left: 0;
+  right: auto;
+  width: 190px;
+}
+/* Where versions are kept, in plain words for whoever opens it. */
+.versions-note {
+  font-size: var(--t-label);
+  color: var(--soft);
+}
+.versions-note summary {
+  list-style: none;
+  cursor: default;
+}
+.versions-note summary::-webkit-details-marker {
+  display: none;
+}
+.versions-note summary u {
+  color: var(--ev);
+  text-decoration: none;
+}
+.versions-note summary:hover u {
+  text-decoration: underline;
+}
+.versions-note summary:focus-visible {
+  outline: 2px solid var(--ev);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.versions-note ul {
+  margin: 6px 0 0;
+  padding: 9px 12px 9px 26px;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--mid);
+}
+.versions-note li + li {
+  margin-top: 4px;
+}
+
+/* ---- Make: lanes under the timeline, choices beside the video ---- */
+.watch.make {
+  grid-template-columns: minmax(0, 1fr) 264px;
+}
+.tl-cut {
+  position: absolute;
+  top: 13px;
+  height: 8px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--paper) 0 3px,
+    color-mix(in srgb, var(--brand) 30%, var(--paper)) 3px 6px
+  );
+  pointer-events: none;
+}
+.lanes {
+  display: grid;
+  gap: 5px;
+}
+.lane-row {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+/* In Make the timeline starts where the lanes do, so a cut sits right above its block. */
+.watch.make .tl,
+.watch.make .tl-chapters {
+  margin-left: 70px;
+}
+.lane {
+  position: relative;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--fill);
+  overflow: hidden;
+}
+.lane i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 2px;
+  border-radius: 3px;
+}
+.lane i.x {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--brand) 35%, var(--paper)) 0 3px,
+    var(--paper) 3px 6px
+  );
+}
+.lane i.s {
+  background: color-mix(in srgb, #5b7fe0 55%, var(--paper));
+}
+.lane i.t {
+  background: var(--ink);
+}
+.make-panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-height: 0;
+  padding: 14px;
+  border-left: 1px solid var(--line);
+  background: var(--sub);
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.make-panel .caption,
+.make-panel .reading-empty {
+  margin: 0;
+}
+.recipes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
+.recipe {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  font-size: var(--t-label);
+  color: var(--mid);
+}
+.recipe b {
+  display: block;
+  font-weight: 500;
+  color: var(--ink);
+}
+.recipe.on {
+  border-color: color-mix(in srgb, var(--brand) 78%, #000);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 78%, #000);
+}
+.opts {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.opt-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  font-size: var(--t-body);
+  text-align: left;
+}
+.opt-row:first-child {
+  border-top: 0;
+}
+.opt-row:hover:not(:disabled) {
+  background: var(--sub);
+}
+.opt-row:disabled {
+  color: var(--soft);
+}
+.opt-row:focus-visible {
+  outline: 2px solid var(--ev);
+  outline-offset: -2px;
+}
+.opt-check {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--line2);
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 1;
+  color: #fff;
+}
+.opt-row[aria-checked='true'] .opt-check {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--brand) 78%, #000);
+}
+.opt-field {
+  display: grid;
+  gap: 4px;
+  padding: 0 10px 9px 34px;
+}
+.make-length {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.make-length b {
+  font-weight: 500;
+}
+.btn.make-go {
+  justify-content: center;
+  height: 34px;
+  border-color: transparent;
+  background: color-mix(in srgb, var(--brand) 78%, #000);
+  color: #fff;
+}
+.btn.make-go:hover {
+  background: color-mix(in srgb, var(--brand) 70%, #000);
+}
+.make-problem {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--badbg);
+  color: var(--bad);
+  font-size: var(--t-label);
 }
 
 /* ---- reading column ---- */

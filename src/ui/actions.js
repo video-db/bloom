@@ -4,11 +4,20 @@
 import { bindCollectionActions } from './workspace/collection-actions.js';
 import { chooser } from './panel/sources.js';
 import { seek, startAt } from './workspace/player.js';
-import { confirmRecordingAction } from './workspace/dialogs.js';
+import {
+  confirmRecordingAction,
+  confirmRemoveVersion,
+} from './workspace/dialogs.js';
+import { chosen } from './workspace/make.js';
 
 // state: () => latest app state. browse: how Recordings is looked at. go: change view.
 // render(force): redraw this window.
-export function bindActions(root, { state, browse, go, setTab, render }) {
+export function bindActions(
+  root,
+  { state, browse, go, setTab, page, activeId, render },
+) {
+  const openRecord = () =>
+    state()?.recordings.find((r) => r.id === activeId()) || null;
   bindCollectionActions(root, { state, go });
   root.addEventListener('click', async (event) => {
     const target = event.target.closest('button');
@@ -30,6 +39,7 @@ export function bindActions(root, { state, browse, go, setTab, render }) {
         ...(target.dataset.id ? { id: target.dataset.id } : {}),
         ...(target.dataset.key ? { key: target.dataset.key } : {}),
         ...(target.dataset.view ? { view: target.dataset.view } : {}),
+        ...(target.dataset.version ? { version: target.dataset.version } : {}),
       });
     if (target.dataset.pref) {
       const { pref, value } = target.dataset;
@@ -76,6 +86,41 @@ export function bindActions(root, { state, browse, go, setTab, render }) {
       go(`recording/${target.dataset.record}`);
     }
     if (target.dataset.tab) setTab(target.dataset.tab);
+    // The recording page: Watch or Make, which version plays, and the Make choices.
+    if (target.dataset.mode) {
+      page.mode = target.dataset.mode;
+      render(true);
+    }
+    if (target.dataset.play) {
+      page.playing = target.dataset.play;
+      render(true);
+    }
+    if (target.dataset.choice) {
+      page.choices[target.dataset.choice] =
+        !page.choices[target.dataset.choice];
+      render(true);
+    }
+    if (target.dataset.make) {
+      const record = openRecord();
+      if (record) {
+        const { text, ...choices } = chosen(record, page);
+        window.bloom.command('makeVersion', {
+          id: record.id,
+          ...choices,
+          ...(choices.title && text ? { text } : {}),
+        });
+      }
+    }
+    if (target.dataset.removeVersion) {
+      const record = openRecord();
+      const version = record?.versions?.find(
+        (v) => v.id === target.dataset.removeVersion,
+      );
+      if (version)
+        confirmRemoveVersion(record, version, () => {
+          page.playing = 'original';
+        });
+    }
     if (target.dataset.place) {
       // Recordings is Bloom's own collection; leave any other one being browsed.
       if (target.dataset.place === 'recordings')
@@ -123,6 +168,11 @@ export function bindActions(root, { state, browse, go, setTab, render }) {
       window.bloom.command('mark', { text: note.value });
       note.value = ''; // the note became a mark
     }
+  });
+  // The title card's words are kept as they are typed; nothing is redrawn for it.
+  root.addEventListener('input', (event) => {
+    if (event.target.dataset.titleText !== undefined)
+      page.titleText = event.target.value;
   });
   root.addEventListener('change', (event) => {
     const el = event.target;

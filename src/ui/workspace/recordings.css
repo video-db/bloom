@@ -1,4 +1,13 @@
-/* Recordings: tiles. */
+/* Recordings: tiles, grouped by date under small headings. */
+.tile-group {
+  display: grid;
+  gap: 10px;
+}
+.tile-group .label {
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));

@@ -1,7 +1,8 @@
 import { thumbnail } from '../shared/thumbnail.js';
-// Recordings: everything you have recorded, as tiles, with a filter and a sort.
+// Recordings: everything you have recorded, as tiles grouped by date, with a filter and a
+// sort.
 import { esc } from '../shared/dom.js';
-import { meta, status, newestFirst } from './format.js';
+import { meta, status, newestFirst, period } from './format.js';
 
 const FILTERS = [
   ['all', 'All', () => true],
@@ -13,8 +14,9 @@ const FILTERS = [
   ['attention', 'Needs attention', (r) => r.status === 'error'],
 ];
 const ORDERS = [
-  ['newest', 'Newest', newestFirst],
-  ['oldest', 'Oldest', (a, b) => newestFirst(b, a)],
+  // The two orders by date are shown in groups: Today, Yesterday, and so on.
+  ['newest', 'Newest', newestFirst, true],
+  ['oldest', 'Oldest', (a, b) => newestFirst(b, a), true],
   ['name', 'A–Z', (a, b) => a.title.localeCompare(b.title)],
   ['longest', 'Longest', (a, b) => b.duration - a.duration],
 ];
@@ -30,11 +32,31 @@ const tile = (r) =>
     ><small>${esc([meta(r), status(r)].filter(Boolean).join(' · '))}</small>
   </button>`;
 
+// The tiles, under a heading for each stretch of time when they are in date order.
+function tiles(shown, byDate) {
+  if (!byDate) return `<div class="tiles">${shown.map(tile).join('')}</div>`;
+  const groups = [];
+  for (const r of shown) {
+    const name = period(r.createdAt);
+    if (groups.at(-1)?.name === name) groups.at(-1).list.push(r);
+    else groups.push({ name, list: [r] });
+  }
+  return groups
+    .map(
+      ({ name, list }) =>
+        /* HTML */ `<section class="tile-group" aria-label="${esc(name)}">
+          <h2 class="label">${esc(name)}</h2>
+          <div class="tiles">${list.map(tile).join('')}</div>
+        </section>`,
+    )
+    .join('');
+}
+
 // browse: { filter, order } — how this window is looking at its recordings.
 // When another collection is being browsed, its videos show here instead of Bloom's own.
 export function recordings(s, browse) {
   const [filter, , keep] = pick(FILTERS, browse.filter);
-  const [order, , compare] = pick(ORDERS, browse.order);
+  const [order, , compare, byDate] = pick(ORDERS, browse.order);
   const all = s.browsing ? s.browsing.recordings : s.recordings;
   const shown = all.filter(keep).sort(compare);
   const waiting = {
@@ -66,6 +88,6 @@ export function recordings(s, browse) {
         ).join('')}
       </select>
     </header>
-    ${waiting || (shown.length ? `<div class="tiles">${shown.map(tile).join('')}</div>` : empty)}
+    ${waiting || (shown.length ? tiles(shown, byDate) : empty)}
   </section>`;
 }

@@ -20,6 +20,23 @@ export const status = (r) =>
 export const meta = (r) =>
   [day(r), clock(r.duration)].filter(Boolean).join(' · ');
 export const newestFirst = (a, b) => (b.createdAt || 0) - (a.createdAt || 0);
+// Which group a recording falls in when listed by date, as Finder names them: Today,
+// Yesterday, Previous 7 Days, Previous 30 Days, then the month, then the year.
+export function period(createdAt, now = Date.now()) {
+  if (!createdAt) return 'Earlier';
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const DAY = 24 * 60 * 60 * 1000;
+  const days = Math.ceil((today.getTime() - createdAt) / DAY); // 0 or less is today
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days <= 7) return 'Previous 7 Days';
+  if (days <= 30) return 'Previous 30 Days';
+  const date = new Date(createdAt);
+  return date.getFullYear() === today.getFullYear()
+    ? date.toLocaleDateString(undefined, { month: 'long' })
+    : String(date.getFullYear());
+}
 // Total time across recordings: "40 s", "4 m", "1 h 52 m".
 export function total(seconds) {
   if (seconds < 60) return `${Math.round(seconds)} s`;

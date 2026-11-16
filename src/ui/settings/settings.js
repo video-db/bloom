@@ -115,14 +115,17 @@ const privacy = (s) =>
     </div>`;
 
 function account(s) {
-  // Signing out mid-recording or mid-upload would strand the recording.
-  const busy = !['idle', 'finished'].includes(s.phase) || s.pending.length > 0;
+  // Held back only while a recording is being made, or being processed right now. One
+  // that needs recovery will not finish by itself, so it never stands in the way.
+  const recording = !['idle', 'finished', 'processing-error'].includes(s.phase);
+  const processing = s.pending.some((p) => p.status === 'processing');
+  const busy = recording || processing;
   return /* HTML */ `<h2>Account</h2>
     <div class="card">
       ${row(
         'VideoDB account',
         busy
-          ? 'Connected. Sign out is available once the current recording has finished saving.'
+          ? `Connected. Sign out is available once the recording has ${recording && s.phase !== 'saving' ? 'stopped' : 'been processed'}.`
           : 'Connected to VideoDB.',
         `<button class="btn sm" data-command="signOut" ${busy ? 'disabled' : ''}>Sign out</button>`,
       )}

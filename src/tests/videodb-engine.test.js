@@ -198,6 +198,20 @@ test('sign-out during pending upload is refused and cached work stays visible', 
   assert.equal(f.engine.getState().recordings.length, 1);
 });
 
+test('a recording that needs recovery does not stand in the way of signing out', async (t) => {
+  const f = await setup(t);
+  await f.command('start');
+  await f.command('stop');
+  // Processing failed: the recording waits to be recovered and will not finish by itself.
+  f.recorder.emit('recording-relay-failed', { sessionId: f.recorder.active });
+  await flush();
+  assert.equal(f.engine.getState().phase, 'processing-error');
+  assert.equal(f.engine.getState().pending[0].status, 'failed');
+  await f.command('signOut');
+  assert.equal(f.engine.getState().account.status, 'signed-out');
+  assert.equal(f.engine.getState().problem, null);
+});
+
 test('restart discovers the retained job with no media path in renderer state', async (t) => {
   const f = createFixture();
   t.after(() => f.engine.dispose());

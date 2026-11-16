@@ -1,4 +1,5 @@
 const { ServiceError } = require('./errors');
+const { canSignOut } = require('./model');
 const { createSourceDiscovery } = require('./source-discovery');
 
 // Who is signed in, what macOS allows, and whether the recorder is ready. These are three
@@ -72,14 +73,11 @@ function createAccess(ctx, { service, recorder, library, recover }) {
   const commands = {
     refreshSources: () => discovery.refresh(),
     async signIn({ key }) {
-      if (
-        checking ||
-        !['idle', 'finished'].includes(ctx.get().phase) ||
-        ctx.get().pending.length
-      )
+      // The same rule as signing out: a recording that needs recovery does not block it.
+      if (checking || !canSignOut(ctx.get()))
         throw new ServiceError(
           'busy',
-          'Finish pending recording work before changing accounts.',
+          'Changing accounts is available once the recording has been processed.',
         );
       checking = true;
       ctx.set({ account: { status: 'checking', label: '' }, problem: null });
@@ -106,14 +104,10 @@ function createAccess(ctx, { service, recorder, library, recover }) {
       if (await prepareRecorder()) await recover();
     },
     async signOut() {
-      if (
-        checking ||
-        !['idle', 'finished'].includes(ctx.get().phase) ||
-        ctx.get().pending.length
-      )
+      if (checking || !canSignOut(ctx.get()))
         throw new ServiceError(
           'busy',
-          'Finish pending recording work before signing out.',
+          'Sign out is available once the recording has been processed.',
         );
       await recorder.shutdown();
       service.signOut();

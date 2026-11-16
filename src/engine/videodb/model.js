@@ -76,6 +76,16 @@ function canStart(state) {
     ?.recordingId;
 }
 
+// True when signing out may happen: nothing is being recorded or finished, and no recording
+// is being processed at this moment. A recording that needs recovery will not finish by
+// itself, so it never stands in the way (ADR 0004).
+function canSignOut(state) {
+  return (
+    ['idle', 'finished', 'processing-error'].includes(state.phase) &&
+    !(state.pending || []).some((p) => p.status === 'processing')
+  );
+}
+
 // The name a recording gets until someone renames it: when it was made.
 function datedTitle(date) {
   const day = date.toLocaleDateString(undefined, {
@@ -110,4 +120,5 @@ module.exports = {
   pending,
   unfinished,
   canStart,
+  canSignOut,
 };

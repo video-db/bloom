@@ -1,5 +1,6 @@
 // The application menu, and the About panel it opens.
 const { app, Menu } = require('electron');
+const { canSignOut } = require('../engine/videodb/model');
 const { setupReady, controlsAvailable } = require('./access');
 
 const PREVIEW_SCENARIOS = [
@@ -121,9 +122,7 @@ function installMenu({ engine, windows, prefs }) {
     const signOut = menu?.getMenuItemById('sign-out');
     if (signOut)
       signOut.enabled =
-        state.account?.status === 'signed-in' &&
-        ['idle', 'finished'].includes(state.phase) &&
-        !state.pending?.length;
+        state.account?.status === 'signed-in' && canSignOut(state);
   };
   updateAccess(engine.getState());
   return updateAccess;

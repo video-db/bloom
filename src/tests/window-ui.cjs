@@ -22,6 +22,8 @@ fs.mkdirSync(evidence, { recursive: true });
       '--skip-onboarding',
       '--keep-open',
       `--${theme}`,
+      // A stand-in camera, so asking for one never opens the real one.
+      '--use-fake-device-for-media-stream',
     ],
   });
   const errors = [];
@@ -69,6 +71,22 @@ fs.mkdirSync(evidence, { recursive: true });
       await panel.locator('.source-group').innerText(),
       /The camera is not part of a window recording\./,
     );
+    // Each window may ask only for what it needs: the camera picture may have the camera,
+    // and the tray panel may not. Asked for real, of a stand-in camera.
+    const camera = (page) =>
+      page.evaluate(async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+          stream.getTracks().forEach((track) => track.stop());
+          return 'allowed';
+        } catch (error) {
+          return error.name;
+        }
+      });
+    assert.equal(await camera(cam), 'allowed');
+    assert.equal(await camera(panel), 'NotAllowedError');
     const camSize = () =>
       cam.evaluate(() => [window.innerWidth, window.innerHeight]);
     assert.deepEqual(await camSize(), [200, 200]);

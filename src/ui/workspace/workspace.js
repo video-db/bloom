@@ -11,6 +11,11 @@ import { recording } from './recording.js';
 // browse: { filter, order } — how Recordings is being looked at. tab: the open recording's tab.
 // page: the open recording's mode, what is playing and the Make choices.
 export function workspace(s, route, browse, tab, page) {
+  // Out of reach is not signed out: someone who has signed in is told what is wrong.
+  if (s.account.status === 'checking')
+    return '<main class="page-empty"><h1 role="status">Connecting…</h1></main>';
+  if (s.account.status === 'offline')
+    return '<main class="page-empty"><h1>Bloom can’t reach VideoDB</h1><p>Check your connection.</p><button class="btn" data-command="checkConnection">Try again</button></main>';
   if (s.account.status !== 'signed-in')
     return '<main class="page-empty"><h1>Sign in to continue</h1><button class="btn" data-ui="open-onboarding">Open setup</button></main>';
   const content =

@@ -95,7 +95,6 @@ function sound(s, { key, glyph, label, locked }) {
     data-command="setMuted"
     data-key="${key}"
     data-value="${!muted}"
-    aria-pressed="${!muted}"
     aria-label="${muted ? `Unmute ${name}` : `Mute ${name}`}"
     title="${muted ? `Unmute ${name}` : `Mute ${name}`}"
   >
@@ -247,7 +246,6 @@ export function windowControls(s) {
         class="btn quiet"
         data-command="setWindowHidden"
         data-flag="${!s.windowHidden}"
-        aria-pressed="${s.windowHidden}"
       >
         ${s.windowHidden ? 'Show window' : 'Hide window'}
       </button>

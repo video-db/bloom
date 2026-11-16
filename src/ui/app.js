@@ -65,6 +65,19 @@ function render(force = false) {
       ? document.activeElement
       : null;
     const focusKey = focused?.dataset.focus;
+    // A button is found again by what it is: its data attributes, which say what it does.
+    const sameAs = (el) => JSON.stringify(Object.entries(el.dataset).sort());
+    const focusLike =
+      focused && !focusKey && Object.keys(focused.dataset).length
+        ? [focused.tagName, sameAs(focused)]
+        : null;
+    // Columns that scroll by themselves are put back where they were.
+    const scrolls = new Map(
+      [...root.querySelectorAll('[data-scroll]')].map((el) => [
+        el.dataset.scroll,
+        el.scrollTop,
+      ]),
+    );
     const focusValue = focused?.value;
     const range =
       focused?.selectionStart !== undefined
@@ -100,6 +113,13 @@ function render(force = false) {
       if (range && target?.setSelectionRange && target.type !== 'number')
         target.setSelectionRange(...range);
     }
+    if (focusLike)
+      [...root.querySelectorAll(focusLike[0])]
+        .find((el) => sameAs(el) === focusLike[1])
+        ?.focus({ preventScroll: true });
+    if (drawn === view)
+      for (const el of root.querySelectorAll('[data-scroll]'))
+        el.scrollTop = scrolls.get(el.dataset.scroll) || 0;
     shape = next;
     drawn = view;
     if (scrolled) root.querySelector('.view')?.scrollTo(0, scrolled);
@@ -148,7 +168,9 @@ function go(name) {
   if (id) {
     // A recording that is opened, as against one already on screen, starts in Watch on
     // its original with the usual choices.
-    if (id !== activeId || drawn !== name) Object.assign(page, freshPage());
+    // Coming back from Settings is not opening it again.
+    if (id !== activeId || (drawn !== name && drawn !== 'settings'))
+      Object.assign(page, freshPage());
     activeId = id;
     window.bloom.command('openRecording', { id });
   }

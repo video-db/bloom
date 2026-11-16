@@ -230,7 +230,9 @@ export function recording(s, id, tab, page) {
       </div>
       <aside class="watch-read" aria-label="Summary, transcript and marks">
         ${tabs(current.id)}
-        <div class="watch-text">${current.view(r, signedIn)}</div>
+        <div class="watch-text" data-scroll="read">
+          ${current.view(r, signedIn)}
+        </div>
       </aside>
     </div>
   </section>`;

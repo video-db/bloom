@@ -41,6 +41,9 @@ function body(r, signedIn) {
         Try again
       </button>
     </p>`;
+  // Bloom does not write summaries for another collection's videos.
+  if (r.transcript && r.readOnly)
+    return '<p class="reading-empty">No summary for this video.</p>';
   return r.transcript
     ? '<p class="reading-empty" role="status">Writing the summary…</p>'
     : `<p class="reading-empty">A summary needs a transcript.</p>${withoutTranscript(r, signedIn)}`;

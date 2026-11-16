@@ -152,6 +152,12 @@ export function createOnboarding(root) {
     event.preventDefault();
     submit();
   });
+  // A switch in setup is a checkbox: it saves its preference when it changes.
+  root.addEventListener('change', (event) => {
+    const { pref } = event.target.dataset;
+    if (pref && event.target.type === 'checkbox')
+      window.bloom.ui('set-pref', { key: pref, value: event.target.checked });
+  });
   root.addEventListener('input', (event) => {
     if (event.target.dataset.focus !== 'key') return;
     flow.key = event.target.value;

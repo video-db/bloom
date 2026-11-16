@@ -19,7 +19,7 @@ const mute = (s, key, glyph, name) =>
   s.sources[key]
     ? round({
         command: 'setMuted',
-        attrs: `data-key="${key}" data-value="${!s.muted[key]}" aria-pressed="${!s.muted[key]}"`,
+        attrs: `data-key="${key}" data-value="${!s.muted[key]}"`,
         label: s.muted[key] ? `Unmute ${name}` : `Mute ${name}`,
         glyph,
         off: s.muted[key],
@@ -49,7 +49,7 @@ export function control(s) {
       s.sources.window
         ? round({
             command: 'setWindowHidden',
-            attrs: `data-flag="${!s.windowHidden}" aria-pressed="${!s.windowHidden}"`,
+            attrs: `data-flag="${!s.windowHidden}"`,
             label: s.windowHidden ? 'Show window' : 'Hide window',
             glyph: 'window',
             off: s.windowHidden,

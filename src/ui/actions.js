@@ -130,9 +130,8 @@ export function bindActions(
         });
     }
     if (target.dataset.place) {
-      // Recordings is Bloom's own collection; leave any other one being browsed.
-      if (target.dataset.place === 'recordings')
-        window.bloom.command('closeCollection');
+      // Every place in the sidebar is Bloom's own; a collection being browsed is left.
+      if (state()?.browsing) window.bloom.command('closeCollection');
       go(target.dataset.place);
     }
     if (target.dataset.collection) {

@@ -4,8 +4,11 @@ import { esc } from '../shared/dom.js';
 export function confirmRecordingAction(action, record) {
   const id = record.id;
   const modal = document.createElement('dialog');
+  modal.setAttribute('aria-labelledby', 'dialog-title');
   modal.innerHTML = /* HTML */ `<form method="dialog">
-    <h2>${action === 'delete' ? 'Delete recording?' : 'Rename recording'}</h2>
+    <h2 id="dialog-title">
+      ${action === 'delete' ? 'Delete recording?' : 'Rename recording'}
+    </h2>
     ${
       action === 'rename'
         ? /* HTML */ `<label
@@ -13,6 +16,8 @@ export function confirmRecordingAction(action, record) {
               class="field"
               name="title"
               maxlength="180"
+              pattern=".*\\S.*"
+              title="Type a name"
               value="${esc(record.title)}"
               required
           /></label>`
@@ -53,8 +58,9 @@ export function confirmRecordingAction(action, record) {
 // Removing a version: said plainly what goes and what stays, before it goes.
 export function confirmRemoveVersion(record, version, done) {
   const modal = document.createElement('dialog');
+  modal.setAttribute('aria-labelledby', 'dialog-title');
   modal.innerHTML = /* HTML */ `<form method="dialog">
-    <h2>Remove this version?</h2>
+    <h2 id="dialog-title">Remove this version?</h2>
     <p>
       “${esc(version.name)}” will be removed from “${esc(record.title)}”. The
       original recording is not affected.

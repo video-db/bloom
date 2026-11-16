@@ -163,7 +163,11 @@ export function makePanel(r, page, signedIn) {
           : '';
   const working = r.making?.status === 'working';
   const nothing = !on.silences && !on.subtitles && !on.title && !on.end;
-  return /* HTML */ `<aside class="make-panel" aria-label="Make a video">
+  return /* HTML */ `<aside
+    class="make-panel"
+    aria-label="Make a video"
+    data-scroll="make"
+  >
     <div>
       <span class="label">Make it a</span>
       <div class="recipes">

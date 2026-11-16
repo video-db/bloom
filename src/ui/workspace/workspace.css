@@ -220,10 +220,6 @@
   border-bottom: 1px solid var(--line);
   font-weight: 500;
 }
-.card-note {
-  margin: 0;
-  padding: 10px 13px;
-}
 .page-empty {
   padding: 28px 13px;
   color: var(--mid);

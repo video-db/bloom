@@ -90,12 +90,24 @@ function recent(s, needsSetup) {
 export function panel(s) {
   const needsSetup =
     s.account.status !== 'signed-in' && ['idle', 'finished'].includes(s.phase);
+  // Out of reach is not signed out: someone who has signed in is told what is wrong.
+  const unreachable = s.account.status === 'offline';
   const setup = /* HTML */ `<div class="panel-setup">
     <p class="soft" role="status">
-      ${s.account.status === 'checking' ? 'Checking your connection…' : 'Finish setup to start recording.'}
+      ${
+        s.account.status === 'checking'
+          ? 'Checking your connection…'
+          : unreachable
+            ? 'Bloom can’t reach VideoDB. Check your connection.'
+            : 'Finish setup to start recording.'
+      }
     </p>
     <button class="btn capture-start" disabled>Start recording</button>
-    <button class="btn" data-ui="open-onboarding">Finish setup</button>
+    ${
+      unreachable
+        ? '<button class="btn" data-command="checkConnection">Try again</button>'
+        : '<button class="btn" data-ui="open-onboarding">Finish setup</button>'
+    }
   </div>`;
   const between = canStart(s);
   return /* HTML */ `<section class="panel">

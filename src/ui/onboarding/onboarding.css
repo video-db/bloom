@@ -214,12 +214,6 @@
   color: var(--warn);
   font-size: var(--t-label);
 }
-.setup-note {
-  margin: 10px 0 18px;
-  text-align: center;
-  font-size: var(--t-caption);
-  color: var(--mid);
-}
 /* The design had a note line between the two buttons; this is the space it gave. */
 .setup-create {
   width: 100%;

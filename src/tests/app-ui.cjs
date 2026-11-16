@@ -521,6 +521,24 @@ fs.mkdirSync(evidence, { recursive: true });
       await main.locator('.title-styles button').allInnerTexts(),
       ['Over video', 'Opening card', 'Lower third'],
     );
+    // Each style is a small picture with its name, and no name spills out of its tile.
+    assert.equal(
+      await main
+        .locator('.title-style')
+        .evaluateAll((els) =>
+          els.every((el) => el.scrollWidth <= el.clientWidth),
+        ),
+      true,
+    );
+    // The field's text is no larger than the row's own name.
+    assert.ok(
+      (await main
+        .getByLabel('Title text')
+        .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))) <=
+        (await main
+          .locator('[data-choice="title"]')
+          .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))),
+    );
     assert.equal(await main.locator('.title-preview.over').count(), 1);
     await main.getByRole('button', { name: 'Lower third' }).click();
     assert.equal(await main.locator('.title-preview.third').count(), 1);

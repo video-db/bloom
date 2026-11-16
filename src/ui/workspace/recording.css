@@ -536,14 +536,72 @@
   gap: 6px;
   padding: 0 10px 9px;
 }
+/* The title's styles: three small pictures of where it sits, each with its name. */
 .title-styles {
   display: flex;
+  gap: 6px;
 }
-.title-styles button {
-  flex: 1;
-  padding: 4px 0;
+.title-style {
+  /* Each as wide as its name needs, sharing what is left over. */
+  flex: 1 1 auto;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 5px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
   font-size: var(--t-caption);
+  color: var(--mid);
   white-space: nowrap;
+}
+.title-style:hover {
+  border-color: var(--line2);
+}
+.title-style.on {
+  border-color: color-mix(in srgb, var(--brand) 78%, #000);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 78%, #000);
+  color: var(--ink);
+}
+.title-style:focus-visible {
+  outline: 2px solid var(--ev);
+  outline-offset: 2px;
+}
+/* A miniature of the frame, with the title drawn where that style puts it. The colours
+   are the video's, not the window's: a dark title on a light picture in either theme. */
+.mini {
+  position: relative;
+  width: 44px;
+  aspect-ratio: 16 / 9;
+  border-radius: 3px;
+  background: #d9d9e0;
+  overflow: hidden;
+}
+.mini i {
+  position: absolute;
+  border-radius: 1.5px;
+  background: #17171c;
+}
+.mini.over i {
+  inset: 38% 22%;
+}
+.mini.card {
+  background: #17171c;
+}
+.mini.card i {
+  inset: 42% 26%;
+  background: #fff;
+}
+.mini.third i {
+  left: 8%;
+  bottom: 14%;
+  width: 42%;
+  height: 20%;
+}
+/* The words typed here are detail under a row, so they are no larger than its name. */
+.opt-field .field {
+  height: 28px;
+  font-size: var(--t-label);
 }
 /* A card adds time outside the recording, so it is a block at the lane's very end. */
 .lane i.t.card {

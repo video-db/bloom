@@ -185,15 +185,13 @@ export function makePanel(r, page, signedIn) {
       ${
         page.choices.title
           ? /* HTML */ `<div class="opt-field">
-              <span
-                class="seg title-styles"
-                role="group"
-                aria-label="Title style"
-                >${TITLE_STYLES.map(
+              <div class="title-styles" role="group" aria-label="Title style">
+                ${TITLE_STYLES.map(
                   ([id, label]) =>
-                    `<button class="${id === on.titleStyle ? 'on' : ''}" aria-pressed="${id === on.titleStyle}" data-title-style="${id}">${label}</button>`,
-                ).join('')}</span
-              ><input
+                    `<button class="title-style ${id === on.titleStyle ? 'on' : ''}" aria-pressed="${id === on.titleStyle}" data-title-style="${id}"><span class="mini ${id}"><i></i></span><span>${label}</span></button>`,
+                ).join('')}
+              </div>
+              <input
                 class="field"
                 data-title-text
                 data-focus="title-text"

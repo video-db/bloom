@@ -16,6 +16,15 @@ const { mediaUrl } = require('../engine/videodb/library');
 const copyLink = () =>
   clipboard.writeText('https://example.invalid/sample-recording'); // sample data: there is no real link yet
 
+const CONTROL_COMMANDS = [
+  'stop',
+  'pause',
+  'resume',
+  'mark',
+  'setMuted',
+  'setWindowHidden',
+];
+
 // One of Bloom's own recordings, or one in the collection being browsed.
 const findRecord = (state, id) =>
   state.recordings.find((r) => r.id === id) ||
@@ -58,6 +67,8 @@ function registerIpc({
     const from = BrowserWindow.fromWebContents(event.sender);
     const role = roleOf(from);
     if (!role || role === 'camera') return; // the camera window only shows a picture
+    // The floating control has six buttons; it may send those commands and no others.
+    if (role === 'control' && !CONTROL_COMMANDS.includes(name)) return;
     const previousSession = engine.getState().sessionId;
     engine.command(name, args);
     if (

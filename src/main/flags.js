@@ -7,10 +7,15 @@ const ASSETS = path.join(ROOT, 'assets');
 const UI = path.join(ROOT, 'ui');
 const PRELOAD = path.join(ROOT, 'preload.js');
 
+// Flags that exist for the tests. A packaged app ignores them, so nothing in someone's
+// shell or launch arguments can make their Bloom start empty or skip setup.
+const TEST_ONLY = ['fresh', 'fixture', 'skip-onboarding', 'keep-open'];
+
 // On when passed as --name, or as BLOOM_NAME=1 in the environment.
 const flag = (name) =>
-  process.argv.includes(`--${name}`) ||
-  process.env[`BLOOM_${name.toUpperCase().replace(/-/g, '_')}`] === '1';
+  !(app.isPackaged && TEST_ONLY.includes(name)) &&
+  (process.argv.includes(`--${name}`) ||
+    process.env[`BLOOM_${name.toUpperCase().replace(/-/g, '_')}`] === '1');
 
 // Lets either theme be reviewed on any machine.
 const forcedTheme = () =>

@@ -249,6 +249,7 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
       this.closed = true;
     }
   }
+  const permissions = {}; // the handlers the app installs for what a window may ask for
   const ipcMain = new EventEmitter();
   ipcMain.handle = () => {};
   const nativeTheme = new EventEmitter();
@@ -278,6 +279,18 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
       getDisplayNearestPoint: () => ({
         workArea: { x: 0, y: 20, width: 1440, height: 900 },
       }),
+      on() {},
+    },
+    // What each window may ask for is decided by handlers the app installs.
+    session: {
+      defaultSession: {
+        setPermissionRequestHandler(handler) {
+          permissions.request = handler;
+        },
+        setPermissionCheckHandler(handler) {
+          permissions.check = handler;
+        },
+      },
     },
     shell: { openExternal: () => Promise.resolve() },
     Menu: { buildFromTemplate: (x) => x, setApplicationMenu() {} },
@@ -341,6 +354,7 @@ async function mainHarness(prefOverrides = {}, savePreference = null) {
   return {
     api: context.__bloom,
     windows,
+    permissions,
     notifications,
     shortcuts,
     messages,
@@ -386,6 +400,30 @@ test('native panel Close hides the panel and latest main route waits for rendere
   }
 });
 
+test('a window may ask only for what it needs; the floating control may only do what its buttons do', async () => {
+  const f = await mainHarness();
+  try {
+    const panel = f.windows[0];
+    const asked = (contents, permission) =>
+      new Promise((resolve) =>
+        f.permissions.request(contents, permission, resolve),
+      );
+    // The tray panel has a Copy button, and no use for the camera or microphone.
+    assert.equal(
+      await asked(panel.webContents, 'clipboard-sanitized-write'),
+      true,
+    );
+    assert.equal(await asked(panel.webContents, 'media'), false);
+    assert.equal(f.permissions.check(panel.webContents, 'media'), false);
+    assert.equal(await asked(panel.webContents, 'geolocation'), false);
+    // A page that is not one of Bloom's windows gets nothing.
+    assert.equal(await asked({}, 'media'), false);
+    assert.equal(await asked(null, 'clipboard-sanitized-write'), false);
+  } finally {
+    f.dispose();
+  }
+});
+
 test('old notifications cannot affect a later capture session and Stop works after permission loss', async () => {
   const h = await mainHarness({ nudgeMinutes: 30 });
   try {
@@ -420,9 +458,7 @@ test('onboarding stays open when completion cannot be persisted and malformed UI
   try {
     const panel = h.windows[0];
     h.ui(panel, 'open-onboarding');
-    const onboarding = h.windows.find((w) =>
-      w.surface === 'onboarding',
-    );
+    const onboarding = h.windows.find((w) => w.surface === 'onboarding');
     assert(onboarding);
     h.ui(onboarding, 'onboarding-done');
     assert.equal(onboarding.isDestroyed(), false);
@@ -454,16 +490,12 @@ test('closing onboarding only cancels capture owned by that onboarding window', 
     assert.equal(engine.getState().phase, 'starting');
     engine.command('cancel');
     h.ui(panel, 'open-onboarding');
-    onboarding = h.windows
-      .filter((w) => w.surface === 'onboarding')
-      .at(-1);
+    onboarding = h.windows.filter((w) => w.surface === 'onboarding').at(-1);
     h.command(onboarding, 'start');
     onboarding.close();
     assert.equal(engine.getState().phase, 'idle');
     h.ui(panel, 'open-onboarding');
-    onboarding = h.windows
-      .filter((w) => w.surface === 'onboarding')
-      .at(-1);
+    onboarding = h.windows.filter((w) => w.surface === 'onboarding').at(-1);
     h.command(onboarding, 'start');
     engine.command('cancel');
     h.api.toggleCapture();

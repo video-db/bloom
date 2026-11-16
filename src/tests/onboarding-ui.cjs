@@ -80,9 +80,13 @@ fs.mkdirSync(evidence, { recursive: true });
       const fixture = global.__bloom.getFixture();
       global.__asked = { opened: [], relaunched: 0 };
       shell.openExternal = async (url) => void global.__asked.opened.push(url);
-      electron.relaunch = () => void global.__asked.relaunched++;
+      // Bloom reopens only as part of a quit that goes through, so the stand-in for
+      // quitting is where a reopen is counted; then the run carries on.
       global.__quit = electron.quit;
-      electron.quit = () => {};
+      electron.quit = () => {
+        if (global.__bloom.reopenAsked()) global.__asked.relaunched++;
+        global.__bloom.stayOpen();
+      };
       fixture.recorder.permission = {
         screen: false,
         mic: false,

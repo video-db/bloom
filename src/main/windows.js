@@ -57,6 +57,12 @@ function createWindows({
     window.webContents.on('will-navigate', (event, url) => {
       if (url.split('#')[0] !== window.webContents.getURL().split('#')[0])
         event.preventDefault();
+    }); // A page that crashes is loaded again rather than left blank: the tray panel and the
+    // floating control are how a recording is stopped. A few times only, never in a loop.
+    let reloads = 0;
+    window.webContents.on('render-process-gone', (_event, details) => {
+      if (details?.reason === 'clean-exit' || window.isDestroyed()) return;
+      if (reloads++ < 3) window.webContents.reload();
     });
   }
 

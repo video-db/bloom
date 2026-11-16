@@ -54,6 +54,8 @@ function createPrefs(file) {
     all: () => ({ ...values }),
     set(key, value) {
       if (!valid(key, value)) return false;
+      if (key === 'floatAt' || key === 'camAt')
+        value = { x: value.x, y: value.y };
       const next = { ...values, [key]: value };
       if (file) {
         try {

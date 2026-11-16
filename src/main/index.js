@@ -2,6 +2,8 @@
 const {
   app,
   screen,
+  session,
+  BrowserWindow,
   desktopCapturer,
   dialog,
   systemPreferences,
@@ -47,7 +49,8 @@ let engine,
   quitGuard,
   fixture;
 let quitting = false,
-  shutdownPending = false;
+  shutdownPending = false,
+  reopen = false; // Bloom was asked to reopen once it has quit
 
 function start() {
   prefs = createPrefs(flags.prefsFile());
@@ -130,6 +133,42 @@ function start() {
     livePreviews: real,
   });
 
+  // Once Bloom is on its way out, nothing new starts: a recording begun in the moment
+  // before it closes would be lost without a word.
+  const command = engine.command.bind(engine);
+  engine.command = (name, args) =>
+    name === 'start' && (shutdownPending || quitting)
+      ? false
+      : command(name, args);
+
+  // Each of Bloom's windows may ask for only what it needs. Electron otherwise grants
+  // every permission to every page: the camera to the camera picture, the microphone to
+  // setup's voice check, full screen to the player, and copying where there is a Copy.
+  const MAY = {
+    media: ['camera', 'onboarding'],
+    fullscreen: ['main'],
+    'clipboard-sanitized-write': ['main', 'panel', 'onboarding'],
+  };
+  const may = (contents, permission) => {
+    const window = contents && BrowserWindow.fromWebContents(contents);
+    const role = window && (windows.roleOf(window) || floating.roleOf(window));
+    return !!role && (MAY[permission] || []).includes(role);
+  };
+  session.defaultSession.setPermissionRequestHandler(
+    (contents, permission, answer) => answer(may(contents, permission)),
+  );
+  session.defaultSession.setPermissionCheckHandler((contents, permission) =>
+    may(contents, permission),
+  );
+  // Displays come and go: the control must not be left on one that is now being recorded,
+  // nor the camera on one that is no longer there.
+  for (const change of [
+    'display-added',
+    'display-removed',
+    'display-metrics-changed',
+  ])
+    screen.on(change, () => floating.displaysChanged(engine.getState()));
+
   appState.applyPrefs(); // before any window exists, so the first one opens in the right theme
   tray.onClick(windows.togglePanel);
   theme.onChange(windows.repaint);
@@ -157,7 +196,9 @@ app
     start();
     return openFirstWindow({ engine, prefs, windows, flag: flags.flag });
   })
-  .catch(() => {
+  .catch((error) => {
+    // To the log only: what went wrong is for whoever is looking into it.
+    console.error('Bloom could not open:', error);
     dialog.showErrorBox(
       'Bloom could not open',
       'Local state could not be opened safely. Existing files have been retained. Check available disk space and restart Bloom; do not delete pending recording data.',
@@ -184,7 +225,7 @@ function quitQuietly() {
 
 // Setup asks Bloom to reopen so macOS applies a newly granted permission.
 function restartForPermission() {
-  app.relaunch();
+  reopen = true; // acted on only if this quit goes through
   if (!engine || !quitsQuietly(engine.getState())) return app.quit();
   quitQuietly();
 }
@@ -196,7 +237,10 @@ app.on('before-quit', (event) => {
     // Only capture, or a file still being written, is worth a question (ADR 0004).
     const prompt = recordingQuitPrompt(engine.getState());
     if (!prompt) return quitQuietly();
-    if (dialog.showMessageBoxSync(prompt) !== 1) return;
+    if (dialog.showMessageBoxSync(prompt) !== 1) {
+      reopen = false; // staying open: a restart that was asked for is off
+      return;
+    }
     shutdownPending = true;
     engine
       .shutdown({ suspend: true })
@@ -206,6 +250,7 @@ app.on('before-quit', (event) => {
       })
       .catch(() => {
         shutdownPending = false;
+        reopen = false;
         dialog.showMessageBox({
           type: 'error',
           message: 'Bloom could not finish stopping safely',
@@ -231,6 +276,7 @@ app.on('activate', () => windows?.showPanel());
 app.on('second-instance', () => windows?.showPanel());
 app.on('window-all-closed', () => {}); // a tray app keeps running with no windows
 app.on('will-quit', () => {
+  if (reopen) app.relaunch();
   shortcuts?.unregister();
   tray?.dispose();
   floating?.dispose();
@@ -248,5 +294,12 @@ global.__bloom = {
   hasTray: () => tray.isAvailable(),
   getFixture: () => (!app.isPackaged ? fixture : undefined),
   floatingControlShowing: () => floating.isShowing(),
+  // For a walkthrough that stands in for quitting: was a reopen asked for, and carry on.
+  reopenAsked: () => reopen,
+  stayOpen() {
+    quitting = false;
+    shutdownPending = false;
+    reopen = false;
+  },
   floatingCameraShowing: () => floating.cameraShowing(),
 };

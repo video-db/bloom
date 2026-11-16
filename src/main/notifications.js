@@ -18,6 +18,7 @@ function createNotifications({ engine, prefs, windows }) {
     lastPhase = null,
     lastAsk = null;
 
+  let permissionNotice = null;
   function notify({ title, body, actions = [], onAction, onClick, sticky }) {
     if (!Notification.isSupported()) return;
     const n = new Notification({
@@ -202,7 +203,8 @@ function createNotifications({ engine, prefs, windows }) {
       lastAsk = state.ask;
     },
     screenPermissionNeeded() {
-      notify({
+      // Held on to: a notification nothing refers to can be cleared away with its buttons.
+      permissionNotice = notify({
         title: 'Bloom can’t see your screen',
         body: 'Turn on Screen Recording for Bloom to record.',
         actions: ['Review'],

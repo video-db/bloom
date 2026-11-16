@@ -155,6 +155,28 @@ function createFloating({
         control.showInactive();
       }
     },
+    // A display was added, removed or changed. The control is placed afresh, since where
+    // it stood may now be the display being recorded; the camera is brought back if the
+    // display it was on has gone.
+    displaysChanged(state) {
+      if (alive(control) && control.isVisible()) control.hide();
+      if (alive(camera)) {
+        const at = camera.getBounds();
+        const visible = screen.getAllDisplays().some(({ workArea: area }) => {
+          const x = Math.max(at.x, area.x);
+          const y = Math.max(at.y, area.y);
+          return (
+            Math.min(at.x + at.width, area.x + area.width) - x > 40 &&
+            Math.min(at.y + at.height, area.y + area.height) - y > 40
+          );
+        });
+        if (!visible) {
+          camera.destroy();
+          camera = null;
+        }
+      }
+      this.sync(state);
+    },
     // The control says how tall its buttons are; the window follows.
     resize(height) {
       if (alive(control) && Number.isFinite(height))

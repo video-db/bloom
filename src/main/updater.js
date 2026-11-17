@@ -139,6 +139,7 @@ function createUpdater({
   feedUrl = process.env.BLOOM_UPDATE_FEED || FEED_URL,
   publicKey = PUBLIC_KEY,
   pid = process.pid,
+  bundleId = BUNDLE_ID, // tests use another, so their stand-in apps never pass for Bloom
   log = () => {},
 }) {
   let ready = null; // { version, app, dir } once a checked update is waiting
@@ -263,7 +264,7 @@ function createUpdater({
       throw new Error('the update has no Info.plist');
     const read = (key) =>
       run('/usr/bin/plutil', ['-extract', key, 'raw', '-o', '-', plist]);
-    if ((await read('CFBundleIdentifier')) !== BUNDLE_ID)
+    if ((await read('CFBundleIdentifier')) !== bundleId)
       throw new Error('the update is not Bloom');
     if ((await read('CFBundleShortVersionString')) !== payload.version)
       throw new Error('the update is not the version the feed says');

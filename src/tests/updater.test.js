@@ -17,6 +17,9 @@ const {
 } = require('../main/updater');
 
 const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519'); // a test key only
+// Stand-in apps never carry Bloom's own identity: macOS registers any app it finds, and a
+// registered copy with Bloom's id can take the permissions meant for the real one.
+const TEST_ID = 'com.videodb.bloom.updater-test';
 const sign = (payload, key = privateKey) => {
   const text = JSON.stringify(payload);
   return {
@@ -140,7 +143,7 @@ function fakeApp(where, version, marker) {
   fs.writeFileSync(
     path.join(app, 'Contents', 'Info.plist'),
     `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict>
-<key>CFBundleIdentifier</key><string>com.videodb.bloom</string>
+<key>CFBundleIdentifier</key><string>${TEST_ID}</string>
 <key>CFBundleShortVersionString</key><string>${version}</string>
 <key>CFBundleExecutable</key><string>Bloom</string>
 <key>CFBundlePackageType</key><string>APPL</string></dict></plist>`,
@@ -173,7 +176,10 @@ async function serve(t, routes) {
 
 async function setup(t, { tamper = false } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bloom-update-'));
-  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  t.after(() => {
+    fs.chmodSync(path.join(root, 'Applications'), 0o755); // a failed test may leave it locked
+    fs.rmSync(root, { recursive: true, force: true });
+  });
   const installed = path.join(root, 'Applications');
   fs.mkdirSync(installed);
   const appPath = fakeApp(installed, '2.3.10', 'old-build');
@@ -220,6 +226,7 @@ const make = (s, extra = {}) =>
     feedUrl: `${s.base}/latest-mac.json`,
     publicKey,
     arch: 'arm64',
+    bundleId: TEST_ID,
     ...extra,
   });
 

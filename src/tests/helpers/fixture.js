@@ -205,6 +205,7 @@ function createFixture({
     async start(args) {
       calls.push(['start', args]);
       this.active = args.sessionId;
+      return { recordingId: `job-${args.sessionId}` };
     },
     async stop() {
       calls.push(['stop']);
@@ -260,10 +261,6 @@ function createFixture({
       events.emit('event', 'processing-complete', payload);
       waits.get(sessionId)?.resolve(payload);
       return payload;
-    },
-    discard(recordingId) {
-      calls.push(['discard', recordingId]);
-      return true;
     },
     emit: (name, payload) => events.emit('event', name, payload),
   };

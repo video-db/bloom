@@ -351,7 +351,7 @@ test('download returns only a secure URL and safe filename, not raw SDK metadata
   });
 });
 
-test('a client without standalone capture is reported without being started', () => {
+test('a client without managed recording is reported without being started', () => {
   class LegacyClient {
     constructor() {
       assert.fail('must not instantiate');
@@ -359,8 +359,12 @@ test('a client without standalone capture is reported without being started', ()
   }
   const { service } = fixture({ CaptureClient: LegacyClient });
   assert.deepEqual(service.captureCapabilities().missing, [
-    'startLocalRecording',
-    'stopLocalRecording',
+    'getCapabilities',
+    'startRecording',
+    'stopRecording',
+    'listRecordings',
+    'relayRecording',
+    'waitForProcessing',
     'getWindows',
   ]);
   assert.equal(service.captureCapabilities().supported, false);
@@ -380,7 +384,11 @@ test('local credentials persist across restart with private permissions and clea
     assert.equal(fs.statSync(file).mode & 0o777, 0o600);
     assert.equal(fs.statSync(path.dirname(file)).mode & 0o777, 0o700);
     assert.throws(() => store.write(' '), { code: 'invalid-input' });
-    assert.equal(restarted.read(), 'synthetic-test-key', 'invalid input preserves the saved key');
+    assert.equal(
+      restarted.read(),
+      'synthetic-test-key',
+      'invalid input preserves the saved key',
+    );
     restarted.clear();
     assert.equal(store.read(), null);
     assert.equal(fs.existsSync(legacyFile), false);
@@ -508,7 +516,10 @@ test('the composed boundary never restores a dev credential into production', as
     const prod = createVideoDBBoundary({ ...dependencies, apiUrl: PROD_API });
     assert.equal(await prod.restore(), null);
     assert.equal(connections, 1);
-    assert.equal(fs.existsSync(path.join(dir, 'videodb-dev', 'credentials.json')), true);
+    assert.equal(
+      fs.existsSync(path.join(dir, 'videodb-dev', 'credentials.json')),
+      true,
+    );
     assert.equal(
       fs.existsSync(path.join(dir, 'videodb-prod', 'credentials.json')),
       false,
@@ -518,32 +529,37 @@ test('the composed boundary never restores a dev credential into production', as
   }
 });
 
-test('recorder tokens are freshly minted for the verified session end-user', async () => {
+test('recorder tokens are freshly minted for the owner and bound to the Bloom collection', async () => {
   const { service, coll, conn } = fixture();
   let issued = 0;
-  coll.getCaptureSession = async (id) => ({
-    id,
-    collectionId: coll.id,
-    endUserId: 'session-owner',
-  });
-  conn.generateClientToken = async (ttl, userId) => {
-    assert.equal(ttl, 3600);
-    assert.equal(userId, 'session-owner');
-    return `synthetic-token-${++issued}`;
+  conn.generateRecorderToken = async ({ collectionId, userId, expiresIn }) => {
+    assert.equal(expiresIn, 3600);
+    assert.equal(userId, 'bloom-owner');
+    return { token: `synthetic-token-${++issued}`, collectionId };
   };
   await login(service);
-  assert.notEqual(
-    await service.recorderToken({ sessionId: 'session-1' }),
-    await service.recorderToken({ sessionId: 'session-1' }),
+  const first = await service.recorderAuthorization({ owner: 'bloom-owner' });
+  const second = await service.recorderAuthorization({ owner: 'bloom-owner' });
+  assert.notEqual(first.token, second.token, 'never a cached token');
+  assert.equal(first.collectionId, coll.id);
+  // A recording authorised for another collection gets a token for that one.
+  assert.equal(
+    (
+      await service.recorderAuthorization({
+        owner: 'bloom-owner',
+        collectionId: 'collection-earlier',
+      })
+    ).collectionId,
+    'collection-earlier',
   );
-  coll.getCaptureSession = async () => ({
-    collectionId: 'another-collection',
-    endUserId: 'different-owner',
+  await assert.rejects(service.recorderAuthorization({}), {
+    code: 'signed-out',
   });
-  await assert.rejects(service.recorderToken({ sessionId: 'foreign' }), {
-    code: 'forbidden',
-  });
-  assert.equal(issued, 2);
+  conn.generateRecorderToken = async () => ({ token: '' });
+  await assert.rejects(
+    service.recorderAuthorization({ owner: 'bloom-owner' }),
+    { code: 'authentication' },
+  );
 });
 
 test('an uncertain session creation is reconciled by its durable operation identity', async () => {
@@ -563,12 +579,19 @@ test('an uncertain session creation is reconciled by its durable operation ident
   assert.deepEqual(service.pendingOperations(), []);
 });
 
-
 test('collection mutations preserve descriptions, protect the destination and reconcile uncertain deletion', async () => {
   const { service, conn, calls } = fixture({ timeoutMs: 30 });
   await login(service);
-  let remote = { id: 'other', name: 'Other', description: 'Keep this description',
-    delete: async () => { calls.push(['deleteCollection']); remote = null; throw new Error('response lost'); } };
+  let remote = {
+    id: 'other',
+    name: 'Other',
+    description: 'Keep this description',
+    delete: async () => {
+      calls.push(['deleteCollection']);
+      remote = null;
+      throw new Error('response lost');
+    },
+  };
   conn.getCollection = async () => {
     if (!remote) throw { status: 404 };
     return remote;
@@ -578,14 +601,27 @@ test('collection mutations preserve descriptions, protect the destination and re
     remote.name = name;
     return remote;
   };
-  await assert.rejects(service.renameCollection('bloom-collection', 'Other'), { code: 'protected' });
-  await assert.rejects(service.deleteCollection('bloom-collection'), { code: 'protected' });
-  await assert.rejects(service.renameCollection('other', 'Bloom Recordings'), { code: 'invalid-input' });
+  await assert.rejects(service.renameCollection('bloom-collection', 'Other'), {
+    code: 'protected',
+  });
+  await assert.rejects(service.deleteCollection('bloom-collection'), {
+    code: 'protected',
+  });
+  await assert.rejects(service.renameCollection('other', 'Bloom Recordings'), {
+    code: 'invalid-input',
+  });
   await service.renameCollection('other', 'Renamed');
-  assert.deepEqual(calls.at(-1), ['renameCollection', 'other', 'Renamed', 'Keep this description']);
+  assert.deepEqual(calls.at(-1), [
+    'renameCollection',
+    'other',
+    'Renamed',
+    'Keep this description',
+  ]);
   await assert.rejects(service.deleteCollection('other'), { uncertain: true });
   assert.equal(service.pendingOperations()[0].key, 'collection:other');
-  assert.deepEqual(await service.reconcileCollectionAction('other'), { reconciliationNeeded: false });
+  assert.deepEqual(await service.reconcileCollectionAction('other'), {
+    reconciliationNeeded: false,
+  });
   assert.deepEqual(service.pendingOperations(), []);
   assert.equal(calls.filter(([name]) => name === 'deleteCollection').length, 1);
 });
@@ -596,11 +632,22 @@ test('uncertain collection rename is not replayed until its result is confirmed'
   let name = 'Original';
   let count = 0;
   conn.getCollection = async () => ({ name });
-  conn.updateCollection = async () => { count++; throw new Error('offline'); };
-  await assert.rejects(service.renameCollection('other', 'New'), { uncertain: true });
-  assert.deepEqual(await service.reconcileCollectionAction('other'), { reconciliationNeeded: true });
-  await assert.rejects(service.renameCollection('other', 'New'), { code: 'reconciliation-needed' });
+  conn.updateCollection = async () => {
+    count++;
+    throw new Error('offline');
+  };
+  await assert.rejects(service.renameCollection('other', 'New'), {
+    uncertain: true,
+  });
+  assert.deepEqual(await service.reconcileCollectionAction('other'), {
+    reconciliationNeeded: true,
+  });
+  await assert.rejects(service.renameCollection('other', 'New'), {
+    code: 'reconciliation-needed',
+  });
   assert.equal(count, 1);
   name = 'New';
-  assert.deepEqual(await service.reconcileCollectionAction('other'), { reconciliationNeeded: false });
+  assert.deepEqual(await service.reconcileCollectionAction('other'), {
+    reconciliationNeeded: false,
+  });
 });

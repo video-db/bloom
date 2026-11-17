@@ -203,7 +203,7 @@ function createVideoDBEngine({
     },
     async newRecording() {
       if (state.phase === 'processing-error') {
-        await recorder.shutdown({ suspend: true });
+        // The recorder is left running: it may be sending other recordings.
         const record = state.recordings.find(
           (r) => r.sessionId === state.sessionId,
         );

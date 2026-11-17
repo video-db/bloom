@@ -13,7 +13,6 @@ const DEV_API = 'https://api.dev.videodb.io';
 const PROD_API = 'https://api.videodb.io';
 const SDK_BRANCH = 'release-0.3.3';
 const COLLECTION_NAME = 'Bloom Recordings';
-const UPLOAD_DEADLINE_MS = 30 * 60 * 1000;
 
 // Main-process boundary only. The SDK and credential store are injected for offline verification.
 function createVideoDBService({
@@ -160,27 +159,33 @@ function createVideoDBService({
         return coll.id;
       });
     },
-    // Send a finished recording file to the Bloom collection. Reading the file and the
-    // transfer can take minutes, so this has its own long deadline.
-    async uploadRecording({ path: filePath, title }) {
+    // A fresh recorder token, bound to the Bloom collection (or the one a recording was
+    // authorised for), for the recorder's own use: it sends the recording with it. Never cached.
+    async recorderAuthorization({ owner, collectionId } = {}) {
       const scope = account();
-      await this.ensureCollection();
-      assertCurrent(scope);
-      const video = await request(
-        () =>
-          scope.collection.uploadFile({
-            filePath,
-            ...(title ? { name: title } : {}),
-          }),
-        { timeoutMs: UPLOAD_DEADLINE_MS },
-      );
-      assertCurrent(scope);
-      if (typeof video?.id !== 'string')
+      if (typeof owner !== 'string' || !owner)
         throw new ServiceError(
-          'invalid-response',
-          'VideoDB did not confirm the recording. Recover it to try again.',
+          'signed-out',
+          'Connect your VideoDB account first.',
         );
-      return { id: video.id };
+      const target = collectionId || (await this.ensureCollection());
+      const issued = await read(scope, () =>
+        scope.conn.generateRecorderToken({
+          collectionId: target,
+          userId: owner,
+          expiresIn: 3600,
+        }),
+      );
+      if (
+        typeof issued?.token !== 'string' ||
+        !issued.token ||
+        typeof issued.collectionId !== 'string'
+      )
+        throw new ServiceError(
+          'authentication',
+          'A recorder token could not be issued. Reconnect and try again.',
+        );
+      return { token: issued.token, collectionId: issued.collectionId };
     },
     pendingOperations() {
       return journal
@@ -212,14 +217,18 @@ function createVideoDBService({
     captureCapabilities() {
       const prototype = CaptureClient?.prototype;
       const missing = [
-        'startLocalRecording',
-        'stopLocalRecording',
+        'getCapabilities',
+        'startRecording',
+        'stopRecording',
+        'listRecordings',
+        'relayRecording',
+        'waitForProcessing',
         'getWindows',
       ].filter((method) => typeof prototype?.[method] !== 'function');
       return {
         supported: missing.length === 0,
         missing,
-        reason: 'Recording needs an SDK with standalone capture.',
+        reason: 'Recording needs an SDK with managed recording.',
       };
     },
   };

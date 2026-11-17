@@ -107,8 +107,7 @@ function createCapture(
       let attempted = false,
         started = false;
       try {
-        // Standalone recording has no backend session: the id is Bloom's own, and nothing
-        // is asked of VideoDB before capture begins.
+        // Bloom's own id for this recording; the recorder gives it one of its own at start.
         sessionId = `rec-${operationId}`;
         const title = state.purpose || datedTitle(new Date());
         record = newRecord({ id: `local-${operationId}`, sessionId, title });
@@ -136,7 +135,11 @@ function createCapture(
             : []),
         ];
         attempted = true;
-        await recorder.start({ sessionId, channels, title });
+        const { recordingId } = await recorder.start({
+          sessionId,
+          channels,
+          title,
+        });
         started = true;
         accumulated = 0;
         began = now();
@@ -144,7 +147,9 @@ function createCapture(
         pauses = [];
         ctx.set({ phase: 'recording' });
         tick();
-        ctx.update(record.id, { jobStage: 'recording' });
+        // The recorder's id is kept from the start, so a recording cut short by a crash is
+        // still recognised when the recorder lists it after a restart.
+        ctx.update(record.id, { jobStage: 'recording', recordingId });
       } catch (error) {
         const safe = safeError(error);
         // The recorder said no: nothing is being recorded, so there is nothing to stop and

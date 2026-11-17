@@ -152,10 +152,6 @@ test('Stop and relay acceptance do not imply playback; completion makes the same
   assert.equal(ready.paragraphs.length, 2);
   assert.equal(ready.summary.keyPoints[0].at, 0);
   assert.equal(ready.summaryStatus, 'ready');
-  // Playable from VideoDB: the file that got it there is cleared away, and only then.
-  const discarded = f.calls.filter(([name]) => name === 'discard');
-  assert.ok(discarded.length >= 1);
-  assert.ok(discarded.every(([, id]) => id === ready.recordingId));
 });
 
 test('with automatic transcription off, a new recording is left untranscribed', async (t) => {
@@ -247,11 +243,6 @@ test('a recording that needs recovery does not stand in the way of signing out',
   await flush();
   assert.equal(f.engine.getState().phase, 'processing-error');
   assert.equal(f.engine.getState().pending[0].status, 'failed');
-  assert.equal(
-    f.calls.some(([name]) => name === 'discard'),
-    false,
-    'a recording that needs recovery keeps its file',
-  );
   await f.command('signOut');
   assert.equal(f.engine.getState().account.status, 'signed-out');
   assert.equal(f.engine.getState().problem, null);
@@ -712,21 +703,74 @@ test('Start is available while the last recording is processed, and that one car
   );
 });
 
-test('Start is not offered while the file is still being written', async (t) => {
+test("the recorder's id is kept from Start, and a capture is not shown as processing", async (t) => {
   const f = await setup(t);
   await f.command('start');
-  // Stop is confirmed but the recorder has not yet said the file is ready.
-  f.recorder.stop = async () => {};
+  const record = f.engine.getState().recordings[0];
+  assert.equal(record.recordingId, `job-${f.recorder.active}`);
+  assert.deepEqual(f.engine.getState().pending, []);
   await f.command('stop');
   assert.equal(f.engine.getState().phase, 'saving');
-  assert.equal(f.engine.getState().recordings[0].recordingId, undefined);
-  await f.command('start');
-  assert.equal(
-    f.engine.getState().phase,
-    'saving',
-    'no second capture over an unfinished file',
+  assert.equal(f.engine.getState().pending[0].status, 'processing');
+});
+
+test('after a restart a capture cut short is found by its id; one the recorder never had needs recovery', async (t) => {
+  const cache = createRecordingCache();
+  const base = { title: 'Recording', marks: [], createdAt: 1 };
+  cache.save('a'.repeat(64), [
+    // Bloom closed while this was being captured: the recorder has it, as needing recovery.
+    {
+      ...base,
+      id: 'local-cut',
+      sessionId: 'rec-cut',
+      recordingId: 'job-cut',
+      status: 'processing',
+      jobStage: 'recording',
+    },
+    // Sent by Bloom itself before 2.3.13; the recorder never had it.
+    {
+      ...base,
+      id: 'local-old',
+      sessionId: 'rec-old',
+      recordingId: 'old-file',
+      status: 'processing',
+      jobStage: 'uploading',
+    },
+  ]);
+  const f = createFixture({ cache });
+  t.after(() => f.engine.dispose());
+  f.recorder.jobs = [{ recordingId: 'job-cut', stage: 'failed' }];
+  await f.command('signIn', { key: 'synthetic-key' });
+  await flush();
+  const byId = Object.fromEntries(
+    f.engine.getState().recordings.map((r) => [r.id, r]),
   );
-  assert.equal(f.engine.getState().recordings.length, 1);
+  assert.equal(
+    f.engine.getState().recordings.length,
+    2,
+    'nothing is duplicated',
+  );
+  assert.equal(byId['local-cut'].status, 'error');
+  assert.equal(byId['local-old'].status, 'error');
+  assert.deepEqual(
+    f.engine.getState().pending.map((p) => p.status),
+    ['failed', 'failed'],
+  );
+});
+
+test('a recording already in VideoDB that Bloom does not know is left to the library', async (t) => {
+  const f = createFixture();
+  t.after(() => f.engine.dispose());
+  f.recorder.jobs = [
+    {
+      recordingId: 'job-gone',
+      stage: 'complete',
+      result: { videoId: 'deleted-video' },
+    },
+  ];
+  await f.command('signIn', { key: 'synthetic-key' });
+  await flush();
+  assert.equal(f.engine.getState().recordings.length, 0);
 });
 
 test('a single window can be chosen and recorded; a display choice clears it', async (t) => {

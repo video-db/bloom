@@ -16,7 +16,7 @@ Bloom keeps its data in the `bloom-next` folder under the system application-sup
 | `updates/` | A downloaded update until it is in place, and how earlier installs went; see the [runbook](../runbook.md#publish-an-update) |
 | `videodb-dev/` or `videodb-prod/` | Per-environment local credential, operation receipts and cached library metadata; see [persistence](videodb-integration.md#persistence-and-errors) |
 
-A recording's file is kept by the recorder, under `~/Library/Application Support/videodb-recorder/recordings/`, until the recording is playable in VideoDB; Bloom then deletes it (architecture ADR 0006). `local-recordings.json` in the environment folder lists the files Bloom is still responsible for. Automated runs use a separate `bloom-next-test` folder so they never read a person's data.
+A recording's media is the recorder's: it keeps it until VideoDB confirms the recording and then clears it (architecture ADR 0007). Bloom keeps no file, path or list of files; a `local-recordings.json` left by 2.3.12 or earlier is no longer read. Automated runs use a separate `bloom-next-test` folder so they never read a person's data.
 
 ## Environment and flags
 

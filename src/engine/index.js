@@ -39,7 +39,6 @@ function createEngine(options = {}) {
     const recorder = createLocalRecorder({
       CaptureClient,
       service,
-      journalFile: path.join(directory, 'local-recordings.json'),
       permissionStatus: options.permissionStatus,
       permissionDecided: options.permissionDecided,
       askMicrophone: options.askMicrophone,
@@ -47,13 +46,7 @@ function createEngine(options = {}) {
     return createVideoDBEngine({
       service,
       recorder,
-      cache: createRecordingCache(
-        path.join(
-          options.dataDir,
-          service.apiUrl.includes('.dev.') ? 'videodb-dev' : 'videodb-prod',
-          'library.json',
-        ),
-      ),
+      cache: createRecordingCache(path.join(directory, 'library.json')),
     });
   }
   return createSampleEngine(options);

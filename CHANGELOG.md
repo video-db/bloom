@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The recorder now sends a recording to VideoDB itself and clears its copy once VideoDB has it; Bloom no longer handles recording files at all. Uses SDK release-0.3.3 at `2df0118` (recorder `0.3.3-managed.2`, with the microphone-stop fix).
+- Starting a recording needs a connection to VideoDB, which now authorises a recording before capture begins.
+- Quitting or signing out never waits for a recording to reach VideoDB; the recorder carries on at the next launch.
+- Recordings that an earlier Bloom was still sending show as needing recovery and cannot be recovered by this version.
+
 ## [2.3.12] - 2026-11-17
 
 - Setup: allowing the microphone is shown at once. Before, setup could stay at "Waiting…" until Bloom was reopened.

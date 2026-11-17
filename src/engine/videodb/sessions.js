@@ -58,19 +58,6 @@ function createSessions({ account, read, mutate, operations }) {
       await ownedSession(account(), id);
       return true;
     },
-    async recorderToken({ sessionId } = {}) {
-      const scope = account();
-      const session = sessionId ? await ownedSession(scope, sessionId) : null;
-      const token = await read(scope, () =>
-        scope.conn.generateClientToken(3600, session?.endUserId),
-      );
-      if (typeof token !== 'string' || !token)
-        throw new ServiceError(
-          'authentication',
-          'A recorder token could not be issued. Reconnect and try again.',
-        );
-      return token;
-    },
   };
 }
 

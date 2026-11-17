@@ -101,7 +101,7 @@ function datedTitle(date) {
 
 function pending(records) {
   return records
-    .filter((r) => r.recordingId && !r.videoId)
+    .filter((r) => r.recordingId && !r.videoId && r.jobStage !== 'recording')
     .map((r) => ({
       id: r.id,
       title: r.title,

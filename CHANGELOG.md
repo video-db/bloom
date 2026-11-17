@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## [2.3.12] - 2026-11-17
+
+- Setup: allowing the microphone is shown at once. Before, setup could stay at "Waiting…" until Bloom was reopened.
+
 ## [2.3.11] - 2026-11-17
 
 - Bloom is signed with its own certificate. macOS now keeps Screen Recording, Microphone and Camera for Bloom across updates, and a permission granted to any genuine copy of Bloom applies to the installed one. Moving from 2.3.10 asks for Screen Recording once more; after that, not again.

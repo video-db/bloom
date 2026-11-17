@@ -85,6 +85,19 @@ On the actual target platform, with a test account and a screen you are content 
 
 Redact keys, tokens and recording URLs before sharing any diagnostic output.
 
+## Publish an update
+
+A packaged Bloom checks `https://artifacts.videodb.io/bloom/latest-mac.json` three minutes after launch and then every four hours. When the feed names a newer version and its signature verifies, Bloom downloads that version's zip in the background, checks it, and puts it in place when Bloom is not in use (nothing recording, being sent or being made, no Bloom window open, the Mac untouched for a minute; or half an hour away with a window open), reopening to the menu bar. Otherwise it goes in when the person next quits Bloom. Nothing is shown and nothing waits on it.
+
+1. Once, on the Mac that builds releases: `node build/update-key.js`. It creates the signing key in `~/Library/Application Support/bloom-release/update-signing-key.pem` and prints the public key, which must match `src/main/update-key.js`. Keep a copy of the private key somewhere safe; never commit it. If it is lost, people must install the next version by hand.
+2. Bump the version and build: `npm run dist`.
+3. `node build/publish-update.js`. It zips both apps with `ditto` and writes `dist/latest-mac.json`, signed, and checks the signature with the key the app ships with.
+4. Upload `bloom-<version>-mac-arm64.zip`, `bloom-<version>-mac-x64.zip` and the two DMGs to `https://artifacts.videodb.io/bloom/`, then `latest-mac.json` last, so the feed never names a zip that is not there yet. Uploading the feed is the moment every running Bloom can see the update.
+
+Installed versions before 2.3.10 have no updater: install 2.3.10 by hand once. Bloom does not update itself from source, from a disk image, from a translocated copy (opened straight from Downloads without moving to Applications), or from a folder it cannot write to. Downloaded updates are kept in the `updates` folder of Bloom's data until they are in place.
+
+After an update macOS may forget Screen Recording, because builds are not signed with a stable certificate; Bloom then opens setup at the permissions step and says why.
+
 ## Reset local state
 
 1. Quit Bloom from its tray panel.

@@ -12,12 +12,16 @@ Bloom keeps its data in the `bloom-next` folder under the system application-sup
 
 | Path | Purpose |
 |---|---|
-| `prefs.json` | Saved preferences: appearance, recording defaults, notifications, open at login, setup completion |
+| `prefs.json` | Saved preferences: appearance, recording defaults, notifications, open at login, setup completion, the version that ran last |
+| `updates/` | A downloaded update until it is in place, and how earlier installs went; see the [runbook](../runbook.md#publish-an-update) |
 | `videodb-dev/` or `videodb-prod/` | Per-environment local credential, operation receipts and cached library metadata; see [persistence](videodb-integration.md#persistence-and-errors) |
 
 A recording's file is kept by the recorder, under `~/Library/Application Support/videodb-recorder/recordings/`, until the recording is playable in VideoDB; Bloom then deletes it (architecture ADR 0006). `local-recordings.json` in the environment folder lists the files Bloom is still responsible for. Automated runs use a separate `bloom-next-test` folder so they never read a person's data.
 
 ## Environment and flags
+
+A packaged Bloom reads its update feed from `https://artifacts.videodb.io/bloom/latest-mac.json`; `BLOOM_UPDATE_FEED` points it elsewhere, for testing a release. The feed must still be signed with the release key.
+
 
 A packaged app uses `https://api.videodb.io`. From source, `npm start` uses `https://api.dev.videodb.io`.
 

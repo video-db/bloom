@@ -3,7 +3,15 @@
 // quits. Nothing is shown and nothing waits on it; anything that goes wrong is tried again
 // later. Apple's updater is not used: it refuses builds that are not signed by Apple.
 const crypto = require('node:crypto');
-const fs = require('node:fs');
+// Electron's own fs treats an app.asar inside the downloaded app as a folder and cannot
+// delete or copy it; its original-fs sees plain files. Plain Node (the tests) has only fs.
+const fs = (() => {
+  try {
+    return require('original-fs');
+  } catch {
+    return require('node:fs');
+  }
+})();
 const path = require('node:path');
 const { execFile, spawn } = require('node:child_process');
 const { Readable } = require('node:stream');
@@ -406,7 +414,10 @@ function createUpdater({
     check,
     whenIdle,
     tidy,
-    status: () => ({ ready: ready && { version: ready.payload.version }, installing }),
+    status: () => ({
+      ready: ready && { version: ready.payload.version },
+      installing,
+    }),
   };
 }
 

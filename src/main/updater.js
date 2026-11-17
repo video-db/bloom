@@ -118,6 +118,17 @@ function idle({ state, windowsOpen, systemIdleSeconds }) {
   return windowsOpen ? systemIdleSeconds >= 30 * 60 : systemIdleSeconds >= 60;
 }
 
+// The designated requirement an app is signed with, as codesign states it, or null.
+async function requirementOf(app) {
+  try {
+    const text = await run('/usr/bin/codesign', ['-d', '-r-', app]);
+    const line = text.split('\n').find((l) => l.startsWith('designated => '));
+    return line ? line.slice('designated => '.length).trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 const run = (file, args, timeout = 5 * 60 * 1000) =>
   new Promise((resolve, reject) =>
     execFile(file, args, { timeout }, (error, stdout) =>
@@ -269,6 +280,18 @@ function createUpdater({
     if ((await read('CFBundleShortVersionString')) !== payload.version)
       throw new Error('the update is not the version the feed says');
     await run('/usr/bin/codesign', ['--verify', '--deep', '--strict', app]);
+    // Once Bloom is signed with its own certificate, an update must be signed with the same
+    // one: the running app's requirement names it ("certificate root" for a self-signed
+    // one). An ad hoc Bloom names only its own build's hash.
+    const required = await requirementOf(appPath);
+    if (/certificate (leaf|root)/.test(required || ''))
+      await run('/usr/bin/codesign', [
+        '--verify',
+        '--deep',
+        '--strict',
+        `-R=${required}`,
+        app,
+      ]);
     return app;
   }
 

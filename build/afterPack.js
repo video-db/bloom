@@ -3,6 +3,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { signAsync } = require('@electron/osx-sign');
 const { verifyMacSignature } = require('./verify-mac-signature');
+const { signingIdentity, withSigningKeychain } = require('./signing-identity');
 const { Arch } = require('electron-builder');
 const {
   prepareMacRecorder,
@@ -98,20 +99,30 @@ module.exports = async function afterPack(context) {
     throw new Error('Capture Info.plist missing from packaged Bloom app.');
   }
 
-  // Local builds have no Developer ID certificate. Seal the whole bundle anyway;
-  // electron-builder may subsequently replace this with a configured distribution signature.
+  // Signed with Bloom's own certificate when this Mac has it (build/signing-identity.js),
+  // so every release shares one designated requirement and macOS keeps its permissions
+  // across updates. Without it (a contributor's build) the bundle is sealed ad hoc.
   const appPath = path.join(appOutDir, `${appName}.app`);
-  await signAsync({
-    app: appPath,
-    platform: 'darwin',
-    identity: '-',
-    identityValidation: false,
-    preAutoEntitlements: false,
-    optionsForFile: () => ({
-      entitlements: path.join(__dirname, 'entitlements.mac.plist'),
-      hardenedRuntime: false,
-    }),
-  });
+  const identity = signingIdentity();
+  console.log(
+    identity
+      ? `Signing with Bloom Release Signing (${identity.hash.slice(0, 8)})`
+      : 'No Bloom signing certificate on this Mac: signing ad hoc',
+  );
+  const sign = () =>
+    signAsync({
+      app: appPath,
+      platform: 'darwin',
+      identity: identity ? identity.hash : '-',
+      ...(identity ? { keychain: identity.keychain } : {}),
+      identityValidation: false,
+      preAutoEntitlements: false,
+      optionsForFile: () => ({
+        entitlements: path.join(__dirname, 'entitlements.mac.plist'),
+        hardenedRuntime: false,
+      }),
+    });
+  await (identity ? withSigningKeychain(sign) : sign());
   verifyMacSignature(appPath, context.packager.appInfo.id);
   console.log('Verified complete Bloom bundle signature.');
 };

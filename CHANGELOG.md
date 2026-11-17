@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [2.3.11] - 2026-11-17
+
+- Bloom is signed with its own certificate. macOS now keeps Screen Recording, Microphone and Camera for Bloom across updates, and a permission granted to any genuine copy of Bloom applies to the installed one. Moving from 2.3.10 asks for Screen Recording once more; after that, not again.
+- Updates are accepted only when signed with the same certificate as the running Bloom.
+- Fixed: the updater's own tests could register stand-in apps under Bloom's identity, which could take the Screen Recording permission meant for Bloom.
+
 ## [2.3.10] - 2026-11-17
 
 - Bloom updates itself. It checks for a new version in the background, downloads and verifies it (a signed feed, the file's hash, the app's identity and signature), and puts it in place only when Bloom is not in use, reopening to the menu bar; otherwise at the next quit. Nothing is shown and nothing waits on it. Releases add a signed feed and a zip per architecture beside the DMGs (`node build/publish-update.js`).

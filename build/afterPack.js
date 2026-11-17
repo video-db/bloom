@@ -120,6 +120,9 @@ module.exports = async function afterPack(context) {
       optionsForFile: () => ({
         entitlements: path.join(__dirname, 'entitlements.mac.plist'),
         hardenedRuntime: false,
+        // A secure timestamp is for Apple-issued certificates; with Bloom's own one it
+        // only adds a network round trip for each of the hundreds of files.
+        timestamp: 'none',
       }),
     });
   await (identity ? withSigningKeychain(sign) : sign());

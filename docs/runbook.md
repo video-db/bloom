@@ -89,14 +89,17 @@ Redact keys, tokens and recording URLs before sharing any diagnostic output.
 
 A packaged Bloom checks `https://artifacts.videodb.io/bloom/latest-mac.json` three minutes after launch and then every four hours. When the feed names a newer version and its signature verifies, Bloom downloads that version's zip in the background, checks it, and puts it in place when Bloom is not in use (nothing recording, being sent or being made, no Bloom window open, the Mac untouched for a minute; or half an hour away with a window open), reopening to the menu bar. Otherwise it goes in when the person next quits Bloom. Nothing is shown and nothing waits on it.
 
-1. Once, on the Mac that builds releases: `node build/update-key.js`. It creates the signing key in `~/Library/Application Support/bloom-release/update-signing-key.pem` and prints the public key, which must match `src/main/update-key.js`. Keep a copy of the private key somewhere safe; never commit it. If it is lost, people must install the next version by hand.
+1. Once, on the Mac that builds releases:
+   - `node build/update-key.js` creates the key that signs the update feed, and prints the public key, which must match `src/main/update-key.js`.
+   - `node build/signing-identity.js` creates Bloom's own code-signing certificate in a keychain of its own. Then trust it for code signing on that Mac, which asks for the Mac's password once: `security add-trusted-cert -r trustRoot -p codeSign -k ~/Library/Application\ Support/bloom-release/bloom-signing.keychain-db ~/Library/Application\ Support/bloom-release/bloom-signing.cert.pem` (export the certificate first with `security find-certificate -c "Bloom Release Signing" -p <keychain> > <cert.pem>`).
+   - Both live in `~/Library/Application Support/bloom-release/` with their passwords. Keep a copy of that folder somewhere safe and never commit it. A lost update key means people install the next version by hand; a lost certificate means every Mac grants Bloom's permissions once more.
 2. Bump the version and build: `npm run dist`.
 3. `node build/publish-update.js`. It fills `dist/release/` with exactly what the host holds: `v<version>/` with both DMGs, both update zips (made with `ditto`) and a `.sha256` beside each, and at the top `latest-mac.json` (the feed, signed, and checked against the key the app ships with) and `latest-version.txt` (what the install command reads).
 4. Upload `dist/release/v<version>/` to `https://artifacts.videodb.io/bloom/v<version>/` first, then `latest-mac.json` and `latest-version.txt` to `https://artifacts.videodb.io/bloom/` last, so nothing points at a file that is not there yet. Uploading the feed is the moment every running Bloom can see the update; uploading the version file is the moment the install command gives the new version.
 
 Installed versions before 2.3.10 have no updater: install 2.3.10 by hand once. Bloom does not update itself from source, from a disk image, from a translocated copy (opened straight from Downloads without moving to Applications), or from a folder it cannot write to. Downloaded updates are kept in the `updates` folder of Bloom's data until they are in place.
 
-After an update macOS may forget Screen Recording, because builds are not signed with a stable certificate; Bloom then opens setup at the permissions step and says why.
+Builds made on that Mac are signed with Bloom's certificate (the build log says "Signing with Bloom Release Signing"), so macOS keeps Bloom's permissions across updates. A build on a Mac without it is signed ad hoc, and macOS would forget Screen Recording at each update; Bloom then opens setup at the permissions step and says why. Never ship an ad hoc build after a certificate-signed one: the updater refuses it, and people would have to grant permissions again.
 
 ## Reset local state
 

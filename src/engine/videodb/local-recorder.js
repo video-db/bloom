@@ -67,12 +67,14 @@ function createLocalRecorder({
   journalFile,
   permissionStatus,
   permissionDecided = () => true,
+  askMicrophone = null, // Bloom's own process asks for the microphone, when it can
   recorderHome = RECORDER_HOME, // where a recording is looked for when its path is unknown
 }) {
   const events = new EventEmitter();
   const sending = new Map(); // recordingId -> promise of the completion payload
   let client = null;
   let active = null; // { recordingId, sessionId } while capturing
+  let micAllowed = false; // the person said yes to Bloom's own microphone question
 
   // ---- the list of files: recordingId -> { sessionId, scopeId, path, title, stage, videoId }
   let entries = {};
@@ -200,13 +202,18 @@ function createLocalRecorder({
     permissions() {
       return {
         screen: permissionStatus('screen'),
-        mic: permissionStatus('microphone'),
+        mic: micAllowed || permissionStatus('microphone'),
         // macOS has an answer for the microphone: allowed or refused, not still asking.
-        micDecided: permissionDecided('microphone'),
+        micDecided: micAllowed || permissionDecided('microphone'),
         camera: false,
       };
     },
     async requestPermission(key) {
+      if (key !== 'screen' && askMicrophone) {
+        // The answer to the question is the status; macOS's own reading can lag behind it.
+        micAllowed = (await askMicrophone()) === true;
+        return this.permissions();
+      }
       await request(() =>
         ensure().requestPermission(
           key === 'screen' ? 'screen-capture' : 'microphone',

@@ -42,6 +42,7 @@ function createEngine(options = {}) {
       journalFile: path.join(directory, 'local-recordings.json'),
       permissionStatus: options.permissionStatus,
       permissionDecided: options.permissionDecided,
+      askMicrophone: options.askMicrophone,
     });
     return createVideoDBEngine({
       service,

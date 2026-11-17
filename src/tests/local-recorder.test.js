@@ -569,3 +569,42 @@ test("only windows that can be recorded are offered: on screen, and not Bloom's 
     ],
   });
 });
+
+test('the microphone is asked for by Bloom itself, and its answer is the status', async () => {
+  const { createLocalRecorder } = require('../engine/videodb/local-recorder');
+  const asked = [];
+  const make = (answer) =>
+    createLocalRecorder({
+      CaptureClient: class extends EventEmitter {
+        async requestPermission(kind) {
+          asked.push(['recorder', kind]);
+        }
+      },
+      service: { cachedIdentity: () => null },
+      // macOS's own reading in this process still says "not asked" after the answer.
+      permissionStatus: () => false,
+      permissionDecided: () => false,
+      askMicrophone: async () => {
+        asked.push(['bloom', 'microphone']);
+        return answer;
+      },
+    });
+  const yes = make(true);
+  const after = await yes.requestPermission('mic');
+  assert.equal(after.mic, true);
+  assert.equal(after.micDecided, true);
+  assert.equal(yes.permissions().mic, true, 'and it stays so');
+  const no = make(false);
+  assert.equal((await no.requestPermission('mic')).mic, false);
+  assert.deepEqual(
+    asked,
+    [
+      ['bloom', 'microphone'],
+      ['bloom', 'microphone'],
+    ],
+    'the recorder is never asked for the microphone',
+  );
+  // Screen Recording still goes through the recorder.
+  await yes.requestPermission('screen');
+  assert.deepEqual(asked.at(-1), ['recorder', 'screen-capture']);
+});

@@ -84,6 +84,10 @@ function start() {
       // False while macOS is still asking the person, so setup does not call that "off".
       permissionDecided: (kind) =>
         systemPreferences.getMediaAccessStatus(kind) !== 'not-determined',
+      // The microphone question is asked by Bloom itself: the answer is the result, and
+      // this process then reads the permission correctly. Asked by the recorder, a separate
+      // process, the answer reached macOS but this process went on reading "not asked".
+      askMicrophone: () => systemPreferences.askForMediaAccess('microphone'),
       scope: flags.flag('v1') ? 'v1' : 'full',
       // Someone who has been through onboarding already has an account.
       signedIn: flags.flag('skip-onboarding') || prefs.all().onboardingComplete,

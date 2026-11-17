@@ -209,6 +209,11 @@ export function permissions(s, flow) {
     /* HTML */ `<section class="setup-content" aria-labelledby="setup-title">
         <h1 id="setup-title">You’re in control.</h1>
         <p class="setup-lede">Nothing records until you press Start.</p>
+        ${
+          s.updated && screen !== 'on'
+            ? `<p class="setup-notice" role="status">${icons.warning}<span>Bloom has been updated. Turn on Screen Recording again to keep recording.</span></p>`
+            : ''
+        }
         <div class="setup-rows">
           ${row({
             icon: icons.screen,

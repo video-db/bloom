@@ -12,6 +12,7 @@ function createAppState({
   loginSupported = false,
   version = '',
   livePreviews = false,
+  updated = false, // started after an update with Screen Recording no longer on
   syncMenu = () => {},
 }) {
   let prefError = ''; // why the last preference save failed; windows show it until one succeeds
@@ -38,6 +39,7 @@ function createAppState({
     loginSupported,
     version,
     livePreviews, // onboarding may show the screen and microphone working
+    updated,
     hint,
   });
 

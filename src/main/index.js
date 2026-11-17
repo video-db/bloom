@@ -11,6 +11,7 @@ const {
 const { createEngine } = require('../engine');
 const flags = require('./flags');
 const { createPrefs } = require('./prefs');
+const { afterUpdate } = require('./after-update');
 const { createTheme } = require('./theme');
 const { createTray } = require('./tray');
 const { createWindows } = require('./windows');
@@ -54,6 +55,13 @@ let quitting = false,
 
 function start() {
   prefs = createPrefs(flags.prefsFile());
+  // After an update Screen Recording may need turning on again; setup will say so.
+  const updated = afterUpdate({
+    version: app.getVersion?.() || '',
+    prefs,
+    packaged: !!app.isPackaged,
+    screenStatus: () => systemPreferences?.getMediaAccessStatus?.('screen'),
+  });
   // Walkthroughs drive the real engine against a fake service and recorder; never when packaged.
   if (flags.flag('fixture') && !app.isPackaged)
     fixture = require('../tests/helpers/fixture').createFixture();
@@ -129,6 +137,7 @@ function start() {
     windows,
     floating,
     loginSupported: !!app.isPackaged,
+    updated,
     version: app.getVersion?.() || '',
     livePreviews: real,
   });

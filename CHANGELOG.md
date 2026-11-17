@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- After an update, if Screen Recording no longer works, Bloom clears its out-of-date permission entry and opens setup at the permissions step with a line saying why, so the person can turn it on again. Needed while builds are not signed with a stable certificate.
+
 ## [2.3.9] - 2026-11-17
 
 - A recording's file is deleted from the Mac once the recording is ready to play; one that is still being processed or needs recovery keeps its file.

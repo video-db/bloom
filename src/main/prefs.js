@@ -3,6 +3,7 @@ const fs = require('node:fs');
 
 const DEFAULTS = {
   onboardingComplete: false,
+  lastVersion: '', // the version that ran last, to tell when Bloom has been updated
   appearance: 'system', // system | light | dark
   floatingControl: true, // show the recording control on screen while recording
   camSize: 'm', // the floating camera's size: s | m | l

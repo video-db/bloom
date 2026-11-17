@@ -305,6 +305,8 @@ function createWindows({
       onboardingSession = sessionId;
     },
     roleOf,
+    // Whether any of Bloom's own windows is showing: the update waits while one is.
+    anyVisible: () => open().some((window) => window.isVisible()),
     // Another window of the app, with the same isolation and navigation rules.
     surface(name, options, loadOptions = {}) {
       const window = new BrowserWindow({ ...options, webPreferences });

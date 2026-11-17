@@ -3,6 +3,8 @@ const {
   app,
   screen,
   session,
+  net,
+  powerMonitor,
   BrowserWindow,
   desktopCapturer,
   dialog,
@@ -12,6 +14,8 @@ const { createEngine } = require('../engine');
 const flags = require('./flags');
 const { createPrefs } = require('./prefs');
 const { afterUpdate } = require('./after-update');
+const { createUpdater } = require('./updater');
+const path = require('node:path');
 const { createTheme } = require('./theme');
 const { createTray } = require('./tray');
 const { createWindows } = require('./windows');
@@ -48,7 +52,8 @@ let engine,
   notifications,
   shortcuts,
   quitGuard,
-  fixture;
+  fixture,
+  updater;
 let quitting = false,
   shutdownPending = false,
   reopen = false; // Bloom was asked to reopen once it has quit
@@ -196,6 +201,22 @@ function start() {
     restart: restartForPermission,
   });
   shortcuts.register();
+  // A newer Bloom is downloaded in the background and goes in only when Bloom is not in
+  // use, or when the person next quits. Never from source or in automated runs.
+  if (app.isPackaged && !flags.automated()) {
+    updater = createUpdater({
+      version: app.getVersion(),
+      appPath: path.resolve(app.getPath('exe'), '..', '..', '..'),
+      updatesDir: path.join(app.getPath('userData'), 'updates'),
+      getState: () => engine.getState(),
+      windowsOpen: () => windows.anyVisible() || floating.cameraShowing(),
+      systemIdleSeconds: () => powerMonitor.getSystemIdleTime(),
+      quit: () => app.quit(),
+      fetchImpl: (url, options) => net.fetch(url, options),
+      log: (message) => console.log(`[update] ${message}`),
+    });
+    updater.start();
+  }
 }
 
 app
@@ -285,6 +306,9 @@ app.on('activate', () => windows?.showPanel());
 app.on('second-instance', () => windows?.showPanel());
 app.on('window-all-closed', () => {}); // a tray app keeps running with no windows
 app.on('will-quit', () => {
+  // A downloaded update goes in as Bloom quits; if Bloom was to reopen, the update does it.
+  if (updater?.applyOnQuit({ reopen })) reopen = false;
+  updater?.stop();
   if (reopen) app.relaunch();
   shortcuts?.unregister();
   tray?.dispose();

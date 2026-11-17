@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bloom updates itself. It checks for a new version in the background, downloads and verifies it (a signed feed, the file's hash, the app's identity and signature), and puts it in place only when Bloom is not in use, reopening to the menu bar; otherwise at the next quit. Nothing is shown and nothing waits on it. Releases add a signed feed and a zip per architecture beside the DMGs (`node build/publish-update.js`).
+
 - After an update, if Screen Recording no longer works, Bloom clears its out-of-date permission entry and opens setup at the permissions step with a line saying why, so the person can turn it on again. Needed while builds are not signed with a stable certificate.
 
 ## [2.3.9] - 2026-11-17

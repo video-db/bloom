@@ -1,8 +1,11 @@
-// Makes what Bloom's self-update reads, from the apps `npm run dist` just built:
+// Makes a release ready to upload, from what `npm run dist` just built:
 //   node build/publish-update.js
-// It writes, in dist/: one zip per architecture and latest-mac.json, the feed, signed with
-// the release key (build/update-key.js). Upload all of them beside the DMGs; the feed last,
-// so it never points at a zip that is not there yet.
+// dist/release/ then holds exactly what goes to artifacts.videodb.io/bloom/, laid out as the
+// host keeps it: v<version>/ with both DMGs, both update zips and a .sha256 beside each;
+// and, at the top, latest-mac.json (the update feed, signed with the release key from
+// build/update-key.js) and latest-version.txt (what the install script reads). Upload the
+// v<version>/ folder first and the two top files last, so nothing points at a file that is
+// not there yet.
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -12,10 +15,12 @@ const { verifiedPayload } = require('../src/main/updater');
 
 const ROOT = path.join(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
-const BASE_URL =
+const HOST =
   process.env.BLOOM_UPDATE_BASE || 'https://artifacts.videodb.io/bloom';
 const { version } = require('../package.json');
 const BUILDS = { arm64: 'mac-arm64', x64: 'mac' };
+const RELEASE = path.join(DIST, 'release');
+const FOLDER = path.join(RELEASE, `v${version}`);
 
 const plist = (app, key) =>
   execFileSync('/usr/bin/plutil', [
@@ -29,19 +34,33 @@ const plist = (app, key) =>
     .toString()
     .trim();
 
+// As the host keeps them: "<sha256>  <name>" on one line, beside the file.
+function checksum(file) {
+  const sha = crypto
+    .createHash('sha256')
+    .update(fs.readFileSync(file))
+    .digest('hex');
+  fs.writeFileSync(`${file}.sha256`, `${sha}  ${path.basename(file)}\n`);
+  return sha;
+}
+
+fs.rmSync(RELEASE, { recursive: true, force: true });
+fs.mkdirSync(FOLDER, { recursive: true });
 const files = {};
 for (const [arch, folder] of Object.entries(BUILDS)) {
   const app = path.join(DIST, folder, 'Bloom.app');
-  if (!fs.existsSync(app))
-    throw new Error(`No ${arch} build at ${app}; run npm run dist first.`);
+  const dmg = path.join(DIST, `bloom-${version}-mac-${arch}.dmg`);
+  for (const needed of [app, dmg])
+    if (!fs.existsSync(needed))
+      throw new Error(`No ${arch} build at ${needed}; run npm run dist first.`);
   if (plist(app, 'CFBundleShortVersionString') !== version)
-    throw new Error(
-      `The ${arch} build is not version ${version}; build again.`,
-    );
-  const name = `bloom-${version}-mac-${arch}.zip`;
-  const zip = path.join(DIST, name);
-  fs.rmSync(zip, { force: true });
+    throw new Error(`The ${arch} build is not version ${version}; build again.`);
+  const shippedDmg = path.join(FOLDER, path.basename(dmg));
+  fs.copyFileSync(dmg, shippedDmg);
+  checksum(shippedDmg);
   // ditto keeps the app's signature, links and permissions as a Mac copy would.
+  const name = `bloom-${version}-mac-${arch}.zip`;
+  const zip = path.join(FOLDER, name);
   execFileSync('/usr/bin/ditto', [
     '-c',
     '-k',
@@ -50,15 +69,11 @@ for (const [arch, folder] of Object.entries(BUILDS)) {
     app,
     zip,
   ]);
-  const bytes = fs.readFileSync(zip);
   files[arch] = {
-    url: `${BASE_URL}/${name}`,
-    sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
-    size: bytes.length,
+    url: `${HOST}/v${version}/${name}`,
+    sha256: checksum(zip),
+    size: fs.statSync(zip).size,
   };
-  console.log(
-    `${name}  ${files[arch].size} bytes  sha256 ${files[arch].sha256}`,
-  );
 }
 
 const payload = JSON.stringify({
@@ -77,9 +92,10 @@ const feed = {
 if (!verifiedPayload(feed))
   throw new Error('The feed does not verify with src/main/update-key.js.');
 fs.writeFileSync(
-  path.join(DIST, 'latest-mac.json'),
+  path.join(RELEASE, 'latest-mac.json'),
   JSON.stringify(feed, null, 2) + '\n',
 );
+fs.writeFileSync(path.join(RELEASE, 'latest-version.txt'), `${version}\n`);
 console.log(
-  `latest-mac.json for ${version}, signed and verified. Upload the zips, then the feed, to ${BASE_URL}/`,
+  `Release ${version} ready in ${RELEASE}. Upload v${version}/ to ${HOST}/v${version}/ first, then latest-mac.json and latest-version.txt to ${HOST}/.`,
 );

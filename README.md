@@ -98,6 +98,7 @@ Bloom is macOS only.
 | **Make** | Turn a recording into a tighter version: silences cut, subtitles, a title in three styles, an end card |
 | **Transcription and summary** | Prepared after each recording (a setting); key points, action items and chapters with their times |
 | **Share** | One-click shareable link for any recording |
+| **Updates itself** | Downloads a new version in the background and installs it only when Bloom is idle |
 | **Keyboard shortcuts** | `Cmd+Shift+R` to start or stop recording from anywhere, `Cmd+Shift+M` to mark a moment |
 | **Open source** | Fully customizable UI layer |
 

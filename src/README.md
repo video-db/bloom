@@ -39,6 +39,9 @@ src/
     downloads.js      saving a recording to a file the person chooses
     screen-preview.js the still of the screen shown in setup
     quit-guard.js     when quitting asks first, and how long it waits for the recorder
+    updater.js        self-update: the signed feed, background download and checks, install when idle
+    update-key.js     the public key the update feed must be signed with
+    after-update.js   after an update, clears a stale Screen Recording entry so setup can ask again
     floating.js       windows that float over the screen: the recording control and the camera picture
     float-placement.js  where the control may sit so it is not in the recording, and where the camera goes
     clock.js          mm:ss formatting shared by the tray and notifications

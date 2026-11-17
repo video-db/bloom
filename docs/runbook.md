@@ -50,7 +50,7 @@ For a change that must not alter any screen, set `BLOOM_STYLE_SNAPSHOT=1` and a 
 
 1. Confirm the branch and `package.json` version. The current internal build is 2.3.12; main can have a different version.
 2. Install dependencies with `npm ci`.
-3. Build an unpacked app with `npm run pack`, or DMGs with `npm run dist`. The macOS installer configuration builds arm64 and x64. Output is under `dist/`, with DMGs named `bloom-<version>-mac-<arch>.dmg`.
+3. Build an unpacked app with `npm run pack`, or DMGs with `npm run dist`. On the release Mac the build is signed with Bloom's own certificate (see Publish an update); elsewhere it is signed ad hoc, which is fine for trying a change but must not be published. The macOS installer configuration builds arm64 and x64. Output is under `dist/`, with DMGs named `bloom-<version>-mac-<arch>.dmg`.
 4. Select the artifact matching the Mac architecture (`uname -m`: arm64 for Apple Silicon, x86_64 for Intel; x64 and AMD64 mean x86_64).
 5. Quit Bloom through its tray menu. Move the existing `/Applications/Bloom.app` to Trash, then mount the local DMG and drag Bloom to Applications. Do not copy it over a running app.
 6. If macOS blocks the locally built app, run `xattr -cr /Applications/Bloom.app`, then launch it. Local builds use ad-hoc signing and are not notarised releases.

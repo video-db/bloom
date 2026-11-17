@@ -24,13 +24,13 @@ PID="$1"; APP="$2"; NEW="$3"; OLD="$4"; RELAUNCH="$5"; RESULT="$6"
 i=0
 while kill -0 "$PID" 2>/dev/null; do
   sleep 0.5; i=$((i + 1))
-  if [ "$i" -gt 120 ]; then echo "timeout" > "$RESULT"; exit 1; fi
+  if [ "$i" -gt 600 ]; then echo "timeout" > "$RESULT"; exit 1; fi
 done
 reopen() { if [ "$RELAUNCH" = "1" ]; then /usr/bin/open -g "$APP"; fi; }
 rm -rf "$OLD"
-if ! mv "$APP" "$OLD" 2>/dev/null; then echo "move-old-failed" > "$RESULT"; reopen; exit 1; fi
-if ! mv "$NEW" "$APP" 2>/dev/null; then
-  mv "$OLD" "$APP"; echo "move-new-failed" > "$RESULT"; reopen; exit 1
+if ! mv "$APP" "$OLD"; then echo "move-old-failed" > "$RESULT"; reopen; exit 1; fi
+if ! mv "$NEW" "$APP"; then
+  rm -rf "$APP"; mv "$OLD" "$APP"; echo "move-new-failed" > "$RESULT"; reopen; exit 1
 fi
 echo "installed" > "$RESULT"
 reopen
@@ -154,7 +154,12 @@ function createUpdater({
     try {
       fs.accessSync(path.dirname(appPath), fs.constants.W_OK);
       fs.accessSync(appPath, fs.constants.W_OK);
-      return true;
+      fs.mkdirSync(updatesDir, { recursive: true, mode: 0o700 });
+      // Both moves in the swap must be renames on one volume: a copy across volumes can
+      // stop half way and leave no app at all.
+      return (
+        fs.statSync(updatesDir).dev === fs.statSync(path.dirname(appPath)).dev
+      );
     } catch {
       return false;
     }
@@ -174,7 +179,7 @@ function createUpdater({
         /* not tried yet */
       }
       if (result && result !== 'installed') {
-        counts[name] = (counts[name] || 0) + 1;
+        if (result !== 'timeout') counts[name] = (counts[name] || 0) + 1;
         log(`update ${name} did not go in: ${result}`);
         fs.rmSync(path.join(dir, 'result'), { force: true });
       }
@@ -213,27 +218,41 @@ function createUpdater({
       throw new Error('download does not match the feed');
   }
 
-  // Downloads, unpacks and checks one version. Leaves `ready` set when it may go in.
-  async function stage(payload, file) {
-    const dir = path.join(updatesDir, payload.version);
-    const marker = path.join(dir, 'ready.json');
-    if (fs.existsSync(marker)) {
-      const saved = JSON.parse(fs.readFileSync(marker, 'utf8'));
-      if (fs.existsSync(saved.app)) return (ready = { ...saved, dir });
-    }
-    fs.rmSync(dir, { recursive: true, force: true });
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const sha256Of = (file) =>
+    new Promise((resolve, reject) => {
+      const hash = crypto.createHash('sha256');
+      fs.createReadStream(file)
+        .on('error', reject)
+        .on('data', (chunk) => hash.update(chunk))
+        .on('end', () => resolve(hash.digest('hex')));
+    });
+
+  // Unpacks the checked zip afresh and checks the app in it. Nothing left on disk from
+  // before is trusted: the folder is Bloom's, but anything running as the person can
+  // write to it. Returns the app's path.
+  async function unpack(dir, payload, file) {
     const zip = path.join(dir, 'update.zip');
-    await download(file, zip);
+    if (
+      !fs.existsSync(zip) ||
+      fs.statSync(zip).size !== file.size ||
+      (await sha256Of(zip)) !== file.sha256
+    )
+      throw new Error('the downloaded update does not match the feed');
     const unpacked = path.join(dir, 'unpacked');
+    fs.rmSync(unpacked, { recursive: true, force: true });
     await run('/usr/bin/ditto', ['-x', '-k', zip, unpacked]);
-    fs.rmSync(zip, { force: true });
-    const apps = fs
-      .readdirSync(unpacked)
-      .filter((name) => name.endsWith('.app'));
-    if (apps.length !== 1) throw new Error('the update holds no single app');
-    const app = path.join(unpacked, apps[0]);
+    const app = path.join(unpacked, 'Bloom.app');
+    const entries = fs.readdirSync(unpacked);
+    // Exactly Bloom.app, a real folder, not a link to somewhere else.
+    if (
+      entries.length !== 1 ||
+      entries[0] !== 'Bloom.app' ||
+      !fs.lstatSync(app).isDirectory()
+    )
+      throw new Error('the update holds no single Bloom.app');
     const plist = path.join(app, 'Contents', 'Info.plist');
+    if (!fs.lstatSync(plist).isFile())
+      throw new Error('the update has no Info.plist');
     const read = (key) =>
       run('/usr/bin/plutil', ['-extract', key, 'raw', '-o', '-', plist]);
     if ((await read('CFBundleIdentifier')) !== BUNDLE_ID)
@@ -241,8 +260,24 @@ function createUpdater({
     if ((await read('CFBundleShortVersionString')) !== payload.version)
       throw new Error('the update is not the version the feed says');
     await run('/usr/bin/codesign', ['--verify', '--deep', '--strict', app]);
-    fs.writeFileSync(marker, JSON.stringify({ version: payload.version, app }));
-    ready = { version: payload.version, app, dir };
+    return app;
+  }
+
+  // Downloads one version, unless its checked zip is already here, and checks it. Leaves
+  // `ready` set when it may go in.
+  async function stage(payload, file) {
+    const dir = path.join(updatesDir, payload.version);
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const zip = path.join(dir, 'update.zip');
+    let app;
+    try {
+      app = await unpack(dir, payload, file);
+    } catch {
+      fs.rmSync(zip, { force: true });
+      await download(file, zip);
+      app = await unpack(dir, payload, file);
+    }
+    ready = { payload, file, dir, app };
     log(`update ${payload.version} is ready`);
     return ready;
   }
@@ -269,42 +304,77 @@ function createUpdater({
     }
   }
 
-  // Bloom has exited by the time the script swaps it; with relaunch it reopens to the tray.
-  function install({ relaunch }) {
-    if (!ready || installing || !fs.existsSync(ready.app)) return false;
+  // Swaps the update in once Bloom has exited, reopening it to the tray when asked. Runs
+  // as Bloom quits, never before: a quit that is called off leaves nothing behind. The app
+  // is checked again first. True when the script was started.
+  async function install({ relaunch }) {
+    if (!ready || installing) return false;
     installing = true;
-    const script = path.join(ready.dir, 'install.sh');
-    fs.writeFileSync(script, INSTALL_SCRIPT, { mode: 0o700 });
-    fs.rmSync(path.join(ready.dir, 'result'), { force: true });
-    spawn(
-      '/bin/sh',
-      [
-        script,
-        String(pid),
-        appPath,
-        ready.app,
-        path.join(ready.dir, 'previous.app'),
-        relaunch ? '1' : '0',
-        path.join(ready.dir, 'result'),
-      ],
-      { detached: true, stdio: 'ignore' },
-    ).unref();
-    log(`installing update ${ready.version}`);
-    return true;
+    try {
+      const app = await unpack(ready.dir, ready.payload, ready.file);
+      const script = path.join(ready.dir, 'install.sh');
+      fs.writeFileSync(script, INSTALL_SCRIPT, { mode: 0o700 });
+      fs.rmSync(path.join(ready.dir, 'result'), { force: true });
+      const child = spawn(
+        '/bin/sh',
+        [
+          script,
+          String(pid),
+          appPath,
+          app,
+          path.join(ready.dir, 'previous.app'),
+          relaunch ? '1' : '0',
+          path.join(ready.dir, 'result'),
+        ],
+        { detached: true, stdio: 'ignore' },
+      );
+      child.on('error', (error) => log(`install script: ${error.message}`));
+      child.unref();
+      log(`installing update ${ready.payload.version}`);
+      return true;
+    } catch (error) {
+      log(`update not installed: ${error.message}`);
+      ready = null; // checked again from scratch at the next check
+      installing = false;
+      return false;
+    }
   }
 
-  function whenIdle() {
+  // Idle: Bloom is asked to quit, and the update goes in as it does (applyOnQuit). If the
+  // quit is called off, nothing has been started, and the next idle moment tries again.
+  let quitAskedAt = 0;
+  async function whenIdle() {
     if (!ready || installing) return;
+    // Asked to quit a while ago and still running: the quit was called off. Start over,
+    // and do not reopen Bloom at some later quit the person makes themselves.
+    if (quitAskedAt && Date.now() - quitAskedAt >= 2 * 60 * 1000) {
+      quitAskedAt = 0;
+      relaunchAfter = false;
+    }
+    if (quitAskedAt) return;
     if (
       idle({
         state: getState(),
         windowsOpen: windowsOpen(),
         systemIdleSeconds: systemIdleSeconds(),
-      }) &&
-      install({ relaunch: true })
-    )
+      })
+    ) {
+      quitAskedAt = Date.now();
+      relaunchAfter = true;
+      // The update is checked again before Bloom is asked to quit, so a bad one never
+      // costs a restart.
+      try {
+        await unpack(ready.dir, ready.payload, ready.file);
+      } catch (error) {
+        log(`update not installed: ${error.message}`);
+        ready = null;
+        relaunchAfter = false;
+        return;
+      }
       quit();
+    }
   }
+  let relaunchAfter = false; // set when Bloom quits for the update and should come back
 
   return {
     start() {
@@ -319,12 +389,16 @@ function createUpdater({
       timers.push(setInterval(whenIdle, IDLE_POLL_MS));
       for (const timer of timers) timer.unref?.();
     },
-    // Bloom is quitting anyway: a waiting update goes in now. True when the update will
-    // also reopen Bloom, so the caller need not.
+    // Bloom is quitting: a waiting update goes in now. The script is started from here
+    // only. Returns a promise of true when the update will also reopen Bloom.
     applyOnQuit({ reopen = false } = {}) {
-      if (!enabled || installing) return installing && reopen;
-      return install({ relaunch: reopen }) && reopen;
+      const relaunch = reopen || relaunchAfter;
+      relaunchAfter = false;
+      if (!enabled || !ready) return Promise.resolve(false);
+      return install({ relaunch }).then((started) => started && relaunch);
     },
+    // Whether quitting should wait for applyOnQuit.
+    hasUpdate: () => enabled && !!ready && !installing,
     stop() {
       for (const timer of timers.splice(0)) clearTimeout(timer);
     },
@@ -332,7 +406,7 @@ function createUpdater({
     check,
     whenIdle,
     tidy,
-    status: () => ({ ready: ready && { version: ready.version }, installing }),
+    status: () => ({ ready: ready && { version: ready.payload.version }, installing }),
   };
 }
 

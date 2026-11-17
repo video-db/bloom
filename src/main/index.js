@@ -305,9 +305,24 @@ app.on('before-quit', (event) => {
 app.on('activate', () => windows?.showPanel());
 app.on('second-instance', () => windows?.showPanel());
 app.on('window-all-closed', () => {}); // a tray app keeps running with no windows
-app.on('will-quit', () => {
-  // A downloaded update goes in as Bloom quits; if Bloom was to reopen, the update does it.
-  if (updater?.applyOnQuit({ reopen })) reopen = false;
+app.on('will-quit', (event) => {
+  // A downloaded update goes in as Bloom quits: quitting waits the few seconds it takes to
+  // check it again and start the swap, then carries on. If Bloom was to reopen, the update
+  // does it.
+  if (updater?.hasUpdate()) {
+    event.preventDefault();
+    updater
+      .applyOnQuit({ reopen })
+      .then((reopens) => {
+        if (reopens) reopen = false;
+      })
+      .catch(() => {})
+      .finally(() => {
+        updater.stop();
+        app.quit();
+      });
+    return;
+  }
   updater?.stop();
   if (reopen) app.relaunch();
   shortcuts?.unregister();

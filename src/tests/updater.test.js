@@ -231,30 +231,40 @@ const waitFor = async (check, ms = 15000) => {
   }
 };
 
-test('a newer version is downloaded and checked, then swapped in once Bloom has exited', async (t) => {
+test('a newer version is downloaded and checked; Bloom is asked to quit only when idle', async (t) => {
   const s = await setup(t);
   let quits = 0;
   const away = { seconds: 0 };
-  const bloom = spawn('/bin/sleep', ['30']); // stands in for the running Bloom
-  t.after(() => bloom.kill());
   const updater = make(s, {
-    pid: bloom.pid,
     quit: () => quits++,
     systemIdleSeconds: () => away.seconds,
   });
   await updater.check();
-  assert.deepEqual(updater.status(), {
-    ready: { version: '2.3.11' },
-    installing: false,
-  });
-  // The person is at the Mac: nothing happens.
-  updater.whenIdle();
+  assert.equal(updater.status().ready.version, '2.3.11');
+  assert.equal(updater.hasUpdate(), true);
+  await updater.whenIdle(); // the person is at the Mac
   assert.equal(quits, 0);
-  assert.equal(updater.status().installing, false);
-  // Away for a while: Bloom is asked to quit, and the swap waits for it to have gone.
   away.seconds = 120;
-  updater.whenIdle();
-  assert.equal(quits, 1);
+  await updater.whenIdle();
+  assert.equal(quits, 1, 'asked to quit');
+  await updater.whenIdle();
+  assert.equal(quits, 1, 'asked once, not again while it quits');
+  assert.equal(
+    updater.status().installing,
+    false,
+    'nothing is started until Bloom quits',
+  );
+});
+
+test('as Bloom quits the update is checked again, then swapped in once Bloom has exited', async (t) => {
+  const s = await setup(t);
+  const bloom = spawn('/bin/sleep', ['30']); // stands in for the running Bloom
+  t.after(() => bloom.kill());
+  const updater = make(s, { pid: bloom.pid });
+  await updater.check();
+  // An ordinary quit, not to reopen: the swap starts, and waits for Bloom to have gone.
+  assert.equal(await updater.applyOnQuit({ reopen: false }), false);
+  assert.equal(updater.hasUpdate(), false);
   const dir = path.join(s.root, 'updates', '2.3.11');
   await new Promise((r) => setTimeout(r, 700));
   assert.equal(
@@ -270,17 +280,35 @@ test('a newer version is downloaded and checked, then swapped in once Bloom has 
   );
   assert.ok(
     fs.existsSync(path.join(s.appPath, 'Contents', 'Resources', 'new-build')),
-    'the new app is in place',
   );
   assert.ok(
     fs.existsSync(
       path.join(dir, 'previous.app', 'Contents', 'Resources', 'old-build'),
     ),
-    'the old one kept until it worked',
   );
   // The next launch, now 2.3.11, clears it all away.
   make(s, { version: '2.3.11' }).tidy();
   assert.equal(fs.existsSync(dir), false);
+});
+
+test('an update changed on disk after it was checked is not installed', async (t) => {
+  const s = await setup(t);
+  const updater = make(s, { pid: 999999 });
+  await updater.check();
+  // Something running as the person changes the downloaded file.
+  fs.appendFileSync(
+    path.join(s.root, 'updates', '2.3.11', 'update.zip'),
+    'tampered',
+  );
+  assert.equal(await updater.applyOnQuit({ reopen: false }), false);
+  await new Promise((r) => setTimeout(r, 500));
+  assert.equal(
+    fs.existsSync(path.join(s.root, 'updates', '2.3.11', 'result')),
+    false,
+  );
+  assert.ok(
+    fs.existsSync(path.join(s.appPath, 'Contents', 'Resources', 'old-build')),
+  );
 });
 
 test('a download that does not match the feed is never installed', async (t) => {
@@ -291,7 +319,7 @@ test('a download that does not match the feed is never installed', async (t) => 
   });
   await updater.check();
   assert.equal(updater.status().ready, null);
-  updater.whenIdle();
+  await updater.whenIdle();
   assert.ok(
     fs.existsSync(path.join(s.appPath, 'Contents', 'Resources', 'old-build')),
   );
@@ -331,7 +359,7 @@ test('a version that fails to go in twice is left alone, and the old app is put 
     // Bloom's folder cannot be written to at the moment of the swap.
     fs.chmodSync(path.dirname(s.appPath), 0o555);
     assert.equal(
-      updater.applyOnQuit({ reopen: false }),
+      await updater.applyOnQuit({ reopen: false }),
       false,
       'Bloom does not reopen',
     );

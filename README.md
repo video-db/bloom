@@ -61,20 +61,17 @@ To install the published build, run:
 curl -fsSL https://artifacts.videodb.io/bloom/install | bash
 ```
 
-This detects your Mac architecture and installs the published build to `/Applications`. For the version in this checkout, follow the [local build and installation runbook](docs/runbook.md#build-and-install-locally).
-
-The published build is an earlier release than this checkout. Run this one from source with `npm ci` then `npm start`, or build it with the runbook.
+This detects your Mac architecture, checks the download's SHA-256 and installs the latest published build to `/Applications`. Bloom then updates itself. For the version in this checkout, follow the [local build and installation runbook](docs/runbook.md#build-and-install-locally).
 
 <details>
-<summary>Manual install — v2.2.0 artifact URLs (the earlier app)</summary>
+<summary>Manual install</summary>
 
-- **Apple Silicon (M1/M2/M3/M4)**: [bloom-2.2.0-arm64.dmg](https://artifacts.videodb.io/bloom/bloom-2.2.0-arm64.dmg)
-- **Apple Intel**: [bloom-2.2.0-x64.dmg](https://artifacts.videodb.io/bloom/bloom-2.2.0-x64.dmg)
-- **Windows**: [bloom-2.2.0-x64.exe](https://artifacts.videodb.io/bloom/bloom-2.2.0-x64.exe)
+1. Read the latest version from [latest-version.txt](https://artifacts.videodb.io/bloom/latest-version.txt).
+2. Download `https://artifacts.videodb.io/bloom/v<version>/bloom-<version>-mac-arm64.dmg` (Apple Silicon) or `…-mac-x64.dmg` (Intel). A `.sha256` file sits beside each.
+3. Mount the DMG and drag Bloom to Applications.
+4. Bloom is not notarised, so macOS blocks a downloaded copy the first time: run `xattr -cr /Applications/Bloom.app`, or choose Open Anyway in System Settings → Privacy & Security. Then launch it.
 
-1. Mount the DMG and drag Bloom to your Applications folder
-2. Open Terminal and run `xattr -cr /Applications/Bloom.app`
-3. Launch the app from Applications or Spotlight
+Bloom is macOS only.
 
 </details>
 

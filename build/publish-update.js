@@ -3,9 +3,9 @@
 // dist/release/ then holds exactly what goes to artifacts.videodb.io/bloom/, laid out as the
 // host keeps it: v<version>/ with both DMGs, both update zips and a .sha256 beside each;
 // and, at the top, latest-mac.json (the update feed, signed with the release key from
-// build/update-key.js) and latest-version.txt (what the install script reads). Upload the
-// v<version>/ folder first and the two top files last, so nothing points at a file that is
-// not there yet.
+// build/update-key.js) and latest-version.txt (what the install script reads). Publish it
+// through binary-publish (docs/runbook.md, "Publish an update"), which writes the checksums
+// and latest-version.txt itself and moves the pointers last.
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -97,5 +97,5 @@ fs.writeFileSync(
 );
 fs.writeFileSync(path.join(RELEASE, 'latest-version.txt'), `${version}\n`);
 console.log(
-  `Release ${version} ready in ${RELEASE}. Upload v${version}/ to ${HOST}/v${version}/ first, then latest-mac.json and latest-version.txt to ${HOST}/.`,
+  `Release ${version} ready in ${RELEASE}. In binary-publish, publish ${version} with the four files in v${version}/ and latest-mac.json.`,
 );

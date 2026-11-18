@@ -1029,7 +1029,18 @@ async function initSettings() {
         document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.theme === currentTheme);
         });
+        // Sync launch-on-startup toggle
+        const openAtLoginCheckbox = document.getElementById('openAtLoginCheckbox');
+        if (openAtLoginCheckbox) {
+            openAtLoginCheckbox.checked = !!config.openAtLogin;
+        }
         popover.classList.add('visible');
+    });
+
+    // Launch on startup toggle
+    const openAtLoginCheckbox = document.getElementById('openAtLoginCheckbox');
+    openAtLoginCheckbox?.addEventListener('change', () => {
+        window.configAPI.saveConfig({ openAtLogin: openAtLoginCheckbox.checked });
     });
 
     // Close on outside click (mousedown works in drag regions too)

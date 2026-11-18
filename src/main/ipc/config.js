@@ -1,6 +1,6 @@
 'use strict';
 
-const { ipcMain, shell, BrowserWindow } = require('electron');
+const { app, ipcMain, shell, BrowserWindow } = require('electron');
 const { randomUUID } = require('crypto');
 const { getAppConfig, saveUserConfig, resetAppConfig } = require('../lib/config');
 const { CONFIG_FILE } = require('../lib/paths');
@@ -15,11 +15,17 @@ const fs = require('fs');
 function registerConfigHandlers(getVideodbService) {
   ipcMain.handle('get-settings', () => {
     const config = getAppConfig();
-    return { ...config, isConnected: !!config.accessToken };
+    const loginSettings = app.getLoginItemSettings();
+    return { ...config, isConnected: !!config.accessToken, openAtLogin: loginSettings.openAtLogin };
   });
 
   ipcMain.handle('save-settings', (event, data) => {
     try {
+      // Apply login item setting via Electron API (not persisted in config file)
+      if (data.openAtLogin !== undefined) {
+        app.setLoginItemSettings({ openAtLogin: data.openAtLogin });
+        delete data.openAtLogin; // Don't persist in config — Electron manages this
+      }
       saveUserConfig(data);
       // Broadcast theme change to all other windows
       if (data.theme) {

@@ -1269,6 +1269,43 @@
             text-align: right;
         }
 
+        /* Toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+        .switch-slider::before {
+            content: "";
+            position: absolute;
+            height: 14px;
+            width: 14px;
+            left: 2px;
+            bottom: 2px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .switch input:checked + .switch-slider {
+            background: #EC5B16;
+            border-color: #EC5B16;
+        }
+        .switch input:checked + .switch-slider::before {
+            transform: translateX(16px);
+            background: #fff;
+        }
+
         /* Theme toggle */
         .theme-toggle {
             display: flex;
@@ -1352,6 +1389,13 @@
                                     Light
                                 </button>
                             </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Launch on startup</span>
+                            <label class="switch" id="openAtLoginSwitch">
+                                <input type="checkbox" id="openAtLoginCheckbox">
+                                <span class="switch-slider"></span>
+                            </label>
                         </div>
                         <div class="settings-row">
                             <span class="settings-label">Shortcut</span>

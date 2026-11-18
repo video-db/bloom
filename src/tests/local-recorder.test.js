@@ -562,3 +562,43 @@ test('only a delivery the recorder says it cannot retry is final', async () => {
     { recordingId: 'rec-1', sessionId: 'rec-a', permanent: true },
   ]);
 });
+
+test('a delivery the recorder is still retrying waits for a connection without Bloom stepping in', async () => {
+  const f = fixture();
+  await f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
+  await f.recorder.stop();
+  f.client().emit('processing-failed', {
+    recordingId: 'rec-1',
+    owner: OWNER,
+    errorCode: 'NETWORK',
+    retryable: true,
+    retrying: true,
+  });
+  assert.deepEqual(f.events.at(-1), [
+    'recording-relay-failed',
+    { recordingId: 'rec-1', sessionId: 'rec-a', permanent: false, retrying: true },
+  ]);
+  // Waiting to try again: no estimate, no progress shown.
+  f.client().emit('processing-progress', {
+    recordingId: 'rec-1', owner: OWNER, percent: 12, etaSeconds: null,
+  });
+  assert.equal(f.events.filter(([n]) => n === 'recording-progress').length, 0);
+  f.client().jobs = [
+    { recordingId: 'rec-1', owner: OWNER, stage: 'uploaded', partial: false, partialReason: null, progress: { percent: 12, etaSeconds: null } },
+  ];
+  assert.equal((await f.recorder.recover())[0].progress, undefined);
+  // Moving again: a measured estimate brings the bar back.
+  f.client().emit('processing-progress', {
+    recordingId: 'rec-1', owner: OWNER, percent: 20, etaSeconds: 40,
+  });
+  assert.deepEqual(
+    f.events.filter(([n]) => n === 'recording-progress').at(-1)[1].progress,
+    0.2,
+  );
+});
+
+test('Stop waits as long as the recorder may take to finish a long recording', () => {
+  const { stopBudget } = require('../engine/videodb/local-recorder');
+  assert.equal(stopBudget(60), 160000); // short: the recorder's 155 s floor and a margin
+  assert.equal(stopBudget(3600), 940000); // an hour: 15 min + 30 s, and a margin
+});

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- The recorder now sends a recording to VideoDB itself, reports how far it has got, and clears its copy once VideoDB has it; Bloom no longer handles recording files at all. Uses SDK 0.5.3 (`release-0-5-3` at `2a6ff19`, recorder `0.3.3-managed.4`).
+- The recorder now sends a recording to VideoDB itself, reports how far it has got, and clears its copy once VideoDB has it; Bloom no longer handles recording files at all. Uses SDK 0.5.3 (`release-0-5-3` at `dd42b2e`, recorder `0.3.3-managed.5`), which retries a delivery by itself for up to 24 hours and picks up deliveries left from the last run.
 - The progress bar follows the recorder: "Processing 43%" covers sending and VideoDB's work, and stays below 100 % until the recording is ready. A Bloom reopened during delivery shows the progress at once.
 - A recording the recorder could not deliver waits for a better connection and is handed back to the recorder by itself; one it no longer has can't be processed. A recording cut short by a crash or a forced quit is still delivered.
 - Starting a recording needs a connection to VideoDB, which now authorises a recording before capture begins.

@@ -49,7 +49,8 @@ function createJobs(
     later.delete(id);
   }
   // The connection let a recording down: it waits for a better one, and nothing blocks.
-  function waitForConnection(identity) {
+  // `recorderRetrying`: the recorder is trying again by itself, so Bloom only shows it.
+  function waitForConnection(identity, { recorderRetrying = false } = {}) {
     const record = forJob(identity);
     if (!record || record.paused) return;
     const { sessionId } = record;
@@ -63,7 +64,7 @@ function createJobs(
       ['saving', 'processing-error'].includes(ctx.get().phase)
     )
       ctx.set({ phase: 'idle', problem: null, upload: null });
-    tryLater(record.id);
+    if (!recorderRetrying) tryLater(record.id);
   }
 
   function forSession(sessionId) {
@@ -201,7 +202,7 @@ function createJobs(
       ['recording-relay-failed', 'recording-token-error'].includes(name) &&
       !payload.permanent
     )
-      return waitForConnection(payload);
+      return waitForConnection(payload, { recorderRetrying: !!payload.retrying });
     if (
       [
         'local-recording-failed',

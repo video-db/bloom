@@ -1055,3 +1055,20 @@ test('quitting during delivery is not a failure, and the recorder’s progress w
   assert.equal(f.engine.getState().recordings[0].jobStage, 'sending');
   assert.equal(f.engine.getState().recordings[0].progress, 0.3);
 });
+
+test('while the recorder retries a delivery itself, Bloom only shows it waiting', async (t) => {
+  const f = await setup(t, { retryDelay: () => 5 });
+  await f.command('start');
+  await f.command('stop');
+  const sessionId = f.engine.getState().sessionId;
+  f.recorder.emit('recording-relay-failed', { sessionId, permanent: false, retrying: true });
+  await flush();
+  assert.equal(f.engine.getState().recordings[0].jobStage, 'waiting-connection');
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  await f.engine.whenIdle();
+  assert.equal(
+    f.calls.some(([name]) => name === 'relay'),
+    false,
+    'the recorder is already trying again',
+  );
+});

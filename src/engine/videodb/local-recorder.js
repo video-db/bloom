@@ -9,9 +9,13 @@ const { ServiceError, request, safeError } = require('./errors');
 const MIC = { id: 'mic:default', name: 'Microphone' };
 const SYSTEM_AUDIO = { id: 'system_audio:default', name: 'System audio' };
 const NATIVE_EVENTS = ['shutdown', 'error', 'window-closed', 'window-switched'];
-// A long recording can take a long time to reach VideoDB; the recorder keeps working on it
-// and says when it fails, so this wait only ends one the recorder has stopped reporting on.
-const PROCESSING_WAIT_MS = 6 * 60 * 60 * 1000;
+// A long recording can take a long time to reach VideoDB, and the recorder retries a
+// delivery for up to 24 hours; this wait only ends one the recorder has stopped reporting on.
+const PROCESSING_WAIT_MS = 25 * 60 * 60 * 1000;
+// The recorder may take a quarter of the recording's length plus 30 s to finish a long one,
+// and at least 155 s; Stop waits for that and a margin.
+const stopBudget = (seconds) =>
+  Math.max(160000, Math.ceil((seconds / 4 + 30) * 1000) + 10000);
 // The recorder's stages, as the engine knows them.
 const STAGES = {
   ready: 'processing',
@@ -32,6 +36,8 @@ function createLocalRecorder({
   const events = new EventEmitter();
   const sessions = new Map(); // recordingId -> Bloom's session id, for this run
   const delivering = new Set(); // recordings the recorder is sending in this run
+  const retrying = new Set(); // deliveries the recorder is waiting to try again
+  let startedAt = 0; // when the current capture began, for Stop's budget
   let client = null;
   let active = null; // { recordingId, sessionId } while capturing
   let micAllowed = false; // the person said yes to Bloom's own microphone question
@@ -71,6 +77,12 @@ function createLocalRecorder({
     instance.on('processing-progress', (payload) => {
       if (client !== instance || payload?.owner !== owner()) return;
       if (!Number.isFinite(payload.percent)) return;
+      // While the recorder waits to try again it reports no estimate; the recording keeps
+      // waiting for a better connection until a measured one says delivery is moving.
+      if (retrying.has(payload.recordingId)) {
+        if (payload.etaSeconds === null) return;
+        retrying.delete(payload.recordingId);
+      }
       tell('recording-progress', payload.recordingId, {
         progress: Math.min(0.99, Math.max(0, payload.percent / 100)),
       });
@@ -78,6 +90,7 @@ function createLocalRecorder({
     instance.on('processing-complete', (payload) => {
       if (client !== instance || payload?.owner !== owner()) return;
       delivering.delete(payload.recordingId);
+      retrying.delete(payload.recordingId);
       tell('processing-complete', payload.recordingId, {
         result: { videoId: payload.result?.videoId },
       });
@@ -91,7 +104,14 @@ function createLocalRecorder({
         const id = payload?.recordingId;
         if (client !== instance || !(sessions.has(id) || delivering.has(id)))
           return;
+        // Still retrying: the recorder carries on by itself, and its wait stays open.
+        if (payload?.retrying === true) {
+          retrying.add(id);
+          tell('recording-relay-failed', id, { permanent: false, retrying: true });
+          return;
+        }
         delivering.delete(id);
+        retrying.delete(id);
         // The recorder keeps the recording and can send it again unless it says it cannot.
         tell('recording-relay-failed', payload.recordingId, {
           permanent: payload?.retryable === false,
@@ -228,7 +248,10 @@ function createLocalRecorder({
             ? { result: { videoId: job.result.videoId } }
             : {}),
           metadata: { duration_seconds: job.durationSeconds },
-          ...(job.stage !== 'complete' && Number.isFinite(job.progress?.percent)
+          // Not while the recorder waits to try again: that recording waits for a connection.
+          ...(job.stage !== 'complete' &&
+          !retrying.has(job.recordingId) &&
+          Number.isFinite(job.progress?.percent)
             ? { progress: Math.min(0.99, job.progress.percent / 100) }
             : {}),
         }));
@@ -285,6 +308,7 @@ function createLocalRecorder({
       }
       sessions.set(started.recordingId, sessionId);
       active = { recordingId: started.recordingId, sessionId };
+      startedAt = Date.now();
       return { recordingId: started.recordingId };
     },
     // Ends capture. Once the recorder says the recording is ready it sends it by itself.
@@ -306,7 +330,7 @@ function createLocalRecorder({
               throw error;
             }
           },
-          { timeoutMs: 160000, mutation: true },
+          { timeoutMs: stopBudget((Date.now() - startedAt) / 1000), mutation: true },
         );
       } catch (error) {
         // The recorder says nothing is being recorded, and Bloom knew of nothing either.
@@ -409,4 +433,4 @@ function createLocalRecorder({
   };
 }
 
-module.exports = { createLocalRecorder };
+module.exports = { createLocalRecorder, stopBudget };

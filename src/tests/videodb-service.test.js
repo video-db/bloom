@@ -618,7 +618,11 @@ function uploadFixture(options = {}) {
       sent.push(['get', parts.join('/')]);
       return { data: { uploadUrl: 'https://upload.example/object-1' } };
     },
-    async post(parts, form, config) {
+    async post(parts, form, config, poll) {
+      if (parts[0] === 'collection') {
+        sent.push(['register', parts.join('/'), form, poll]);
+        return { data: { id: 'video-new' } };
+      }
       // Drain the body the way the HTTP client would.
       const chunks = [];
       await new Promise((resolve, reject) => {
@@ -630,10 +634,6 @@ function uploadFixture(options = {}) {
       sent.push(['post', parts.join('/'), config, Buffer.concat(chunks)]);
       return { data: {} };
     },
-  };
-  f.coll.uploadURL = async (data) => {
-    sent.push(['register', data]);
-    return { id: 'video-new' };
   };
   return { ...f, file, dir, sent };
 }
@@ -660,9 +660,12 @@ test('a recording is sent with no time or size limit, then registered', async ()
     assert.equal(Number(config.headers['Content-Length']), body.length);
     assert(body.includes(Buffer.alloc(4096, 7)), 'the whole file is in the request');
     assert.equal(progress.at(-1), 1);
+    // Registered as the SDK's uploadURL would, but waiting up to an hour for the video.
     assert.deepEqual(sent[2], [
       'register',
+      'collection/bloom-collection/upload',
       { url: 'https://upload.example/object-1', name: 'Demo' },
+      { maxPollTime: 60 * 60 * 1000 },
     ]);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

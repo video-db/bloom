@@ -20,7 +20,9 @@ const COLLECTION_NAME = 'Bloom Recordings';
 // caps a recording near 70 MB. Bloom sends the file itself with no time or size limit; only
 // a send that has stopped moving for this long is given up, to be tried again.
 const STALLED_MS = 2 * 60 * 1000;
-const REGISTER_MS = 10 * 60 * 1000;
+// VideoDB makes the video from the file before answering; for a long recording that can
+// take well past the SDK's own eight-minute wait, after which the file would be sent again.
+const REGISTER_MS = 60 * 60 * 1000;
 
 // Main-process boundary only. The SDK and credential store are injected for offline verification.
 function createVideoDBService({
@@ -235,15 +237,18 @@ function createVideoDBService({
         }
         clearInterval(watch);
         assertCurrent(scope);
-        // VideoDB makes the video from the file; the SDK waits up to about eight minutes.
-        const video = await request(
+        // The same call as the SDK's uploadURL, waiting up to an hour for the video.
+        const made = await request(
           () =>
-            scope.collection.uploadURL({
-              url,
-              ...(title ? { name: title } : {}),
-            }),
-          { timeoutMs: REGISTER_MS, mutation: true },
+            http.post(
+              ['collection', scope.collection.id, 'upload'],
+              { url, ...(title ? { name: title } : {}) },
+              undefined,
+              { maxPollTime: REGISTER_MS },
+            ),
+          { timeoutMs: REGISTER_MS + 60 * 1000, mutation: true },
         );
+        const video = made?.data;
         assertCurrent(scope);
         if (typeof video?.id !== 'string')
           throw new ServiceError(

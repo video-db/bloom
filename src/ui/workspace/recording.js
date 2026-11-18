@@ -5,6 +5,7 @@
 import { esc, clock, button } from '../shared/dom.js';
 import { icon } from '../shared/icons.js';
 import { meta, status } from './format.js';
+import { stage, progressBar } from '../shared/stage.js';
 import { transcript } from './transcript.js';
 import { summary } from './summary.js';
 import { timeline } from './timeline.js';
@@ -109,33 +110,7 @@ const notices = (r) =>
           ${button('reconcileRecording', 'Check result', `data-id="${esc(r.id)}"`)}
         </div>`
       : ''
-  }${
-    r.status === 'error'
-      ? /* HTML */ `<div class="processing-banner" role="alert">
-          <div>
-            <b
-              >${
-                r.videoId
-                  ? 'This recording needs another check'
-                  : 'This recording has not been processed'
-              }</b
-            >
-            <p>
-              ${
-                r.videoId
-                  ? 'It is in VideoDB; playback still has to be confirmed.'
-                  : 'Recover it to finish processing.'
-              }
-            </p>
-          </div>
-          ${button(
-            'retryRecording',
-            r.videoId ? 'Check again' : 'Recover recording',
-            `data-id="${esc(r.id)}"`,
-          )}
-        </div>`
-      : ''
-  }`;
+  }${progressBar(stage(r).progress)}`;
 
 // The person's marks, as their own tab. A function, so TABS above can name it.
 function marks(r) {

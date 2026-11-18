@@ -769,3 +769,6 @@
 .summary-foot {
   margin: 14px 0 0;
 }
+.recording > .progress {
+  margin: 0 20px 12px;
+}

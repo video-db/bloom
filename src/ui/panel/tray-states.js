@@ -5,6 +5,7 @@ import { esc, clock, button } from '../shared/dom.js';
 import { icon } from '../shared/icons.js';
 import { mark } from '../shared/mark.js';
 import { sources, windowControls } from './sources.js';
+import { stage, stageLine, progressBar } from '../shared/stage.js';
 
 const current = (s) => s.recordings.find((r) => r.sessionId === s.sessionId);
 
@@ -88,28 +89,16 @@ const paused = (s) =>
       </button>
     </div>`;
 
-// A recording that is not ready yet: being processed, waiting its turn, or needing recovery.
-// under: the card sits under a heading that already says what state it is in.
-const card = ({ id, title, duration, failed, waiting, under = false }) =>
+// A recording that is not ready yet: what it is doing and how far along. Nothing to press:
+// Bloom carries on by itself, and tries again when the connection allows.
+const card = (r) =>
   /* HTML */ `<div class="tray-card">
     <span class="shot"></span>
     <span class="rc-copy"
-      ><b>${esc(title)}</b
-      ><small
-        >${
-          failed
-            ? under
-              ? clock(duration)
-              : 'Needs recovery'
-            : `${clock(duration)} · ${waiting ? 'Waiting' : 'Processing'}`
-        }</small
-      ></span
+      ><b>${esc(r.title)}</b
+      ><small>${clock(r.duration)} · ${esc(r.paused ? 'Waiting' : stageLine(r))}</small
+      >${progressBar(stage(r).progress)}</span
     >
-    ${
-      failed
-        ? `<button class="btn sm" data-command="retryRecording" data-id="${esc(id)}" title="Recover this recording">Recover</button>`
-        : ''
-    }
   </div>`;
 
 // The few seconds after Stop while the file is being finished.
@@ -127,7 +116,14 @@ const finished = (s) =>
       <span class="shot"></span>
       <span class="rc-copy"
         ><b>${esc(s.result.title)}</b
-        ><small>${clock(s.result.duration)} · Ready to play</small></span
+        ><small
+          >${clock(s.result.duration)} · Ready to play${
+            s.recordings.find((r) => r.id === s.result.id)?.transcriptStatus ===
+            'processing'
+              ? ' · Understanding'
+              : ''
+          }</small
+        ></span
       >
     </div>
     <div class="row2">
@@ -164,12 +160,7 @@ export const resultCard = (s) => (s.result ? finished(s) : '');
 export function currentCard(s) {
   const record = current(s);
   if (!record || !['saving', 'processing-error'].includes(s.phase)) return '';
-  return card({
-    id: record.id,
-    title: record.title,
-    duration: record.duration || s.elapsed,
-    failed: s.phase === 'processing-error' || record.status === 'error',
-  });
+  return card({ ...record, duration: record.duration || s.elapsed });
 }
 
 // Earlier recordings that are not ready yet, in two groups.
@@ -177,25 +168,24 @@ export function pending(s) {
   const shown = ['saving', 'processing-error'].includes(s.phase)
     ? current(s)?.id
     : null;
-  const others = s.pending.filter((p) => p.id !== shown);
+  const others = s.pending
+    .filter((p) => p.id !== shown)
+    .map((p) => ({
+      ...p,
+      jobStage: p.stage,
+      status: p.status === 'failed' ? 'error' : 'processing',
+      paused: p.status === 'waiting',
+    }));
   const group = (label, items) =>
     items.length
-      ? `<span class="label">${label}</span>${items
-          .map((p) =>
-            card({
-              ...p,
-              failed: p.status === 'failed',
-              waiting: p.status === 'waiting',
-              under: true,
-            }),
-          )
-          .join('')}`
+      ? `<span class="label">${label}</span>${items.map(card).join('')}`
       : '';
+  const waiting = (p) => p.jobStage === 'waiting-connection';
   return `${group(
     'Processing',
-    others.filter((p) => p.status !== 'failed'),
-  )}${group(
-    'Needs recovery',
-    others.filter((p) => p.status === 'failed'),
+    others.filter((p) => p.status !== 'error' && !waiting(p)),
+  )}${group('Waiting for a better connection', others.filter(waiting))}${group(
+    'Can’t be processed',
+    others.filter((p) => p.status === 'error'),
   )}`;
 }

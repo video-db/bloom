@@ -387,3 +387,20 @@ select {
   object-fit: cover;
   display: block;
 }
+
+/* A thin bar for how far a recording's processing has got. */
+.progress {
+  display: block;
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--line2);
+  overflow: hidden;
+}
+.progress > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+  transition: width 0.4s ease;
+}

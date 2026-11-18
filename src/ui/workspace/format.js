@@ -1,4 +1,5 @@
 // How a recording's date, length and state read wherever the main window shows it.
+import { stageLine } from '../shared/stage.js';
 import { clock } from '../shared/dom.js';
 
 export const day = (r) =>
@@ -10,13 +11,11 @@ export const day = (r) =>
     : '';
 // A ready recording needs no label. Only say something when there is something to know.
 export const status = (r) =>
-  r.status === 'error'
-    ? r.videoId
-      ? 'Needs attention'
-      : 'Needs recovery'
-    : r.status === 'ready'
-      ? ''
-      : 'Processing';
+  r.status === 'ready'
+    ? r.transcriptStatus === 'processing'
+      ? 'Understanding'
+      : ''
+    : stageLine(r);
 export const meta = (r) =>
   [day(r), clock(r.duration)].filter(Boolean).join(' · ');
 export const newestFirst = (a, b) => (b.createdAt || 0) - (a.createdAt || 0);

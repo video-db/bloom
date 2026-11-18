@@ -5,6 +5,7 @@
 ## [2.3.13] - 2026-11-18
 
 - Recordings of any length are processed. Before, a recording larger than about 70 MB on an ordinary connection (a few minutes of screen) could never be processed, and Recover failed the same way, because each request was cut off after 60 seconds. There is now no limit on a recording's length or size.
+- The Mac does not go to sleep on its own while a recording is being processed, and Bloom waits as long as VideoDB needs to make a long recording playable instead of sending it again.
 - Processing shows its progress ("Processing 43%", with a bar), then "Making it playable", then "Ready to play · Understanding" while the transcript is made.
 - Processing continues by itself. If the connection is too slow or drops, the recording waits under "Waiting for a better connection" and Bloom tries again after 1, 5 and 15 minutes, then every half hour and at every launch. Recover is gone. Recordings that 2.3.12 or earlier could not process are processed at the first launch of this version, while their file is there.
 - Settings → General: Check for updates, which becomes Restart to update once a newer Bloom is ready.

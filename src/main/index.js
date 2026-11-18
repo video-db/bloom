@@ -9,12 +9,14 @@ const {
   desktopCapturer,
   dialog,
   systemPreferences,
+  powerSaveBlocker,
 } = require('electron');
 const { createEngine } = require('../engine');
 const flags = require('./flags');
 const { createPrefs } = require('./prefs');
 const { afterUpdate } = require('./after-update');
 const { createUpdater } = require('./updater');
+const { createKeepAwake } = require('./keep-awake');
 const path = require('node:path');
 const { createTheme } = require('./theme');
 const { createTray } = require('./tray');
@@ -192,6 +194,8 @@ function start() {
   theme.onChange(windows.repaint);
   windows.createPanel();
   engine.onState(appState.broadcast);
+  const keepAwake = createKeepAwake({ blocker: powerSaveBlocker });
+  engine.onState((state) => keepAwake.observe(state));
   appState.broadcast(engine.getState());
   registerIpc({
     engine,

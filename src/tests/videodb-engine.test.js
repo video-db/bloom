@@ -941,3 +941,34 @@ test('a send the connection lets down waits for a better one and is tried again 
   await flush();
   assert.equal(f.engine.getState().recordings[0].status, 'ready');
 });
+
+test('the progress and the wait for a better connection survive the background poll', async (t) => {
+  const f = await setup(t);
+  await f.command('start');
+  await f.command('stop');
+  const sessionId = f.engine.getState().sessionId;
+  f.recorder.emit('recording-progress', {
+    sessionId,
+    recordingId: `job-${sessionId}`,
+    progress: 0.43,
+  });
+  await flush();
+  const shown = [];
+  const off = f.engine.onState((s) => shown.push(s.recordings[0].jobStage));
+  t.after(off);
+  // The engine re-reads the recorder's list every 3 s while a recording is unfinished.
+  await new Promise((resolve) => setTimeout(resolve, 3300));
+  await f.engine.whenIdle();
+  assert.equal(f.engine.getState().recordings[0].jobStage, 'sending');
+  assert.equal(f.engine.getState().recordings[0].progress, 0.43);
+  assert.equal(shown.includes('processing'), false, 'never flipped back');
+
+  f.recorder.emit('recording-relay-failed', { sessionId, permanent: false });
+  await flush();
+  await new Promise((resolve) => setTimeout(resolve, 3300));
+  await f.engine.whenIdle();
+  assert.equal(
+    f.engine.getState().recordings[0].jobStage,
+    'waiting-connection',
+  );
+});

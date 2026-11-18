@@ -7,6 +7,8 @@ const { ServiceError } = require('./errors');
 // A recording that could not be processed on the connection is tried again by itself:
 // after one, five and fifteen minutes, then every half hour, and at every launch.
 const RETRY_MINUTES = [1, 5, 15, 30];
+// Stages this run knows more precisely than the recorder's list does.
+const KNOWN_STAGES = ['sending', 'registering', 'waiting-connection', 'playback'];
 
 function createJobs(
   ctx,
@@ -273,9 +275,14 @@ function createJobs(
       const measuredDuration = Number(
         job.metadata?.duration_seconds ?? job.metadata?.durationSeconds,
       );
+      // The recorder lists a recording being sent, or waiting to be, as plain processing.
+      // What this run already knows (how far the send has got, or that it waits for a
+      // better connection) is kept, or the poll every few seconds would wipe it.
+      const known =
+        job.stage === 'processing' && KNOWN_STAGES.includes(record.jobStage);
       ctx.update(record.id, {
         recordingId: job.recordingId,
-        jobStage: job.stage,
+        ...(known ? {} : { jobStage: job.stage }),
         ...(Number.isFinite(measuredDuration) && measuredDuration > 0
           ? { duration: measuredDuration }
           : {}),

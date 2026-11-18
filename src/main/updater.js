@@ -154,8 +154,15 @@ function createUpdater({
   log = () => {},
 }) {
   let ready = null; // { version, app, dir } once a checked update is waiting
-  let busy = false;
+  let busy = null; // the check in progress
   let installing = false;
+  // What Settings shows: idle | checking | current | downloading | ready | failed | unavailable
+  let status = { state: 'idle' };
+  const listeners = new Set();
+  function show(next) {
+    status = next;
+    for (const listener of listeners) listener(status);
+  }
   const timers = [];
   const failuresFile = path.join(updatesDir, 'failures.json');
   const failures = () => {
@@ -314,25 +321,41 @@ function createUpdater({
     return ready;
   }
 
-  async function check() {
-    if (busy || installing || ready) return;
-    busy = true;
+  // Looks for a newer Bloom and downloads it. A check someone asked for says how it went;
+  // a background one changes what is shown only when it finds something.
+  function check({ manual = false } = {}) {
+    if (installing) return Promise.resolve();
+    if (ready) {
+      if (manual) show({ state: 'ready', version: ready.payload.version });
+      return Promise.resolve();
+    }
+    if (manual) show({ state: 'checking' });
+    if (!busy) busy = lookForUpdate().finally(() => (busy = null));
+    const attempt = busy;
+    return attempt.then((outcome) => {
+      if (manual || outcome.state !== 'failed') show(outcome);
+    });
+  }
+  async function lookForUpdate() {
     try {
-      if (!placeable()) return;
+      if (!placeable()) return { state: 'unavailable' };
       const response = await fetchImpl(feedUrl, {
         signal: AbortSignal.timeout(30 * 1000),
       });
-      if (!response.ok) return;
+      if (!response.ok) throw new Error(`feed answered ${response.status}`);
       const payload = verifiedPayload(await response.json(), publicKey);
-      if (!payload || !newer(payload.version, version)) return;
-      if ((failures()[payload.version] || 0) >= MAX_FAILURES) return;
+      if (!payload) throw new Error('the feed is not signed by Bloom');
+      const current = { state: 'current', checkedAt: Date.now() };
+      if (!newer(payload.version, version)) return current;
+      if ((failures()[payload.version] || 0) >= MAX_FAILURES) return current;
       const file = payload.files[arch];
-      if (!file) return;
+      if (!file) return current;
+      show({ state: 'downloading', version: payload.version });
       await stage(payload, file);
+      return { state: 'ready', version: payload.version };
     } catch (error) {
       log(`update check: ${error.message}`); // tried again at the next check
-    } finally {
-      busy = false;
+      return { state: 'failed' };
     }
   }
 
@@ -411,13 +434,14 @@ function createUpdater({
   return {
     start() {
       if (!enabled) return;
+      if (!placeable()) show({ state: 'unavailable' });
       try {
         tidy();
       } catch (error) {
         log(`update tidy: ${error.message}`);
       }
-      timers.push(setTimeout(check, FIRST_CHECK_MS));
-      timers.push(setInterval(check, CHECK_EVERY_MS));
+      timers.push(setTimeout(() => check(), FIRST_CHECK_MS));
+      timers.push(setInterval(() => check(), CHECK_EVERY_MS));
       timers.push(setInterval(whenIdle, IDLE_POLL_MS));
       for (const timer of timers) timer.unref?.();
     },
@@ -431,6 +455,27 @@ function createUpdater({
     },
     // Whether quitting should wait for applyOnQuit.
     hasUpdate: () => enabled && !!ready && !installing,
+    // Check for updates, from Settings.
+    checkNow: () => (enabled ? check({ manual: true }) : Promise.resolve()),
+    // Restart to update, from Settings: only when nothing is being recorded or processed.
+    installNow() {
+      if (!enabled || !ready || installing) return false;
+      const state = getState();
+      if (
+        !['idle', 'finished', 'processing-error'].includes(state?.phase) ||
+        (state.pending || []).some((p) => p.status === 'processing')
+      )
+        return false;
+      relaunchAfter = true;
+      quit();
+      return true;
+    },
+    // What Settings shows.
+    shown: () => status,
+    onStatus(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     stop() {
       for (const timer of timers.splice(0)) clearTimeout(timer);
     },

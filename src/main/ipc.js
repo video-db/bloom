@@ -40,6 +40,7 @@ function registerIpc({
   floating,
   screenPreview,
   restart,
+  updates = { check() {}, install() {} },
 }) {
   // Which of Bloom's windows a message came from, floating ones included.
   const roleOf = (window) =>
@@ -118,6 +119,14 @@ function registerIpc({
     }
     if (name === 'main-ready' && role === 'main') {
       windows.mainRendererReady();
+      return;
+    }
+    if (name === 'check-update' && role === 'main') {
+      Promise.resolve(updates.check()).catch(() => {});
+      return;
+    }
+    if (name === 'install-update' && role === 'main') {
+      updates.install();
       return;
     }
     if (name === 'float-size' && role === 'control')

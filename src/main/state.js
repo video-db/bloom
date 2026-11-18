@@ -17,6 +17,7 @@ function createAppState({
 }) {
   let prefError = ''; // why the last preference save failed; windows show it until one succeeds
   let hint = ''; // 'first-recording' from the end of setup until a recording starts
+  let update; // what the updater says for Settings; none in a build that does not update
 
   // Preferences that change the app itself rather than a window.
   function applyPrefs() {
@@ -41,6 +42,7 @@ function createAppState({
     livePreviews, // onboarding may show the screen and microphone working
     updated,
     hint,
+    ...(update ? { update } : {}),
   });
 
   function broadcast(state) {
@@ -64,6 +66,9 @@ function createAppState({
     },
     setHint(value) {
       hint = value;
+    },
+    setUpdate(value) {
+      update = value;
     },
   };
 }

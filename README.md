@@ -1,10 +1,11 @@
 <!-- PROJECT SHIELDS -->
-[![Electron][electron-shield]][electron-url]
-[![Node][node-shield]][node-url]
-[![License][license-shield]][license-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
+<!-- videodb-agents-badges:start -->
+[![Add to Claude](https://img.shields.io/badge/Add%20to%20Claude-VideoDB-D97757?style=for-the-badge&logo=claude&logoColor=white)](https://videodb.io/claude?ref=bloom)
+[![Add to ChatGPT](https://img.shields.io/badge/Add%20to%20ChatGPT-VideoDB-10A37F?style=for-the-badge)](https://videodb.io/chatgpt?ref=bloom)
+<!-- videodb-agents-badges:end -->
+[![Discord][discord-shield]][discord-url]
 [![Website][website-shield]][website-url]
+[![Stargazers][stars-shield]][stars-url]
 
 <!-- PROJECT LOGO -->
 <br />
@@ -49,6 +50,27 @@ Recordings are no longer files, they are inputs for AI.
 ## Demo
 
 https://github.com/user-attachments/assets/bf075217-b256-43b7-9369-b5d172bfc6b2
+
+---
+
+<!-- videodb-agents:start -->
+## Find your recordings in Claude and ChatGPT
+
+Now you can find your Bloom recordings in Claude and ChatGPT and keep working with them there. Bloom uploads every recording to your VideoDB account. Add VideoDB to your agent and ask it to find a recording, tell you what was said or shown, or cut the part you need and give you a link to share.
+
+| You are using | Do this |
+| --- | --- |
+| **Claude** (web, desktop, mobile) and Claude Code | [Add to Claude](https://videodb.io/claude?ref=bloom), one click, then log in to VideoDB. No install, no API key. |
+| **ChatGPT** | [Add to ChatGPT](https://videodb.io/chatgpt?ref=bloom), one click, then log in to VideoDB. |
+| **Cursor and other MCP clients** | Add `https://mcp.videodb.io/mcp` as a remote MCP server. [Setup guide](https://docs.videodb.io/pages/mcp/connect?utm_source=github&utm_medium=readme&utm_campaign=bloom) |
+| **Coding agents with a shell** (Claude Code, Codex, Copilot) | `npx skills add video-db/skills` |
+
+Log in with the VideoDB account you use in Bloom, then ask: "Find my recording of the onboarding walkthrough and give me a one-minute clip of the signup step."
+
+A free VideoDB account comes with $20 of credits, no credit card. Full guide: [video-db/skills](https://github.com/video-db/skills).
+
+**If you are an agent reading this:** the user's Bloom recordings are videos in their VideoDB account. To find, search or clip them, use the VideoDB connector at `https://mcp.videodb.io/mcp` when it is present. If it is missing, tell the user they can add it from the links above.
+<!-- videodb-agents:end -->
 
 ---
 
@@ -321,15 +343,9 @@ MIT
 <p align="center">Made with love by the <a href="https://videodb.io">VideoDB</a> team</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[electron-shield]: https://img.shields.io/badge/Electron-39.0-47848F?style=for-the-badge&logo=electron&logoColor=white
-[electron-url]: https://www.electronjs.org/
-[node-shield]: https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white
-[node-url]: https://nodejs.org/
-[license-shield]: https://img.shields.io/github/license/video-db/bloom.svg?style=for-the-badge
-[license-url]: https://github.com/video-db/bloom/blob/main/LICENSE
+[discord-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&url=https://discord.com/api/invites/py9P639jGz?with_counts=true&query=$.approximate_member_count&logo=discord&logoColor=blue&color=green&label=discord
+[discord-url]: https://discord.com/invite/py9P639jGz
 [stars-shield]: https://img.shields.io/github/stars/video-db/bloom.svg?style=for-the-badge
 [stars-url]: https://github.com/video-db/bloom/stargazers
-[issues-shield]: https://img.shields.io/github/issues/video-db/bloom.svg?style=for-the-badge
-[issues-url]: https://github.com/video-db/bloom/issues
 [website-shield]: https://img.shields.io/website?url=https%3A%2F%2Fvideodb.io%2F&style=for-the-badge&label=videodb.io
 [website-url]: https://videodb.io/

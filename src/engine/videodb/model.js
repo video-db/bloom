@@ -107,8 +107,15 @@ function pending(records) {
       title: r.title,
       duration: r.duration,
       stage: r.jobStage,
+      videoId: r.videoId || null,
       status:
-        r.status === 'error' ? 'failed' : r.paused ? 'waiting' : 'processing',
+        r.status === 'error'
+          ? 'failed'
+          : r.jobStage === 'waiting-connection'
+            ? 'connection'
+            : r.paused
+              ? 'waiting'
+              : 'processing',
       progress: r.progress ?? null,
     }));
 }

@@ -12,8 +12,6 @@ const capture = {
   stopped: () =>
     '<span class="badge warn">Capture needs attention · <button data-ui="show-panel">Review</button></span>',
   saving: () => '<span class="badge">Processing…</span>',
-  'processing-error': () =>
-    '<span class="badge warn">A recording needs recovery · <button data-ui="show-panel">Review</button></span>',
 };
 
 // No brand beside the window buttons: the one branded thing here is the action.

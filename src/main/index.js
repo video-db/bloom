@@ -9,12 +9,14 @@ const {
   desktopCapturer,
   dialog,
   systemPreferences,
+  powerSaveBlocker,
 } = require('electron');
 const { createEngine } = require('../engine');
 const flags = require('./flags');
 const { createPrefs } = require('./prefs');
 const { afterUpdate } = require('./after-update');
 const { createUpdater } = require('./updater');
+const { createKeepAwake } = require('./keep-awake');
 const path = require('node:path');
 const { createTheme } = require('./theme');
 const { createTray } = require('./tray');
@@ -192,6 +194,8 @@ function start() {
   theme.onChange(windows.repaint);
   windows.createPanel();
   engine.onState(appState.broadcast);
+  const keepAwake = createKeepAwake({ blocker: powerSaveBlocker });
+  engine.onState((state) => keepAwake.observe(state));
   appState.broadcast(engine.getState());
   registerIpc({
     engine,
@@ -203,6 +207,11 @@ function start() {
     floating,
     screenPreview,
     restart: restartForPermission,
+    // Settings' Check for updates and Restart to update; nothing in a build that does not update.
+    updates: {
+      check: () => updater?.checkNow(),
+      install: () => updater?.installNow(),
+    },
   });
   shortcuts.register();
   // A newer Bloom is downloaded in the background and goes in only when Bloom is not in
@@ -219,7 +228,13 @@ function start() {
       fetchImpl: (url, options) => net.fetch(url, options),
       log: (message) => console.log(`[update] ${message}`),
     });
+    appState.setUpdate(updater.shown());
+    updater.onStatus((shown) => {
+      appState.setUpdate(shown);
+      appState.broadcast(engine.getState());
+    });
     updater.start();
+    appState.broadcast(engine.getState());
   }
 }
 

@@ -19,6 +19,7 @@ const STAGES = {
   processing: 'processing',
   complete: 'complete',
 };
+// Stages from recorders before the discard command was withdrawn: nothing to deliver.
 const FORGOTTEN = ['discarding', 'discarded'];
 
 function createLocalRecorder({
@@ -66,6 +67,14 @@ function createLocalRecorder({
       instance.on(name, (payload) => {
         if (client === instance) events.emit('event', name, payload);
       });
+    // How far delivery has got: sending and VideoDB's work as one share, below 1 until done.
+    instance.on('processing-progress', (payload) => {
+      if (client !== instance || payload?.owner !== owner()) return;
+      if (!Number.isFinite(payload.percent)) return;
+      tell('recording-progress', payload.recordingId, {
+        progress: Math.min(0.99, Math.max(0, payload.percent / 100)),
+      });
+    });
     instance.on('processing-complete', (payload) => {
       if (client !== instance || payload?.owner !== owner()) return;
       delivering.delete(payload.recordingId);
@@ -83,7 +92,10 @@ function createLocalRecorder({
         if (client !== instance || !(sessions.has(id) || delivering.has(id)))
           return;
         delivering.delete(id);
-        tell('recording-relay-failed', payload.recordingId);
+        // The recorder keeps the recording and can send it again unless it says it cannot.
+        tell('recording-relay-failed', payload.recordingId, {
+          permanent: payload?.retryable === false,
+        });
       });
     client = instance;
     return client;
@@ -216,6 +228,9 @@ function createLocalRecorder({
             ? { result: { videoId: job.result.videoId } }
             : {}),
           metadata: { duration_seconds: job.durationSeconds },
+          ...(job.stage !== 'complete' && Number.isFinite(job.progress?.percent)
+            ? { progress: Math.min(0.99, job.progress.percent / 100) }
+            : {}),
         }));
     },
     // Starts capture once VideoDB has authorised it. Throws `refused` when nothing is being

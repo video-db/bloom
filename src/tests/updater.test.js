@@ -387,3 +387,43 @@ test('a version that fails to go in twice is left alone, and the old app is put 
   await after.check();
   assert.equal(after.status().ready, null, 'not downloaded again');
 });
+
+test('Check for updates says how it went, and Restart to update installs only when nothing is being processed', async (t) => {
+  const s = await setup(t);
+  let quits = 0;
+  let state = { phase: 'idle', pending: [{ status: 'processing' }], recordings: [] };
+  const updater = make(s, { quit: () => quits++, getState: () => state });
+  const seen = [];
+  updater.onStatus((shown) => seen.push(shown.state));
+  await updater.checkNow();
+  assert.deepEqual(seen, ['checking', 'downloading', 'ready']);
+  assert.deepEqual(updater.shown(), { state: 'ready', version: '2.3.11' });
+  // A recording is being processed: not now.
+  assert.equal(updater.installNow(), false);
+  assert.equal(quits, 0);
+  state = { phase: 'idle', pending: [{ status: 'connection' }], recordings: [] };
+  assert.equal(updater.installNow(), true);
+  assert.equal(quits, 1);
+  // Bloom reopens after the swap.
+  t.after(() => fs.rmSync(path.join(s.root, 'updates'), { recursive: true, force: true }));
+});
+
+test('Check for updates reports up to date, a failed check, and a Bloom that cannot update itself', async (t) => {
+  const s = await setup(t);
+  const current = make(s, { version: '2.3.11' });
+  await current.checkNow();
+  assert.equal(current.shown().state, 'current');
+  assert.equal(typeof current.shown().checkedAt, 'number');
+
+  const offline = make(s, { feedUrl: `${s.base}/missing.json` });
+  await offline.checkNow();
+  assert.equal(offline.shown().state, 'failed');
+  // A background check that fails changes nothing that is shown.
+  const quiet = make(s, { feedUrl: `${s.base}/missing.json` });
+  await quiet.check();
+  assert.equal(quiet.shown().state, 'idle');
+
+  const fromDisk = make(s, { appPath: '/Volumes/Bloom/Bloom.app' });
+  await fromDisk.checkNow();
+  assert.equal(fromDisk.shown().state, 'unavailable');
+});

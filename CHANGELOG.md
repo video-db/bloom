@@ -2,10 +2,20 @@
 
 ## Unreleased
 
-- The recorder now sends a recording to VideoDB itself and clears its copy once VideoDB has it; Bloom no longer handles recording files at all. Uses SDK release-0.3.3 at `2df0118` (recorder `0.3.3-managed.2`, with the microphone-stop fix).
+- The recorder now sends a recording to VideoDB itself, reports how far it has got, and clears its copy once VideoDB has it; Bloom no longer handles recording files at all. Uses SDK 0.5.3 (`release-0-5-3` at `2a6ff19`, recorder `0.3.3-managed.4`).
+- The progress bar follows the recorder: "Processing 43%" covers sending and VideoDB's work, and stays below 100 % until the recording is ready. A Bloom reopened during delivery shows the progress at once.
+- A recording the recorder could not deliver waits for a better connection and is handed back to the recorder by itself; one it no longer has can't be processed. A recording cut short by a crash or a forced quit is still delivered.
 - Starting a recording needs a connection to VideoDB, which now authorises a recording before capture begins.
 - Quitting or signing out never waits for a recording to reach VideoDB; the recorder carries on at the next launch.
-- Recordings that an earlier Bloom was still sending show as needing recovery and cannot be recovered by this version.
+- Recordings that 2.3.13 or earlier had not yet sent show as "Can’t be processed": the recorder does not have them.
+
+## [2.3.13] - 2026-11-18
+
+- Recordings of any length are processed. Before, a recording larger than about 70 MB on an ordinary connection (a few minutes of screen) could never be processed, and Recover failed the same way, because each request was cut off after 60 seconds. There is now no limit on a recording's length or size.
+- The Mac does not go to sleep on its own while a recording is being processed, and Bloom waits as long as VideoDB needs to make a long recording playable instead of sending it again.
+- Processing shows its progress ("Processing 43%", with a bar), then "Making it playable", then "Ready to play · Understanding" while the transcript is made.
+- Processing continues by itself. If the connection is too slow or drops, the recording waits under "Waiting for a better connection" and Bloom tries again after 1, 5 and 15 minutes, then every half hour and at every launch. Recover is gone. Recordings that 2.3.12 or earlier could not process are processed at the first launch of this version, while their file is there.
+- Settings → General: Check for updates, which becomes Restart to update once a newer Bloom is ready.
 
 ## [2.3.12] - 2026-11-17
 

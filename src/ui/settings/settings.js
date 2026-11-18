@@ -127,6 +127,41 @@ function account(s) {
     </div>`;
 }
 
+// The version and, in an installed Bloom, its updates: Check for updates, then Restart to
+// update once a newer Bloom is downloaded and checked. Updates still install by themselves.
+function version(s) {
+  const u = s.update;
+  const current = `Bloom ${esc(s.version)}`;
+  if (!u) return row('Version', '', `<span class="soft">${current}</span>`);
+  const next = u.version ? `Bloom ${esc(u.version)}` : 'A new Bloom';
+  const at = u.checkedAt
+    ? new Date(u.checkedAt).toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : '';
+  // The same moments that hold back Sign out: a recording being made or processed.
+  const recording = !['idle', 'finished', 'processing-error'].includes(s.phase);
+  const processing = s.pending.some((p) => p.status === 'processing');
+  const check = (label = 'Check for updates', disabled = false) =>
+    `<button class="btn sm" data-ui="check-update" ${disabled ? 'disabled' : ''}>${label}</button>`;
+  const [hint, control] = {
+    idle: [current, check()],
+    checking: [current, check('Checking…', true)],
+    current: [`${current} · Up to date${at ? ` · ${at}` : ''}`, check()],
+    downloading: [`Downloading ${next}…`, check(undefined, true)],
+    ready: [
+      recording || processing
+        ? `${next} is ready · after this recording`
+        : `${next} is ready`,
+      `<button class="btn sm pri" data-ui="install-update" ${recording || processing ? 'disabled' : ''}>Restart to update</button>`,
+    ],
+    failed: [`${current} · Couldn’t check`, check()],
+    unavailable: [`${current} · Move Bloom to Applications to update`, ''],
+  }[u.state] || [current, check()];
+  return row('Version', hint, control);
+}
+
 const general = (s) =>
   /* HTML */ `<h2>General</h2>
     <div class="card">
@@ -146,7 +181,7 @@ const general = (s) =>
           ? toggle(s, 'openAtLogin', 'Open Bloom when I log in')
           : '<span class="soft">Not available</span>',
       )}
-      ${s.version ? row('Version', '', `<span class="soft">Bloom ${esc(s.version)}</span>`) : ''}
+      ${s.version ? version(s) : ''}
     </div>`;
 
 export function settings(s) {

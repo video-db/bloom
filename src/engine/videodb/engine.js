@@ -18,6 +18,7 @@ function createVideoDBEngine({
   cache,
   autoRestore = true,
   now,
+  retryDelay, // how long before a recording the connection let down is tried again
 }) {
   const bus = new EventEmitter();
   const commandsInFlight = new Set();
@@ -110,6 +111,7 @@ function createVideoDBEngine({
   const jobs = createJobs(ctx, {
     service,
     recorder,
+    ...(retryDelay ? { retryDelay } : {}),
     // A new recording is ready to play: transcribe and summarise it if the person wants that.
     onReady: (id) => {
       if (autoTranscribe) ctx.run(() => commands.requestTranscript({ id }));

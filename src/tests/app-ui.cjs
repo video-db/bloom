@@ -359,18 +359,36 @@ fs.mkdirSync(evidence, { recursive: true });
     await recorder.screenshot({
       path: path.join(evidence, `${theme}-tray-processing.png`),
     });
-    // If processing fails, the recording waits to be recovered and still does not block Start.
+    // While the file is sent: how far along, with a bar.
     await app.evaluate(() => {
       const { recorder: fake } = global.__bloom.getFixture();
-      fake.emit('recording-relay-failed', { sessionId: fake.active });
+      fake.emit('recording-progress', {
+        sessionId: fake.active,
+        recordingId: `job-${fake.active}`,
+        progress: 0.43,
+      });
     });
-    await phase('processing-error');
-    await recorder.getByText('Needs recovery', { exact: true }).waitFor();
+    await recorder.getByText(/Processing 43%/).waitFor();
+    assert.equal(await recorder.getByRole('progressbar').count(), 1);
+    await recorder.screenshot({
+      path: path.join(evidence, `${theme}-tray-progress.png`),
+    });
+    // The connection lets it down: it waits for a better one by itself, with nothing to
+    // press, and Start stays free.
+    await app.evaluate(() => {
+      const { recorder: fake } = global.__bloom.getFixture();
+      fake.emit('recording-relay-failed', {
+        sessionId: fake.active,
+        permanent: false,
+      });
+    });
+    await phase('idle');
+    await recorder
+      .getByText('Waiting for a better connection', { exact: true })
+      .waitFor();
     assert.equal(
-      await recorder
-        .getByRole('button', { name: 'Recover', exact: true })
-        .count(),
-      1,
+      await recorder.getByRole('button', { name: /Recover|Try now/ }).count(),
+      0,
     );
     assert.equal(
       await recorder
@@ -378,18 +396,17 @@ fs.mkdirSync(evidence, { recursive: true });
         .isEnabled(),
       true,
     );
-    assert.equal(
-      await recorder.locator('.ph.warn').count(),
-      0,
-      'a recording needing recovery does not take over the panel',
-    );
+    assert.equal(await recorder.locator('.ph.warn').count(), 0);
     await recorder.screenshot({
-      path: path.join(evidence, `${theme}-tray-recovery.png`),
+      path: path.join(evidence, `${theme}-tray-waiting.png`),
     });
-    await recorder
-      .getByRole('button', { name: 'Recover', exact: true })
-      .click();
-    await phase('saving');
+    // Bloom's own next try (here at once rather than after a minute).
+    await app.evaluate(() => {
+      const engine = global.__bloom.getEngine();
+      const id = engine.getState().recordings[0].id;
+      engine.command('retryRecording', { id });
+    });
+    await recorder.getByText(/Processing/).first().waitFor();
     assert.equal(
       await app.evaluate(() => global.__bloom.getEngine().getState().result),
       null,

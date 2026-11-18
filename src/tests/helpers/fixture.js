@@ -16,6 +16,7 @@ function createFixture({
   cache = createRecordingCache(),
   records = [],
   autoRestore = false,
+  retryDelay,
 } = {}) {
   const events = new EventEmitter();
   const outcomes = new Map();
@@ -270,6 +271,7 @@ function createFixture({
     cache,
     autoRestore,
     now: () => clock,
+    retryDelay,
   });
   async function command(name, args = {}) {
     engine.command(name, args);

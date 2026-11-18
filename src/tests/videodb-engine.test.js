@@ -234,12 +234,15 @@ test('sign-out during pending upload is refused and cached work stays visible', 
   assert.equal(f.engine.getState().recordings.length, 1);
 });
 
-test('a recording that needs recovery does not stand in the way of signing out', async (t) => {
+test('a recording that can’t be processed does not stand in the way of signing out', async (t) => {
   const f = await setup(t);
   await f.command('start');
   await f.command('stop');
   // Processing failed: the recording waits to be recovered and will not finish by itself.
-  f.recorder.emit('recording-relay-failed', { sessionId: f.recorder.active });
+  f.recorder.emit('recording-relay-failed', {
+    sessionId: f.recorder.active,
+    permanent: true,
+  });
   await flush();
   assert.equal(f.engine.getState().phase, 'processing-error');
   assert.equal(f.engine.getState().pending[0].status, 'failed');
@@ -379,6 +382,7 @@ test('failed retained media can be left for recovery without blocking every late
   await f.command('stop');
   f.recorder.emit('recording-relay-failed', {
     sessionId: f.engine.getState().sessionId,
+    permanent: true,
   });
   await flush();
   assert.equal(f.engine.getState().phase, 'processing-error');
@@ -649,13 +653,19 @@ test('a failed earlier recording, even after a failed recovery, never blocks Sta
   await f.command('start');
   await f.command('stop');
   const failedSession = f.engine.getState().sessionId;
-  f.recorder.emit('recording-relay-failed', { sessionId: failedSession });
+  f.recorder.emit('recording-relay-failed', {
+    sessionId: failedSession,
+    permanent: true,
+  });
   await flush();
   assert.equal(f.engine.getState().phase, 'processing-error');
   // The owner's case: Recover was tried, it failed again, and Start must still work.
   const failedId = f.engine.getState().recordings[0].id;
   await f.command('retryRecording', { id: failedId });
-  f.recorder.emit('recording-relay-failed', { sessionId: failedSession });
+  f.recorder.emit('recording-relay-failed', {
+    sessionId: failedSession,
+    permanent: true,
+  });
   await flush();
   assert.equal(f.engine.getState().recordings[0].status, 'error');
   assert.equal(f.engine.getState().recordings[0].paused, false);
@@ -923,4 +933,101 @@ test('one sound source can be muted while the recording carries on', async (t) =
     mic: false,
     systemAudio: false,
   });
+});
+
+test('progress reaches the recording, then the stage after the file is sent', async (t) => {
+  const f = await setup(t);
+  await f.command('start');
+  await f.command('stop');
+  const sessionId = f.engine.getState().sessionId;
+  f.recorder.emit('recording-progress', {
+    sessionId,
+    recordingId: `job-${sessionId}`,
+    progress: 0.43,
+  });
+  await flush();
+  let record = f.engine.getState().recordings[0];
+  assert.equal(record.jobStage, 'sending');
+  assert.equal(record.progress, 0.43);
+  assert.equal(f.engine.getState().pending[0].progress, 0.43);
+  f.recorder.emit('recording-progress', {
+    sessionId,
+    recordingId: `job-${sessionId}`,
+    progress: 1,
+  });
+  await flush();
+  record = f.engine.getState().recordings[0];
+  assert.equal(record.jobStage, 'registering');
+});
+
+test('a send the connection lets down waits for a better one and is tried again by itself', async (t) => {
+  const f = await setup(t, { retryDelay: () => 5 });
+  await f.command('start');
+  await f.command('stop');
+  const sessionId = f.engine.getState().sessionId;
+  f.recorder.emit('recording-relay-failed', { sessionId, permanent: false });
+  await flush();
+  // Nothing to press and nothing blocked: the tray is ready for the next recording.
+  assert.equal(f.engine.getState().phase, 'idle');
+  assert.equal(f.engine.getState().problem, null);
+  assert.equal(f.engine.getState().pending[0].status, 'connection');
+  assert.equal(
+    f.engine.getState().recordings[0].jobStage,
+    'waiting-connection',
+  );
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  await f.engine.whenIdle();
+  assert(
+    f.calls.some(([name, id]) => name === 'relay' && id === `job-${sessionId}`),
+    'tried again without being asked',
+  );
+  f.recorder.finish(sessionId);
+  await flush();
+  assert.equal(f.engine.getState().recordings[0].status, 'ready');
+});
+
+test('the progress and the wait for a better connection survive the background poll', async (t) => {
+  const f = await setup(t);
+  await f.command('start');
+  await f.command('stop');
+  const sessionId = f.engine.getState().sessionId;
+  f.recorder.emit('recording-progress', {
+    sessionId,
+    recordingId: `job-${sessionId}`,
+    progress: 0.43,
+  });
+  await flush();
+  const shown = [];
+  const off = f.engine.onState((s) => shown.push(s.recordings[0].jobStage));
+  t.after(off);
+  // The engine re-reads the recorder's list every 3 s while a recording is unfinished.
+  await new Promise((resolve) => setTimeout(resolve, 3300));
+  await f.engine.whenIdle();
+  assert.equal(f.engine.getState().recordings[0].jobStage, 'sending');
+  assert.equal(f.engine.getState().recordings[0].progress, 0.43);
+  assert.equal(shown.includes('processing'), false, 'never flipped back');
+
+  f.recorder.emit('recording-relay-failed', { sessionId, permanent: false });
+  await flush();
+  await new Promise((resolve) => setTimeout(resolve, 3300));
+  await f.engine.whenIdle();
+  assert.equal(
+    f.engine.getState().recordings[0].jobStage,
+    'waiting-connection',
+  );
+});
+
+test('a Bloom reopened while the recorder delivers shows the progress at once', async (t) => {
+  const f = await setup(t);
+  await f.command('start');
+  await f.command('stop');
+  const sessionId = f.engine.getState().sessionId;
+  f.recorder.jobs = f.recorder.jobs.map((j) =>
+    j.sessionId === sessionId ? { ...j, progress: 0.61 } : j,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 3300)); // the background poll
+  await f.engine.whenIdle();
+  const record = f.engine.getState().recordings[0];
+  assert.equal(record.jobStage, 'sending');
+  assert.equal(record.progress, 0.61);
 });

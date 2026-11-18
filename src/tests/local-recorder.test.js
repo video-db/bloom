@@ -314,7 +314,7 @@ test('the recorder gets a fresh token whenever it asks, for this account only', 
   assert.equal(await ask({ ...request, owner: 'bloom-someone-else' }), null);
 });
 
-test('a recording that fails to reach VideoDB is reported, and Recover hands it back', async () => {
+test('a recording that fails to reach VideoDB is reported, and handing it back sends it once', async () => {
   const f = fixture();
   await f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
   await f.recorder.stop();
@@ -322,9 +322,10 @@ test('a recording that fails to reach VideoDB is reported, and Recover hands it 
   await flush();
   f.fail('rec-1');
   await assert.rejects(waiting, { code: 'unavailable' });
+  // Not final: the recorder still has it and can send it again.
   assert.deepEqual(f.events.at(-1), [
     'recording-relay-failed',
-    { recordingId: 'rec-1', sessionId: 'rec-a' },
+    { recordingId: 'rec-1', sessionId: 'rec-a', permanent: false },
   ]);
   f.client().jobs = [
     { recordingId: 'rec-1', owner: OWNER, stage: 'needs_recovery' },
@@ -508,4 +509,56 @@ test('the microphone is asked for by Bloom itself, and its answer is the status'
   // Screen Recording still goes through the recorder.
   await yes.requestPermission('screen');
   assert.deepEqual(asked.at(-1), ['recorder', 'screen-capture']);
+});
+
+test('the recorder’s progress reaches the engine, and a reopened Bloom sees it in the list', async () => {
+  const f = fixture();
+  await f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
+  await f.recorder.stop();
+  f.client().emit('processing-progress', {
+    recordingId: 'rec-1',
+    owner: OWNER,
+    percent: 43,
+    etaSeconds: 120,
+  });
+  // Another account's recording says nothing here.
+  f.client().emit('processing-progress', {
+    recordingId: 'rec-x',
+    owner: 'bloom-someone-else',
+    percent: 10,
+    etaSeconds: null,
+  });
+  assert.deepEqual(
+    f.events.filter(([name]) => name === 'recording-progress'),
+    [['recording-progress', { recordingId: 'rec-1', sessionId: 'rec-a', progress: 0.43 }]],
+  );
+  f.client().jobs = [
+    {
+      recordingId: 'rec-1',
+      owner: OWNER,
+      stage: 'uploaded',
+      partial: false,
+      partialReason: null,
+      progress: { percent: 61, etaSeconds: null },
+    },
+  ];
+  const [listed] = await f.recorder.recover();
+  assert.equal(listed.stage, 'processing');
+  assert.equal(listed.progress, 0.61);
+});
+
+test('only a delivery the recorder says it cannot retry is final', async () => {
+  const f = fixture();
+  await f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
+  await f.recorder.stop();
+  f.client().emit('processing-failed', {
+    recordingId: 'rec-1',
+    owner: OWNER,
+    errorCode: 'GONE',
+    retryable: false,
+  });
+  assert.deepEqual(f.events.at(-1), [
+    'recording-relay-failed',
+    { recordingId: 'rec-1', sessionId: 'rec-a', permanent: true },
+  ]);
 });

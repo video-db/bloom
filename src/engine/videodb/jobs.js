@@ -95,6 +95,7 @@ function createJobs(
       ctx.update(record.id, {
         status: 'ready',
         jobStage: 'complete',
+        progress: null,
         streamUrl: video.streamUrl,
         playerUrl: video.playerUrl,
         title: record.requestedTitle || video.title,

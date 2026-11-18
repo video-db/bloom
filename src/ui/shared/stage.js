@@ -1,6 +1,9 @@
 // What a recording that is not ready yet is doing, in a few words, and how far along it is.
 // Nothing here asks the person to act: Bloom carries on by itself.
 export function stage(r) {
+  // Still being captured: nothing is processed until the recording has stopped.
+  if (r.jobStage === 'recording' && r.status !== 'error')
+    return { label: 'Recording' };
   if (r.status === 'error')
     return { label: r.videoId ? 'Needs attention' : 'Can’t be processed' };
   if (r.jobStage === 'waiting-connection')

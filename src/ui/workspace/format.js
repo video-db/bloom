@@ -16,8 +16,11 @@ export const status = (r) =>
       ? 'Understanding'
       : ''
     : stageLine(r);
+// The length is known once the recording has stopped; 0:00 while it is made says nothing.
 export const meta = (r) =>
-  [day(r), clock(r.duration)].filter(Boolean).join(' · ');
+  [day(r), r.jobStage === 'recording' && !r.duration ? '' : clock(r.duration)]
+    .filter(Boolean)
+    .join(' · ');
 export const newestFirst = (a, b) => (b.createdAt || 0) - (a.createdAt || 0);
 // Which group a recording falls in when listed by date, as Finder names them: Today,
 // Yesterday, Previous 7 Days, Previous 30 Days, then the month, then the year.

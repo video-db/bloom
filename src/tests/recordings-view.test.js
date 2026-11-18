@@ -55,3 +55,19 @@ test('date order shows groups; other orders are one plain grid', async () => {
   assert.equal(named.match(/class="tiles"/g).length, 1);
   assert.equal(named.includes('tile-group'), false);
 });
+
+test('a recording being made says Recording, with no 0:00 length', async () => {
+  const { status, meta } = await import('../ui/workspace/format.js');
+  const capturing = {
+    status: 'processing',
+    jobStage: 'recording',
+    duration: 0,
+    createdAt: Date.parse('2026-11-19T02:11:00'),
+  };
+  assert.equal(status(capturing), 'Recording');
+  assert.doesNotMatch(meta(capturing), /0:00/);
+  // Once stopped it is processed, with its length.
+  const stopped = { ...capturing, jobStage: 'sending', progress: 0.4, duration: 64 };
+  assert.equal(status(stopped), 'Processing 40%');
+  assert.match(meta(stopped), /1:04/);
+});

@@ -3,12 +3,9 @@
 [![Add to Claude](https://img.shields.io/badge/Add%20to%20Claude-VideoDB-D97757?style=for-the-badge&logo=claude&logoColor=white)](https://videodb.io/claude?ref=bloom)
 [![Add to ChatGPT](https://img.shields.io/badge/Add%20to%20ChatGPT-VideoDB-10A37F?style=for-the-badge)](https://videodb.io/chatgpt?ref=bloom)
 <!-- videodb-agents-badges:end -->
-[![Electron][electron-shield]][electron-url]
-[![Node][node-shield]][node-url]
-[![License][license-shield]][license-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
+[![Discord][discord-shield]][discord-url]
 [![Website][website-shield]][website-url]
+[![Stargazers][stars-shield]][stars-url]
 
 <!-- PROJECT LOGO -->
 <br />
@@ -346,15 +343,9 @@ MIT
 <p align="center">Made with love by the <a href="https://videodb.io">VideoDB</a> team</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[electron-shield]: https://img.shields.io/badge/Electron-39.0-47848F?style=for-the-badge&logo=electron&logoColor=white
-[electron-url]: https://www.electronjs.org/
-[node-shield]: https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white
-[node-url]: https://nodejs.org/
-[license-shield]: https://img.shields.io/github/license/video-db/bloom.svg?style=for-the-badge
-[license-url]: https://github.com/video-db/bloom/blob/main/LICENSE
+[discord-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&url=https://discord.com/api/invites/py9P639jGz?with_counts=true&query=$.approximate_member_count&logo=discord&logoColor=blue&color=green&label=discord
+[discord-url]: https://discord.com/invite/py9P639jGz
 [stars-shield]: https://img.shields.io/github/stars/video-db/bloom.svg?style=for-the-badge
 [stars-url]: https://github.com/video-db/bloom/stargazers
-[issues-shield]: https://img.shields.io/github/issues/video-db/bloom.svg?style=for-the-badge
-[issues-url]: https://github.com/video-db/bloom/issues
 [website-shield]: https://img.shields.io/website?url=https%3A%2F%2Fvideodb.io%2F&style=for-the-badge&label=videodb.io
 [website-url]: https://videodb.io/

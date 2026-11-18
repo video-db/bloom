@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## [2.3.14] - 2026-11-19
+
+- The display stays on while recording. Before, a recording stopped capturing when the Mac turned the display off, and Stop could not finish it.
+- The processing percentage no longer disappears and comes back while a recording is processed.
+
 ## [2.3.13] - 2026-11-18
 
 - Recordings of any length are processed. Before, a recording larger than about 70 MB on an ordinary connection (a few minutes of screen) could never be processed, and Recover failed the same way, because each request was cut off after 60 seconds. There is now no limit on a recording's length or size.

@@ -1031,3 +1031,27 @@ test('a Bloom reopened while the recorder delivers shows the progress at once', 
   assert.equal(record.jobStage, 'sending');
   assert.equal(record.progress, 0.61);
 });
+
+test('quitting during delivery is not a failure, and the recorder’s progress wins on reopen', async (t) => {
+  const f = await setup(t, { retryDelay: () => 60 * 60 * 1000 });
+  await f.command('start');
+  await f.command('stop');
+  const sessionId = f.engine.getState().sessionId;
+  await f.engine.shutdown();
+  await flush();
+  const record = f.engine.getState().recordings[0];
+  assert.notEqual(record.jobStage, 'waiting-connection');
+  assert.notEqual(record.status, 'error');
+
+  // A stage saved earlier gives way to the recorder's progress at the next look.
+  f.recorder.emit('recording-relay-failed', { sessionId, permanent: false });
+  await flush();
+  assert.equal(f.engine.getState().recordings[0].jobStage, 'waiting-connection');
+  f.recorder.jobs = f.recorder.jobs.map((j) =>
+    j.sessionId === sessionId ? { ...j, progress: 0.3 } : j,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 3300));
+  await f.engine.whenIdle();
+  assert.equal(f.engine.getState().recordings[0].jobStage, 'sending');
+  assert.equal(f.engine.getState().recordings[0].progress, 0.3);
+});

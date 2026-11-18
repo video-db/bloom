@@ -5,7 +5,7 @@ const { createSourceDiscovery } = require('./source-discovery');
 // Who is signed in, what macOS allows, and whether the recorder is ready. These are three
 // separate answers: a key that VideoDB accepted stays accepted even if the recorder or the
 // library then fails, so neither failure is ever reported as a bad key.
-function createAccess(ctx, { service, recorder, library, recover }) {
+function createAccess(ctx, { service, recorder, library, recover, leave = () => {}, stay = () => {} }) {
   let checking = false;
   const discovery = createSourceDiscovery(ctx, recorder);
 
@@ -109,7 +109,13 @@ function createAccess(ctx, { service, recorder, library, recover }) {
           'busy',
           'Sign out is available once the recording has been processed.',
         );
-      await recorder.shutdown();
+      // The recorder's waits end with it; nothing has failed.
+      leave();
+      try {
+        await recorder.shutdown();
+      } finally {
+        stay();
+      }
       service.signOut();
       ctx.switchScope(null);
       ctx.set({

@@ -238,6 +238,11 @@ function createFixture({
     },
     async shutdown(options) {
       calls.push(['shutdown', options]);
+      // As the SDK does: waiting for processing ends when the recorder stops.
+      for (const [key, wait] of waits) {
+        wait.reject(new Error('Recorder exited before processing completed'));
+        waits.delete(key);
+      }
     },
     finish(sessionId = this.active) {
       const result = {

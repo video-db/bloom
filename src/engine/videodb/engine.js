@@ -136,6 +136,8 @@ function createVideoDBEngine({
     recorder,
     library,
     recover: jobs.recover,
+    leave: jobs.leave,
+    stay: jobs.stay,
   });
   const capture = createCapture(ctx, { service, recorder, jobs, now });
   const between = () => ['idle', 'finished'].includes(state.phase);
@@ -300,7 +302,13 @@ function createVideoDBEngine({
           'capture-unknown',
           'Capture stop could not be confirmed. Keep Bloom open and try Stop again.',
         );
-      await recorder.shutdown({ suspend });
+      jobs.leave();
+      try {
+        await recorder.shutdown({ suspend });
+      } finally {
+        // Signing out or a recorder restart keeps Bloom running.
+        if (suspend) jobs.stay();
+      }
     },
     // Last resort when quitting: the recorder did not stop in time and must not outlive Bloom.
     abandon() {

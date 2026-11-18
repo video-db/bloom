@@ -25,6 +25,7 @@ function createJobs(
   const later = new Map(); // record id -> { timer, attempt } for the next try
   let poll = null;
   let disposed = false;
+  let leaving = false; // Bloom is quitting or signing out: waits end, nothing has failed
 
   function tryLater(id) {
     // A failure is often heard twice (the event and the wait); one next try is enough.
@@ -239,6 +240,8 @@ function createJobs(
       try {
         await complete(await recorder.wait(identity));
       } catch (error) {
+        // Quitting ends the wait; the recorder carries on and is asked again next launch.
+        if (leaving || disposed) return;
         if (error?.permanent || error?.code === 'not-found')
           failed(forJob(identity)?.sessionId);
         else waitForConnection(identity);
@@ -286,8 +289,8 @@ function createJobs(
       ctx.update(record.id, {
         recordingId: job.recordingId,
         ...(known ? {} : { jobStage: job.stage }),
-        // A Bloom opened while the recorder delivers shows how far it has got at once.
-        ...(Number.isFinite(job.progress) && !known
+        // While the recorder delivers, its progress wins over any stage saved before.
+        ...(Number.isFinite(job.progress)
           ? { jobStage: 'sending', progress: job.progress }
           : {}),
         ...(Number.isFinite(measuredDuration) && measuredDuration > 0
@@ -372,6 +375,14 @@ function createJobs(
     recover,
     retry,
     continueSetAside,
+    // Bloom is about to stop the recorder: the waits that end are not failures.
+    leave() {
+      leaving = true;
+      for (const id of [...later.keys()]) settled(id);
+    },
+    stay() {
+      leaving = false;
+    },
     dispose() {
       disposed = true;
       clearTimeout(poll);

@@ -4,11 +4,63 @@ const { newRecord, unfinished } = require('./model');
 const CAPTURING = ['starting', 'recording', 'paused', 'stopping', 'stopped'];
 const { ServiceError } = require('./errors');
 
-function createJobs(ctx, { service, recorder, onReady = () => {} }) {
+// A recording that could not be processed on the connection is tried again by itself:
+// after one, five and fifteen minutes, then every half hour, and at every launch.
+const RETRY_MINUTES = [1, 5, 15, 30];
+
+function createJobs(
+  ctx,
+  {
+    service,
+    recorder,
+    onReady = () => {},
+    retryDelay = (attempt) =>
+      RETRY_MINUTES[Math.min(attempt, RETRY_MINUTES.length - 1)] * 60 * 1000,
+  },
+) {
   const waiting = new Set();
   const completing = new Set();
+  const later = new Map(); // record id -> { timer, attempt } for the next try
   let poll = null;
   let disposed = false;
+
+  function tryLater(id) {
+    // A failure is often heard twice (the event and the wait); one next try is enough.
+    if (disposed || !ctx.find(id) || later.get(id)?.pending) return;
+    const attempt = later.has(id) ? later.get(id).attempt + 1 : 0;
+    const timer = setTimeout(() => {
+      later.get(id).pending = false;
+      ctx.run(async () => {
+        try {
+          await retry(id);
+        } catch {
+          tryLater(id); // still capturing, or the connection again: the next try
+        }
+      });
+    }, retryDelay(attempt));
+    timer.unref?.();
+    later.set(id, { timer, attempt, pending: true });
+  }
+  function settled(id) {
+    clearTimeout(later.get(id)?.timer);
+    later.delete(id);
+  }
+  // The connection let a recording down: it waits for a better one, and nothing blocks.
+  function waitForConnection(sessionId) {
+    const record = forSession(sessionId);
+    if (!record || record.paused) return;
+    ctx.update(record.id, {
+      status: 'processing',
+      jobStage: 'waiting-connection',
+      progress: null,
+    });
+    if (
+      ctx.get().sessionId === sessionId &&
+      ['saving', 'processing-error'].includes(ctx.get().phase)
+    )
+      ctx.set({ phase: 'idle', problem: null, upload: null });
+    tryLater(record.id);
+  }
 
   function forSession(sessionId) {
     return ctx.get().recordings.find((r) => r.sessionId === sessionId);
@@ -81,20 +133,14 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
           }
         }
       }
+      settled(record.id);
       onReady(record.id);
       continueSetAside();
     } catch {
       if (scope !== ctx.scope()) return;
-      ctx.update(record.id, { status: 'error', jobStage: 'playback' });
-      if (ctx.get().sessionId === payload.sessionId)
-        ctx.set({
-          phase: 'processing-error',
-          problem: {
-            kind: 'playback',
-            message:
-              'Processed. Playback or the recording name still needs to be checked.',
-          },
-        });
+      // In VideoDB, but playback is not confirmed yet: checked again by itself.
+      ctx.update(record.id, { status: 'processing', jobStage: 'playback' });
+      tryLater(record.id);
     } finally {
       completing.delete(payload.sessionId);
     }
@@ -120,9 +166,7 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
         phase: 'processing-error',
         problem: {
           kind,
-          message: record.videoId
-            ? 'Processing finished, but playback needs another check.'
-            : 'Processing did not finish. Recover the recording to try again.',
+          message: 'This recording can’t be processed.',
         },
       });
     ctx.update(record.id, {
@@ -135,6 +179,14 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
     const record = forSession(payload?.sessionId);
     if (!record) return;
     if (name === 'processing-complete') return complete(payload);
+    if (name === 'recording-progress') {
+      ctx.update(record.id, {
+        status: 'processing',
+        jobStage: payload.progress >= 1 ? 'registering' : 'sending',
+        progress: payload.progress,
+      });
+      return;
+    }
     if (name === 'local-recording-ready') {
       ctx.update(record.id, {
         recordingId: payload.recordingId,
@@ -142,6 +194,8 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
       });
       schedule();
     }
+    if (name === 'recording-relay-failed' && !payload.permanent)
+      return waitForConnection(payload.sessionId);
     if (
       [
         'local-recording-failed',
@@ -179,14 +233,13 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
     ctx.run(async () => {
       try {
         await complete(await recorder.wait(identity));
-      } catch {
-        failed(
+      } catch (error) {
+        const sessionId =
           identity.sessionId ||
-            ctx
-              .get()
-              .recordings.find((r) => r.recordingId === identity.recordingId)
-              ?.sessionId,
-        );
+          ctx.get().recordings.find((r) => r.recordingId === identity.recordingId)
+            ?.sessionId;
+        if (error?.permanent || error?.code === 'not-found') failed(sessionId);
+        else waitForConnection(sessionId);
       } finally {
         waiting.delete(key);
       }
@@ -292,6 +345,7 @@ function createJobs(ctx, { service, recorder, onReady = () => {} }) {
       disposed = true;
       clearTimeout(poll);
       poll = null;
+      for (const id of [...later.keys()]) settled(id);
     },
   };
 }

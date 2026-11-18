@@ -184,10 +184,18 @@ test('Stop finalises the file, says so, sends it, and reports completion without
       metadata: { duration_seconds: 12.5 },
     },
   ]);
-  assert.deepEqual(f.uploads[0].file, {
+  const { onProgress, ...sent } = f.uploads[0].file;
+  assert.deepEqual(sent, {
     path: '/private/media/rec-1/recording.mp4',
     title: 'Demo',
   });
+  // Progress reaches the engine in whole percent, once each.
+  onProgress(0.421);
+  onProgress(0.429);
+  assert.deepEqual(
+    f.events.filter(([name]) => name === 'recording-progress'),
+    [['recording-progress', { recordingId: 'rec-1', sessionId: 'rec-a', progress: 0.42 }]],
+  );
   const waiting = f.recorder.wait({ sessionId: 'rec-a' });
   f.uploads[0].resolve({ id: 'm-1' });
   assert.deepEqual(await waiting, {
@@ -209,7 +217,7 @@ test('Stop finalises the file, says so, sends it, and reports completion without
   );
 });
 
-test('a failed send is reported, and Recover sends the same file again', async () => {
+test('a send the connection lets down is sent again, and only a missing file is final', async () => {
   const f = fixture();
   await f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
   await f.recorder.stop();
@@ -217,16 +225,15 @@ test('a failed send is reported, and Recover sends the same file again', async (
   await flush();
   assert.deepEqual(f.events.at(-1), [
     'recording-relay-failed',
-    { recordingId: 'rec-1', sessionId: 'rec-a' },
+    { recordingId: 'rec-1', sessionId: 'rec-a', permanent: false },
   ]);
-  assert.equal((await f.recorder.recover())[0].stage, 'failed');
-  await assert.rejects(f.recorder.wait({ recordingId: 'rec-1' }));
-
-  await f.recorder.relay('rec-1');
+  // Not final: after a restart it is processing again, and waiting sends it.
+  assert.equal((await f.recorder.recover())[0].stage, 'processing');
+  const waiting = f.recorder.wait({ recordingId: 'rec-1' });
   assert.equal(f.uploads.length, 2);
   assert.equal(f.uploads[1].file.path, '/private/media/rec-1/recording.mp4');
   f.uploads[1].resolve({ id: 'm-2' });
-  await flush();
+  await waiting;
   assert.deepEqual((await f.recorder.recover())[0], {
     recordingId: 'rec-1',
     sessionId: 'rec-a',
@@ -236,6 +243,17 @@ test('a failed send is reported, and Recover sends the same file again', async (
   await assert.rejects(f.recorder.relay('made-by-an-older-bloom'), {
     code: 'not-found',
   });
+
+  // The file is gone: that one can never be processed, and says so once.
+  const gone = fixture();
+  await gone.recorder.start({ sessionId: 'rec-b', channels, title: 'Gone' });
+  await gone.recorder.stop();
+  gone.uploads[0].reject(
+    Object.assign(new Error('missing'), { code: 'not-found' }),
+  );
+  await flush();
+  assert.equal(gone.events.at(-1)[1].permanent, true);
+  assert.equal((await gone.recorder.recover())[0].stage, 'failed');
 });
 
 test('what is sent is the video in the recording folder, however the recorder names it', async (t) => {

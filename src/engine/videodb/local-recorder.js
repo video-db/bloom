@@ -160,21 +160,34 @@ function createLocalRecorder({
     if (!file) {
       if (entry) {
         update(recordingId, { stage: 'failed' });
-        events.emit('event', 'recording-relay-failed', identity(recordingId));
+        events.emit('event', 'recording-relay-failed', {
+          ...identity(recordingId),
+          permanent: true,
+        });
       }
       return Promise.reject(
-        new ServiceError(
-          'not-found',
-          'This recording can no longer be recovered.',
-        ),
+        new ServiceError('not-found', 'This recording can’t be processed.'),
       );
     }
     if (entry.stage === 'complete')
       return Promise.resolve(completion(recordingId));
     if (sending.has(recordingId)) return sending.get(recordingId);
-    update(recordingId, { stage: 'uploading' });
+    update(recordingId, { stage: 'sending' });
+    let shown = -1; // whole percent last told, so the state is not redrawn for every chunk
     const attempt = service
-      .uploadRecording({ path: entry.path, title: entry.title })
+      .uploadRecording({
+        path: entry.path,
+        title: entry.title,
+        onProgress: (share) => {
+          const percent = Math.floor(share * 100);
+          if (percent === shown) return;
+          shown = percent;
+          events.emit('event', 'recording-progress', {
+            ...identity(recordingId),
+            progress: percent / 100,
+          });
+        },
+      })
       .then((video) => {
         update(recordingId, { stage: 'complete', videoId: video.id });
         const payload = completion(recordingId);
@@ -182,9 +195,15 @@ function createLocalRecorder({
         return payload;
       })
       .catch((error) => {
-        update(recordingId, { stage: 'failed' });
-        events.emit('event', 'recording-relay-failed', identity(recordingId));
-        throw error;
+        // Only a recording whose file is gone can never be processed; anything else is
+        // the connection, and Bloom tries again by itself.
+        const permanent = error?.code === 'not-found';
+        update(recordingId, { stage: permanent ? 'failed' : 'waiting' });
+        events.emit('event', 'recording-relay-failed', {
+          ...identity(recordingId),
+          permanent,
+        });
+        throw Object.assign(error, { permanent });
       })
       .finally(() => sending.delete(recordingId));
     sending.set(recordingId, attempt);
@@ -293,7 +312,8 @@ function createLocalRecorder({
       save();
       return true;
     },
-    // Recordings of this account that are not finished: found again after a restart.
+    // Recordings of this account that are not finished: found again after a restart. One
+    // an earlier attempt could not send is processed again, as long as its file is there.
     async recover() {
       const current = scope();
       return Object.entries(entries)
@@ -304,7 +324,8 @@ function createLocalRecorder({
           stage:
             entry.stage === 'complete'
               ? 'complete'
-              : entry.stage === 'failed'
+              : entry.stage === 'failed' &&
+                  !(entry.path && fs.existsSync(videoFile(entry.path)))
                 ? 'failed'
                 : entry.stage === 'recording'
                   ? 'recording'
@@ -437,8 +458,6 @@ function createLocalRecorder({
           'not-found',
           'This recording is not known here.',
         );
-      if (entries[recordingId].stage === 'failed')
-        throw new ServiceError('unavailable', 'Processing did not finish.');
       // Still capturing or being finalised: its turn comes when Stop has the file.
       if (!entries[recordingId].path && active?.recordingId !== recordingId)
         throw new ServiceError('unavailable', 'Processing did not finish.');

@@ -1,5 +1,8 @@
 const { createHash } = require('node:crypto');
-const { ServiceError, request } = require('./errors');
+const fs = require('node:fs');
+const path = require('node:path');
+const FormData = require('form-data');
+const { ServiceError, request, safeError } = require('./errors');
 const { createOperationJournal } = require('./journal');
 const { createOperations } = require('./operations');
 const { createLibrary } = require('./library');
@@ -13,7 +16,11 @@ const DEV_API = 'https://api.dev.videodb.io';
 const PROD_API = 'https://api.videodb.io';
 const SDK_BRANCH = 'release-0.3.3';
 const COLLECTION_NAME = 'Bloom Recordings';
-const UPLOAD_DEADLINE_MS = 30 * 60 * 1000;
+// The SDK gives every request 60 seconds and sends a file as one request, which at 10 Mbit/s
+// caps a recording near 70 MB. Bloom sends the file itself with no time or size limit; only
+// a send that has stopped moving for this long is given up, to be tried again.
+const STALLED_MS = 2 * 60 * 1000;
+const REGISTER_MS = 10 * 60 * 1000;
 
 // Main-process boundary only. The SDK and credential store are injected for offline verification.
 function createVideoDBService({
@@ -24,6 +31,7 @@ function createVideoDBService({
   journal = createOperationJournal(),
   apiUrl = DEV_API,
   timeoutMs = 30000,
+  stalledMs = STALLED_MS, // tests shorten it
 }) {
   if (![DEV_API, PROD_API].includes(apiUrl))
     throw new ServiceError(
@@ -160,27 +168,92 @@ function createVideoDBService({
         return coll.id;
       });
     },
-    // Send a finished recording file to the Bloom collection. Reading the file and the
-    // transfer can take minutes, so this has its own long deadline.
-    async uploadRecording({ path: filePath, title }) {
+    // Send a finished recording file to the Bloom collection: the file to VideoDB's upload
+    // address, then the video made from it. onProgress hears the share of the file sent.
+    async uploadRecording({ path: filePath, title, onProgress = () => {} }) {
       const scope = account();
       await this.ensureCollection();
       assertCurrent(scope);
-      const video = await request(
-        () =>
-          scope.collection.uploadFile({
-            filePath,
-            ...(title ? { name: title } : {}),
-          }),
-        { timeoutMs: UPLOAD_DEADLINE_MS },
-      );
-      assertCurrent(scope);
-      if (typeof video?.id !== 'string')
+      let size;
+      try {
+        size = (await fs.promises.stat(filePath)).size;
+      } catch {
         throw new ServiceError(
-          'invalid-response',
-          'VideoDB did not confirm the recording. Recover it to try again.',
+          'not-found',
+          'This recording can’t be processed.',
         );
-      return { id: video.id };
+      }
+      const http = scope.conn.vhttp;
+      const cancel = new AbortController();
+      let moved = Date.now();
+      const watch = setInterval(
+        () => {
+          if (Date.now() - moved > stalledMs) cancel.abort();
+        },
+        Math.min(15000, stalledMs),
+      );
+      try {
+        const target = await call(() =>
+          http.get(['collection', scope.collection.id, 'upload_url']),
+        );
+        const url = target?.data?.uploadUrl;
+        if (typeof url !== 'string' || !/^https:\/\//.test(url))
+          throw new ServiceError(
+            'invalid-response',
+            'VideoDB did not accept the recording.',
+          );
+        // Progress is what has been read from the file. With redirects off the request
+        // takes it only as fast as the connection does; following redirects would hold the
+        // whole file in memory and read it at once.
+        let sent = 0;
+        const file = fs.createReadStream(filePath);
+        file.on('data', (chunk) => {
+          sent += chunk.length;
+          moved = Date.now();
+          onProgress(size ? sent / size : 1);
+        });
+        const form = new FormData();
+        form.append('file', file, {
+          knownLength: size,
+          filename: path.basename(filePath),
+        });
+        moved = Date.now();
+        try {
+          await http.post([url], form, {
+            headers: {
+              ...form.getHeaders(),
+              'Content-Length': form.getLengthSync(),
+            },
+            timeout: 0,
+            maxRedirects: 0,
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
+            signal: cancel.signal,
+          });
+        } catch (error) {
+          throw safeError(error);
+        }
+        clearInterval(watch);
+        assertCurrent(scope);
+        // VideoDB makes the video from the file; the SDK waits up to about eight minutes.
+        const video = await request(
+          () =>
+            scope.collection.uploadURL({
+              url,
+              ...(title ? { name: title } : {}),
+            }),
+          { timeoutMs: REGISTER_MS, mutation: true },
+        );
+        assertCurrent(scope);
+        if (typeof video?.id !== 'string')
+          throw new ServiceError(
+            'invalid-response',
+            'VideoDB did not confirm the recording.',
+          );
+        return { id: video.id };
+      } finally {
+        clearInterval(watch);
+      }
     },
     pendingOperations() {
       return journal

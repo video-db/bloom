@@ -604,3 +604,108 @@ test('uncertain collection rename is not replayed until its result is confirmed'
   name = 'New';
   assert.deepEqual(await service.reconcileCollectionAction('other'), { reconciliationNeeded: false });
 });
+
+// A recording's file is sent by Bloom, not by the SDK's uploadFile, whose 60-second request
+// limit made anything above about 70 MB impossible to send on an ordinary connection.
+function uploadFixture(options = {}) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bloom-send-'));
+  const file = path.join(dir, 'recording.mp4');
+  fs.writeFileSync(file, Buffer.alloc(4096, 7));
+  const f = fixture(options);
+  const sent = [];
+  f.conn.vhttp = {
+    async get(parts) {
+      sent.push(['get', parts.join('/')]);
+      return { data: { uploadUrl: 'https://upload.example/object-1' } };
+    },
+    async post(parts, form, config) {
+      // Drain the body the way the HTTP client would.
+      const chunks = [];
+      await new Promise((resolve, reject) => {
+        form.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+        form.on('end', resolve);
+        form.on('error', reject);
+        form.resume();
+      });
+      sent.push(['post', parts.join('/'), config, Buffer.concat(chunks)]);
+      return { data: {} };
+    },
+  };
+  f.coll.uploadURL = async (data) => {
+    sent.push(['register', data]);
+    return { id: 'video-new' };
+  };
+  return { ...f, file, dir, sent };
+}
+
+test('a recording is sent with no time or size limit, then registered', async () => {
+  const { service, file, dir, sent } = uploadFixture();
+  try {
+    await login(service);
+    const progress = [];
+    const video = await service.uploadRecording({
+      path: file,
+      title: 'Demo',
+      onProgress: (p) => progress.push(p),
+    });
+    assert.deepEqual(video, { id: 'video-new' });
+    assert.deepEqual(sent[0], ['get', 'collection/bloom-collection/upload_url']);
+    const [, url, config, body] = sent[1];
+    assert.equal(url, 'https://upload.example/object-1');
+    assert.equal(config.timeout, 0);
+    assert.equal(config.maxBodyLength, Infinity);
+    // Followed redirects would hold the whole file in memory and make progress meaningless.
+    assert.equal(config.maxRedirects, 0);
+    assert.match(config.headers['content-type'], /^multipart\/form-data/);
+    assert.equal(Number(config.headers['Content-Length']), body.length);
+    assert(body.includes(Buffer.alloc(4096, 7)), 'the whole file is in the request');
+    assert.equal(progress.at(-1), 1);
+    assert.deepEqual(sent[2], [
+      'register',
+      { url: 'https://upload.example/object-1', name: 'Demo' },
+    ]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a send that stops moving is cancelled and never registered', async () => {
+  const { service, file, dir, sent, conn } = uploadFixture({ stalledMs: 30 });
+  try {
+    await login(service);
+    let signal;
+    conn.vhttp.post = (_parts, _form, config) => {
+      signal = config.signal;
+      // The connection takes nothing and never answers, until Bloom gives up on it.
+      return new Promise((_, reject) =>
+        signal.addEventListener('abort', () =>
+          reject(Object.assign(new Error('canceled'), { name: 'CanceledError' })),
+        ),
+      );
+    };
+    await assert.rejects(service.uploadRecording({ path: file, title: 'Demo' }), {
+      code: 'unavailable',
+    });
+    assert.equal(signal.aborted, true);
+    assert.equal(sent.some(([name]) => name === 'register'), false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a missing file or an unusable upload address is reported, not sent', async () => {
+  const { service, file, dir, conn } = uploadFixture();
+  try {
+    await login(service);
+    await assert.rejects(
+      service.uploadRecording({ path: path.join(dir, 'gone.mp4') }),
+      { code: 'not-found' },
+    );
+    conn.vhttp.get = async () => ({ data: { uploadUrl: 'http://plain.example/x' } });
+    await assert.rejects(service.uploadRecording({ path: file }), {
+      code: 'invalid-response',
+    });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

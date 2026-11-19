@@ -19,7 +19,7 @@ Bloom refreshes available displays and audio devices after a permission grant an
 
 Start recording only after choosing the intended display or window and audio. Nothing captures automatically. Audio turned off in the tray is omitted from the recording. On Stop the tray shows the recording as Processing and Start is available again at once; when processing ends the recording is ready, then verify playback and the copied link. Transcript readiness is separate. While a recording is processed the tray shows the recorder's progress ("Processing 43%"), which covers sending and VideoDB's work and stays below 100 % until the recording is ready, then briefly "Making it playable". If the recorder cannot deliver it, the recording moves under "Waiting for a better connection" and Bloom hands it back to the recorder after 1, 5 and 15 minutes, then every 30 minutes and at every launch; there is no Recover. Only a recording the recorder no longer has shows "Can’t be processed". Neither blocks recording or quitting. New recordings are transcribed once processed when “Transcribe new recordings” is enabled (on by default); this can spend credits. The summary request also suggests a short content-based name for date-named Bloom recordings; custom names are kept. Recordings without usable transcript content keep their date names. Existing missing transcripts can be prepared with Add. After an accepted request, Try again reads its result without submitting another indexing request. Downloads use a save dialog. Rename and delete reach VideoDB; delete asks first and has no Undo.
 
-The recorder keeps a recording until VideoDB confirms it, then clears its copy; use Download to keep one. A recording still being delivered is picked up by the recorder at the next launch for the account that made it. Recordings that 2.3.13 or earlier had not sent are not carried over. There is no server-recording fallback. A recording cut short by a crash or a forced quit is salvaged by the recorder at its next start and delivered as partial.
+The recorder keeps a recording until VideoDB confirms it, then clears its copy; use Download to keep one. A recording still being delivered is picked up by the recorder at the next launch for the account that made it. Recordings that 2.3.14 or earlier had not sent are not carried over. There is no server-recording fallback. A recording cut short by a crash or a forced quit is salvaged by the recorder at its next start and delivered as partial.
 
 ## Automated checks
 
@@ -48,7 +48,7 @@ For a change that must not alter any screen, set `BLOOM_STYLE_SNAPSHOT=1` and a 
 
 ## Build and install locally
 
-1. Confirm the branch and `package.json` version. The current internal build is 2.3.13; main can have a different version.
+1. Confirm the branch and `package.json` version. The current internal build is 2.3.14; main can have a different version.
 2. Install dependencies with `npm ci`.
 3. Build an unpacked app with `npm run pack`, or DMGs with `npm run dist`. On the release Mac the build is signed with Bloom's own certificate (see Publish an update); elsewhere it is signed ad hoc, which is fine for trying a change but must not be published. The macOS installer configuration builds arm64 and x64. Output is under `dist/`, with DMGs named `bloom-<version>-mac-<arch>.dmg`.
 4. Select the artifact matching the Mac architecture (`uname -m`: arm64 for Apple Silicon, x86_64 for Intel; x64 and AMD64 mean x86_64).

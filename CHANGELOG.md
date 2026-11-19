@@ -2,12 +2,18 @@
 
 ## Unreleased
 
-- The recorder now sends a recording to VideoDB itself, reports how far it has got, and clears its copy once VideoDB has it; Bloom no longer handles recording files at all. Uses SDK 0.5.3 (`release-0-5-3` at `dd42b2e`, recorder `0.3.3-managed.5`), which retries a delivery by itself for up to 24 hours and picks up deliveries left from the last run.
+- The recorder now sends a recording to VideoDB itself, reports how far it has got, and clears its copy once VideoDB has it; Bloom no longer handles recording files at all. Uses SDK 0.5.3 (`release-0-5-3` at `65b1fc9`, recorder `0.3.3-managed.7`), which retries a delivery by itself for up to 24 hours, picks up deliveries left from the last run, keeps recording through display sleep, keeps its folder private and removes its receipts 7 days after a recording is complete.
 - The progress bar follows the recorder: "Processing 43%" covers sending and VideoDB's work, and stays below 100 % until the recording is ready. A Bloom reopened during delivery shows the progress at once.
 - A recording the recorder could not deliver waits for a better connection and is handed back to the recorder by itself; one it no longer has can't be processed. A recording cut short by a crash or a forced quit is still delivered.
 - Starting a recording needs a connection to VideoDB, which now authorises a recording before capture begins.
 - Quitting or signing out never waits for a recording to reach VideoDB; the recorder carries on at the next launch.
 - Recordings that 2.3.13 or earlier had not yet sent show as "Can’t be processed": the recorder does not have them.
+- A recording being made says "Recording" in Recordings, not "0:00 · Processing".
+
+## [2.3.14] - 2026-11-19
+
+- The display stays on while recording. Before, a recording stopped capturing when the Mac turned the display off, and Stop could not finish it.
+- The processing percentage no longer disappears and comes back while a recording is processed.
 
 ## [2.3.13] - 2026-11-18
 

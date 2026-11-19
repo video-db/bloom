@@ -1,6 +1,6 @@
 {
   "name": "bloom",
-  "version": "2.3.13",
+  "version": "2.3.14",
   "description": "Bloom — Screen recorder powered by VideoDB",
   "main": "src/main/index.js",
   "scripts": {
@@ -89,6 +89,6 @@
   },
   "dependencies": {
     "hls.js": "^1.7.4",
-    "videodb-capture": "github:video-db/videodb-node#dd42b2efe679d3f8b0d05c2b9450d437030d5553"
+    "videodb-capture": "github:video-db/videodb-node#65b1fc918c31aebe853de52c23fe6dbdde171529"
   }
 }

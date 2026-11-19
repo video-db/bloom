@@ -196,12 +196,6 @@
 .player.playing [data-player-toggle] .ic:last-child {
   display: block;
 }
-.player:fullscreen {
-  border-radius: 0;
-}
-.player:fullscreen .player-bar {
-  display: none;
-}
 .player-empty {
   display: grid;
   place-items: center;

@@ -154,7 +154,13 @@ function wire(record, video) {
   const play = () =>
     video.paused ? video.play().catch(() => {}) : video.pause();
   toggle?.addEventListener('click', play, { signal });
-  video.addEventListener('click', play, { signal });
+  // In full screen the system's own controls play and pause; handling the click here too
+  // would undo it.
+  video.addEventListener(
+    'click',
+    () => document.fullscreenElement !== video && play(),
+    { signal },
+  );
   speed?.addEventListener(
     'click',
     () => {
@@ -163,7 +169,8 @@ function wire(record, video) {
     },
     { signal },
   );
-  // Full screen shows the video alone, so there it has the system's own controls.
+  // Full screen is the video itself, with the system's own controls: their pause and
+  // full-screen buttons act on the video, so they work and lead back to the page.
   box
     ?.querySelector('[data-player-full]')
     ?.addEventListener(
@@ -171,13 +178,13 @@ function wire(record, video) {
       () =>
         document.fullscreenElement
           ? document.exitFullscreen()
-          : box.requestFullscreen?.().catch(() => {}),
+          : video.requestFullscreen?.().catch(() => {}),
       { signal },
     );
   document.addEventListener(
     'fullscreenchange',
     () => {
-      video.controls = document.fullscreenElement === box;
+      video.controls = document.fullscreenElement === video;
     },
     { signal },
   );

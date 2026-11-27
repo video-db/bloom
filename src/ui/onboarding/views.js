@@ -81,12 +81,10 @@ const connectMessage = {
   invalid: `<p class="setup-message bad" role="alert">${icons.warning}<span>That key wasn’t accepted. Check it and try again.</span></p>`,
 };
 
-// Sign in with VideoDB leads when the build can open a browser; a saved key that stopped
-// working, or the person's choice, shows the key field instead.
+// Sign in with VideoDB is the default whenever the build can open a browser; the key field
+// shows only when the person chooses it (owner, 27 Nov: "keep the API key secondary").
 export function usesKey(s, flow) {
-  if (!s.browserSignIn) return true;
-  if (flow.useKey !== null && flow.useKey !== undefined) return flow.useKey;
-  return s.account.status === 'invalid' && s.account.method === 'key';
+  return !s.browserSignIn || flow.useKey === true;
 }
 
 export function browserStatus(s, flow) {
@@ -126,7 +124,7 @@ function signInWithBrowser(s, flow) {
       : `<p class="setup-links"><button type="button" class="setup-link" data-act="use-key" ${locked ? 'disabled' : ''}>Use an API key instead</button></p>`;
   return /* HTML */ `${
     status === 'ran-out'
-      ? `<p class="setup-notice" role="status">${icons.warning}<span>Your sign-in ran out. Sign in again to keep recording.</span></p>`
+      ? `<p class="setup-notice" role="status">${icons.warning}<span>${s.account.method === 'key' ? 'Your saved key stopped working.' : 'Your sign-in ran out.'} Sign in again to keep recording.</span></p>`
       : ''
   }
     <div class="setup-form">${message}${browserButton[status]}</div>

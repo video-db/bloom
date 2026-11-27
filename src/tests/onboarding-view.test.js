@@ -58,8 +58,11 @@ test('Connect leads with Sign in with VideoDB when the build can open a browser'
     draw({ status: 'invalid', method: 'token' }),
     /Your sign-in ran out. Sign in again to keep recording./,
   );
-  // A saved key that stopped working asks for a key, as before.
-  assert.match(draw({ status: 'invalid', method: 'key' }), /Your saved key stopped working/);
+  // A saved key that stopped working also leads with Sign in with VideoDB.
+  const keyRanOut = draw({ status: 'invalid', method: 'key' });
+  assert.match(keyRanOut, /Your saved key stopped working. Sign in again to keep recording./);
+  assert.match(keyRanOut, /data-act="browser">Sign in with VideoDB</);
+  assert.doesNotMatch(keyRanOut, /setup-key/);
 
   const browser = { ...fresh, browser: true, attempted: true };
   assert.match(

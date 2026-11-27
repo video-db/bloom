@@ -16,6 +16,7 @@ const flags = require('./flags');
 const { createPrefs } = require('./prefs');
 const { afterUpdate } = require('./after-update');
 const { createUpdater } = require('./updater');
+const { createLinuxUpdater } = require('./linux-updater');
 const { createKeepAwake } = require('./keep-awake');
 const path = require('node:path');
 const { createTheme } = require('./theme');
@@ -36,6 +37,10 @@ const {
 const { createScreenPreview } = require('./screen-preview');
 const { openFirstWindow } = require('./first-window');
 
+if (process.platform === 'linux') {
+  const features = app.commandLine.getSwitchValue('enable-features');
+  app.commandLine.appendSwitch('enable-features', [features, 'GlobalShortcutsPortal'].filter(Boolean).join(','));
+}
 flags.separateUserData();
 // Automated runs stay out of the Dock and never become the active app, so opening their
 // windows cannot pull the person to another desktop.
@@ -60,6 +65,12 @@ let quitting = false,
   shutdownPending = false,
   reopen = false; // Bloom was asked to reopen once it has quit
 
+// The internal Linux build authenticates recordings against the development service.
+const linuxPreview = process.platform === 'linux' && require('../../package.json').bloomLinuxPreview === true;
+if (linuxPreview) {
+  process.env.VIDEODB_INTERNAL_DEV = '1';
+}
+
 function start() {
   prefs = createPrefs(flags.prefsFile());
   // After an update Screen Recording may need turning on again; setup will say so.
@@ -78,18 +89,20 @@ function start() {
       mode: 'videodb',
       dataDir: app.getPath('userData'),
       apiUrl:
-        flags.flag('production') || app.isPackaged
+        !linuxPreview && (flags.flag('production') || app.isPackaged)
           ? 'https://api.videodb.io'
           : 'https://api.dev.videodb.io',
       permissionStatus: (kind) =>
-        systemPreferences.getMediaAccessStatus(kind) === 'granted',
+        systemPreferences.getMediaAccessStatus?.(kind) === 'granted',
       // False while macOS is still asking the person, so setup does not call that "off".
       permissionDecided: (kind) =>
-        systemPreferences.getMediaAccessStatus(kind) !== 'not-determined',
+        systemPreferences.getMediaAccessStatus?.(kind) !== 'not-determined',
       // The microphone question is asked by Bloom itself: the answer is the result, and
       // this process then reads the permission correctly. Asked by the recorder, a separate
       // process, the answer reached macOS but this process went on reading "not asked".
-      askMicrophone: () => systemPreferences.askForMediaAccess('microphone'),
+      askMicrophone: process.platform === 'darwin'
+        ? () => systemPreferences.askForMediaAccess('microphone')
+        : null,
       scope: flags.flag('v1') ? 'v1' : 'full',
       // Someone who has been through onboarding already has an account.
       signedIn: flags.flag('skip-onboarding') || prefs.all().onboardingComplete,
@@ -99,7 +112,7 @@ function start() {
   const screenPreview = createScreenPreview({
     capturer: desktopCapturer,
     allowed: () =>
-      real && systemPreferences.getMediaAccessStatus('screen') === 'granted',
+      real && systemPreferences.getMediaAccessStatus?.('screen') === 'granted',
   });
   quitGuard = createQuitGuard({
     engine,
@@ -216,8 +229,10 @@ function start() {
   shortcuts.register();
   // A newer Bloom is downloaded in the background and goes in only when Bloom is not in
   // use, or when the person next quits. Never from source or in automated runs.
-  if (app.isPackaged && !flags.automated()) {
-    updater = createUpdater({
+  if (app.isPackaged && (process.platform === 'darwin' || linuxPreview) && !flags.automated()) {
+    const makeUpdater = linuxPreview ? createLinuxUpdater : createUpdater;
+    updater = makeUpdater({
+      relaunch: () => app.relaunch(),
       version: app.getVersion(),
       appPath: path.resolve(app.getPath('exe'), '..', '..', '..'),
       updatesDir: path.join(app.getPath('userData'), 'updates'),
@@ -240,9 +255,10 @@ function start() {
 
 app
   .whenReady()
-  .then(() => {
+  .then(async () => {
     if (!primaryInstance) return;
     start();
+    if (await linuxShortcut(process.argv)) return;
     return openFirstWindow({ engine, prefs, windows, flag: flags.flag });
   })
   .catch((error) => {
@@ -322,7 +338,20 @@ app.on('before-quit', (event) => {
 });
 // macOS reopens a running app through activation rather than a second process.
 app.on('activate', () => windows?.showPanel());
-app.on('second-instance', () => windows?.showPanel());
+// GNOME desktops without the GlobalShortcuts portal can run these commands
+// from their own keyboard settings while another application has focus.
+async function linuxShortcut(argv) {
+  if (process.platform !== 'linux' || !engine || !shortcuts) return false;
+  const toggle = argv.includes('--toggle-recording');
+  if (!toggle && !argv.includes('--mark-recording')) return false;
+  await engine.ready;
+  if (toggle) shortcuts.toggleCapture();
+  else await engine.command('mark');
+  return true;
+}
+app.on('second-instance', async (_event, argv) => {
+  if (!(await linuxShortcut(argv))) windows?.showPanel();
+});
 app.on('window-all-closed', () => {}); // a tray app keeps running with no windows
 app.on('will-quit', (event) => {
   // A downloaded update goes in as Bloom quits: quitting waits the few seconds it takes to

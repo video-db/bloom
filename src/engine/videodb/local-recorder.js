@@ -40,6 +40,21 @@ function createLocalRecorder({
   let startedAt = 0; // when the current capture began, for Stop's budget
   let client = null;
   let active = null; // { recordingId, sessionId } while capturing
+  let nativePermissions;
+  async function refreshNativePermissions() {
+    if (process.platform !== 'linux') return;
+    const capture = ensure();
+    if (!capture.getPermissionStatus) return;
+    const [screen, mic] = await Promise.all(
+      ['screen-capture', 'microphone'].map(kind => request(() => capture.getPermissionStatus(kind))),
+    );
+    nativePermissions = {
+      screen: screen === 'granted',
+      mic: mic === 'granted',
+      micDecided: mic === 'granted' || mic === 'denied',
+      camera: false,
+    };
+  }
   let micAllowed = false; // the person said yes to Bloom's own microphone question
 
   // The recorder keeps each account's recordings apart by this key; it is not a credential.
@@ -166,7 +181,9 @@ function createLocalRecorder({
       events.on('event', listener);
       return () => events.off('event', listener);
     },
+    refreshNativePermissions,
     permissions() {
+      if (nativePermissions) return nativePermissions;
       return {
         screen: permissionStatus('screen'),
         mic: micAllowed || permissionStatus('microphone'),
@@ -190,6 +207,7 @@ function createLocalRecorder({
     },
     async channels() {
       const groups = await request(() => ensure().listChannels());
+      await refreshNativePermissions();
       return {
         displays: Array.from(groups.displays || []).map((c) => ({
           id: c.id,
@@ -282,6 +300,7 @@ function createLocalRecorder({
           async () => {
             try {
               return await ensure().startRecording({
+                live: false,
                 owner: owner(),
                 collectionId: authorization.collectionId,
                 uploadToken: authorization.token,
@@ -307,7 +326,15 @@ function createLocalRecorder({
         );
       }
       sessions.set(started.recordingId, sessionId);
-      active = { recordingId: started.recordingId, sessionId };
+      active = {
+        recordingId: started.recordingId,
+        sessionId,
+        trackIds: {
+          screen: channels.find(channel => channel.type === 'video')?.channelId,
+          mic: MIC.id,
+          system_audio: SYSTEM_AUDIO.id,
+        },
+      };
       startedAt = Date.now();
       return { recordingId: started.recordingId };
     },
@@ -349,9 +376,9 @@ function createLocalRecorder({
       });
     },
     pause: (tracks) =>
-      request(() => ensure().pauseTracks(tracks), { mutation: true }),
+      request(() => ensure().pauseTracks(tracks.map(track => active?.trackIds[track] || track)), { mutation: true }),
     resume: (tracks) =>
-      request(() => ensure().resumeTracks(tracks), { mutation: true }),
+      request(() => ensure().resumeTracks(tracks.map(track => active?.trackIds[track] || track)), { mutation: true }),
     // Recover: ask the recorder to send a recording again. Resolves once it has taken it on.
     async relay(recordingId) {
       const job = (await list()).find((j) => j.recordingId === recordingId);

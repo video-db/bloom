@@ -205,6 +205,7 @@ test('Start is authorised by VideoDB first; only the default sound sources are o
   ]);
   assert.deepEqual(f.named('authorise'), [['authorise', OWNER, undefined]]);
   assert.deepEqual(f.named('start')[0][1], {
+    live: false,
     owner: OWNER,
     collectionId: 'collection-bloom',
     uploadToken: 'token-1',
@@ -454,6 +455,7 @@ test('quitting finishes a capture first and never waits for a recording to reach
   const f = fixture();
   await f.recorder.start({ sessionId: 'rec-a', channels, title: 'Demo' });
   await f.recorder.pause(['screen']);
+  assert.deepEqual(f.named('pause')[0][1], ['display:1']);
   await f.recorder.shutdown();
   assert.deepEqual(
     f.calls.slice(-3).map(([name]) => name),

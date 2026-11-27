@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Bloom includes the internal Node SDK 0.4.3 with the four recorder 0.3.6 platform pins and instant-start live-session interface. Bloom requests authorized deferred recording with `live: false` and uses the selected channel IDs for pause and resume.
+
+- Internal Ubuntu amd64 preview 3 uses Linux recorder 0.3.6 for single-window capture and switching. Packaged builds check for Bloom updates on the hosted internal Linux channel. GNOME desktops can bind start/stop and mark commands as custom keyboard shortcuts.
+
 ## [2.4.0] - 2026-11-19
 
 - The recorder now sends a recording to VideoDB itself, reports how far it has got, and clears its copy once VideoDB has it; Bloom no longer handles recording files at all. Uses SDK 0.5.3 (`release-0-5-3` at `65b1fc9`, recorder `0.3.3-managed.7`), which retries a delivery by itself for up to 24 hours, picks up deliveries left from the last run, keeps recording through display sleep, keeps its folder private and removes its receipts 7 days after a recording is complete.

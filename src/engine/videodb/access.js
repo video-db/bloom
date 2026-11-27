@@ -16,6 +16,7 @@ function createAccess(ctx, { service, recorder, library, recover, leave = () => 
 
   async function checkPermission() {
     const previous = ctx.get().permissions;
+    if (ctx.get().account.status === 'signed-in') await recorder.refreshNativePermissions?.();
     const permissions = recorder.permissions();
     ctx.set({ permissions });
     if (

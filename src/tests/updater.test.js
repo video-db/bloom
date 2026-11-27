@@ -238,7 +238,10 @@ const waitFor = async (check, ms = 15000) => {
   }
 };
 
-test('a newer version is downloaded and checked; Bloom is asked to quit only when idle', async (t) => {
+// These fixtures build and sign a macOS .app with the system codesign tool.
+const signedAppTest = process.platform === 'darwin' ? test : test.skip;
+
+signedAppTest('a newer version is downloaded and checked; Bloom is asked to quit only when idle', async (t) => {
   const s = await setup(t);
   let quits = 0;
   const away = { seconds: 0 };
@@ -263,7 +266,7 @@ test('a newer version is downloaded and checked; Bloom is asked to quit only whe
   );
 });
 
-test('as Bloom quits the update is checked again, then swapped in once Bloom has exited', async (t) => {
+signedAppTest('as Bloom quits the update is checked again, then swapped in once Bloom has exited', async (t) => {
   const s = await setup(t);
   const bloom = spawn('/bin/sleep', ['30']); // stands in for the running Bloom
   t.after(() => bloom.kill());
@@ -298,7 +301,7 @@ test('as Bloom quits the update is checked again, then swapped in once Bloom has
   assert.equal(fs.existsSync(dir), false);
 });
 
-test('an update changed on disk after it was checked is not installed', async (t) => {
+signedAppTest('an update changed on disk after it was checked is not installed', async (t) => {
   const s = await setup(t);
   const updater = make(s, { pid: 999999 });
   await updater.check();
@@ -318,7 +321,7 @@ test('an update changed on disk after it was checked is not installed', async (t
   );
 });
 
-test('a download that does not match the feed is never installed', async (t) => {
+signedAppTest('a download that does not match the feed is never installed', async (t) => {
   const s = await setup(t, { tamper: true });
   const updater = make(s, {
     systemIdleSeconds: () => 3600,
@@ -332,7 +335,7 @@ test('a download that does not match the feed is never installed', async (t) => 
   );
 });
 
-test('nothing is done from a disk image, a folder Bloom cannot write to, or for an older version', async (t) => {
+signedAppTest('nothing is done from a disk image, a folder Bloom cannot write to, or for an older version', async (t) => {
   const s = await setup(t);
   for (const appPath of [
     '/Volumes/Bloom/Bloom.app',
@@ -355,7 +358,7 @@ test('nothing is done from a disk image, a folder Bloom cannot write to, or for 
   assert.equal(current.status().ready, null, 'already this version');
 });
 
-test('a version that fails to go in twice is left alone, and the old app is put back', async (t) => {
+signedAppTest('a version that fails to go in twice is left alone, and the old app is put back', async (t) => {
   const s = await setup(t);
   const updatesDir = path.join(s.root, 'updates');
   const dir = path.join(updatesDir, '2.3.11');
@@ -388,7 +391,7 @@ test('a version that fails to go in twice is left alone, and the old app is put 
   assert.equal(after.status().ready, null, 'not downloaded again');
 });
 
-test('Check for updates says how it went, and Restart to update installs only when nothing is being processed', async (t) => {
+signedAppTest('Check for updates says how it went, and Restart to update installs only when nothing is being processed', async (t) => {
   const s = await setup(t);
   let quits = 0;
   let state = { phase: 'idle', pending: [{ status: 'processing' }], recordings: [] };
@@ -408,7 +411,7 @@ test('Check for updates says how it went, and Restart to update installs only wh
   t.after(() => fs.rmSync(path.join(s.root, 'updates'), { recursive: true, force: true }));
 });
 
-test('Check for updates reports up to date, a failed check, and a Bloom that cannot update itself', async (t) => {
+signedAppTest('Check for updates reports up to date, a failed check, and a Bloom that cannot update itself', async (t) => {
   const s = await setup(t);
   const current = make(s, { version: '2.3.11' });
   await current.checkNow();

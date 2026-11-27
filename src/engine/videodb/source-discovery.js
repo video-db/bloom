@@ -30,6 +30,7 @@ function createSourceDiscovery(ctx, recorder) {
             'No displays are available. Quit and reopen Bloom after allowing screen recording.';
           ctx.set({
             channels,
+            permissions: recorder.permissions(),
             sources: {
               ...sources,
               screen: channels.displays.some((c) => c.id === sources.screen)

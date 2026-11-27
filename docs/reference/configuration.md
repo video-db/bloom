@@ -20,13 +20,15 @@ A recording's media is the recorder's: it keeps it until VideoDB confirms the re
 
 ## Environment and flags
 
-A packaged Bloom reads its update feed from `https://artifacts.videodb.io/bloom/latest-mac.json`; `BLOOM_UPDATE_FEED` points it elsewhere, for testing a release. The feed must still be signed with the release key.
+The packaged macOS app reads its update feed from `https://artifacts.videodb.io/bloom/latest-mac.json`; `BLOOM_UPDATE_FEED` points it elsewhere, for testing a release. The feed must still be signed with the release key.
 
+The Ubuntu internal build reads its update pointer and signed package checksums from the internal Linux channel on the Bloom artifact host. See the [Linux build and update instructions](../runbook.md#build-and-install-locally).
 
-A packaged app uses `https://api.videodb.io`. From source, `npm start` uses `https://api.dev.videodb.io`.
+Release packages use `https://api.videodb.io`. The internal Linux preview built with `build/linux-preview.cjs` and the default source launch use `https://api.dev.videodb.io`.
 
 | Flag | Effect |
 |---|---|
+| `--toggle-recording`, `--mark-recording` | Linux desktop shortcut commands for starting or stopping capture and marking the current recording |
 | `--production` | Use the production API from source |
 | `--light`, `--dark` | Force a theme for review |
 | `--skip-onboarding`, `--open-main`, `--open-preferences`, `--keep-open` | Start at a given surface, or stop the tray panel closing on blur, for review |

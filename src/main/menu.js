@@ -12,7 +12,7 @@ const PREVIEW_SCENARIOS = [
   ['processing-error', 'Processing failed'],
 ];
 
-function installMenu({ engine, windows, prefs }) {
+function installMenu({ engine, windows, prefs, exportDiagnostics = null }) {
   const sample = engine.getState().sample;
   app.setAboutPanelOptions({
     applicationName: sample ? 'Bloom Preview' : 'Bloom',
@@ -105,6 +105,9 @@ function installMenu({ engine, windows, prefs }) {
             click: () => app.showAboutPanel(),
           },
           { label: 'Replay Onboarding', click: windows.openOnboarding },
+          ...(exportDiagnostics && !sample
+            ? [{ label: 'Export Diagnostics…', click: exportDiagnostics }]
+            : []),
         ],
       },
     ]),

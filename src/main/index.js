@@ -49,6 +49,25 @@ if (flags.automated()) app.setActivationPolicy?.('accessory');
 const primaryInstance =
   !app.requestSingleInstanceLock || app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
+// Bloom's log: one file a day under the data folder, with everything main prints copied in.
+const LOG_DIR = path.join(app.getPath('userData'), 'logs');
+const log = primaryInstance
+  ? require('./log-files').createLogger(path.join(LOG_DIR, 'bloom.log'), {
+      fields: {
+        // Bloom's own version: an unpackaged run would report Electron's.
+        v: require('../../package.json').version,
+        run: require('./log-files').newRunId(),
+      },
+    })
+  : () => {};
+if (primaryInstance) {
+  require('./console-log').hookConsole(log);
+  log('info', 'bloom started', {
+    platform: process.platform,
+    arch: process.arch,
+    packaged: !!app.isPackaged,
+  });
+}
 const theme = createTheme({ forced: flags.forcedTheme() });
 
 // Everything else needs a ready app, so it is built in start() and kept here for quit and the test hook.
@@ -158,7 +177,30 @@ function start() {
   });
   notifications = createNotifications({ engine, prefs, windows });
   shortcuts = createShortcuts({ engine, windows, notifications, prefs });
-  const syncMenu = installMenu({ engine, windows, prefs });
+  const syncMenu = installMenu({
+    engine,
+    windows,
+    prefs,
+    exportDiagnostics: () =>
+      require('./export-diagnostics')
+        .exportDiagnostics({
+          dialog,
+          shell,
+          window: BrowserWindow.getFocusedWindow() || undefined,
+          logDir: LOG_DIR,
+          state: engine.getState(),
+          prefs: prefs.all(),
+          version: app.getVersion?.() || '',
+          log,
+        })
+        .catch((error) => {
+          log('error', 'diagnostics export failed', { error: String(error?.message || error) });
+          dialog.showErrorBox(
+            'Bloom couldn’t export diagnostics',
+            'Choose another folder and try again.',
+          );
+        }),
+  });
   const appState = createAppState({
     syncMenu,
     engine,

@@ -1,0 +1,768 @@
+/* One recording in focus, for watching: the video with its playbar and timeline takes most
+   of the width; the summary, transcript and marks are a column beside it. */
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--t-label);
+  color: var(--soft);
+}
+.crumb:hover {
+  color: var(--ink);
+}
+.crumb .ic {
+  width: 14px;
+  height: 14px;
+}
+.record-menu {
+  position: relative;
+  flex: none;
+}
+.record-menu summary {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  list-style: none;
+  cursor: default;
+}
+.record-menu summary::-webkit-details-marker {
+  display: none;
+}
+.record-menu summary:hover {
+  background: var(--fill);
+}
+.record-menu summary:focus-visible {
+  outline: 2px solid var(--ev);
+}
+.record-menu > div {
+  position: absolute;
+  right: 0;
+  top: 38px;
+  z-index: 10;
+  width: 170px;
+  padding: 5px;
+  border: 1px solid var(--line2);
+  border-radius: 9px;
+  background: var(--paper);
+  box-shadow: 0 8px 24px #0002;
+}
+.record-menu button {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  font-size: var(--t-label);
+  text-align: left;
+}
+.record-menu button:hover {
+  background: var(--fill);
+}
+.record-menu button:disabled {
+  opacity: 0.45;
+}
+.destructive {
+  color: var(--bad);
+}
+/* ---- the page: a header row, then the video beside the reading column ---- */
+.view:has(> .recording) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.page.recording {
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+  padding: 0;
+}
+.watch-head {
+  padding: 12px 20px;
+}
+.watch-head h1 {
+  font-size: var(--t-read);
+  letter-spacing: -0.02em;
+}
+.recording > .processing-banner {
+  margin: 0 20px 12px;
+}
+.watch {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 32%, 340px);
+  border-top: 1px solid var(--line);
+}
+.watch-stage {
+  min-width: 0;
+  padding: 14px 18px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+/* As wide as the column, but never so tall that the timeline leaves the window. */
+.watch-video {
+  display: grid;
+  gap: 8px;
+  width: min(100%, calc((100vh - 250px) * 16 / 9));
+  min-width: 280px;
+  margin: 0 auto;
+}
+.watch-read {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid var(--line);
+}
+.watch-read .tabs {
+  flex: none;
+  padding: 0 14px;
+}
+.watch-text {
+  flex: 1;
+  min-height: 0;
+  padding: 12px 14px 20px;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+
+/* ---- the video and its playbar ---- */
+.player {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #101014;
+}
+.player video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.player-bar {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 8px 5px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.62));
+  color: #fff;
+  font: 500 var(--t-caption) / 1 var(--mono);
+  transition: opacity 0.15s;
+}
+/* While it plays the bar steps aside until the pointer or the keyboard comes back. */
+.player.playing:not(:hover):not(:focus-within) .player-bar {
+  opacity: 0;
+}
+.player-bar .grow {
+  flex: 1;
+}
+.player-bar button {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.player-bar button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.player-bar button:focus-visible {
+  outline: 2px solid #fff;
+}
+.player-bar .ic {
+  width: 16px;
+  height: 16px;
+}
+.player [data-player-toggle] .ic:last-child,
+.player.playing [data-player-toggle] .ic:first-child {
+  display: none;
+}
+.player.playing [data-player-toggle] .ic:last-child {
+  display: block;
+}
+.player-empty {
+  display: grid;
+  place-items: center;
+  background: var(--fill);
+  color: var(--soft);
+  font-size: var(--t-label);
+}
+.player-error {
+  margin: 0;
+}
+.player-error:empty {
+  display: none;
+}
+
+/* ---- the timeline: chapters, marks, playhead ---- */
+.tl {
+  --at: 0%;
+  --deep: color-mix(in srgb, var(--brand) 78%, #000);
+  position: relative;
+  height: 34px;
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: none;
+}
+.tl:focus-visible {
+  outline: 2px solid var(--ev);
+  outline-offset: 2px;
+}
+.tl-track {
+  position: absolute;
+  inset: 13px 0 auto;
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.tl-part {
+  --done: 0%;
+  min-width: 0;
+  background: linear-gradient(
+    to right,
+    var(--deep) var(--done),
+    var(--line2) var(--done)
+  );
+}
+.tl-mark {
+  position: absolute;
+  top: 2px;
+  width: 9px;
+  height: 9px;
+  margin-left: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 1.5px;
+  background: var(--ev);
+  transform: rotate(45deg);
+}
+.tl-mark:hover {
+  transform: rotate(45deg) scale(1.3);
+}
+.tl-pin {
+  position: absolute;
+  top: 3px;
+  left: var(--at);
+  width: 2px;
+  height: 28px;
+  margin-left: -1px;
+  background: var(--ink);
+  pointer-events: none;
+}
+.tl-pin::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.tl-chapters {
+  display: flex;
+  gap: 2px;
+  margin-top: -6px;
+}
+.tl-chapter {
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font-size: var(--t-caption);
+  color: var(--soft);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tl-chapter b {
+  font-weight: 500;
+}
+.tl-chapter:hover,
+.tl-chapter.now {
+  color: var(--ink);
+}
+
+/* ---- what is playing: the original and its versions ---- */
+.now-playing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.version {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: none;
+}
+.version:hover {
+  border-color: var(--line2);
+}
+.version.on {
+  border-color: color-mix(in srgb, var(--brand) 78%, #000);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 78%, #000);
+}
+.version b {
+  font-weight: 500;
+}
+.version .chip {
+  font-size: var(--t-caption);
+  padding: 1px 7px;
+}
+/* Opens upward: the row sits near the bottom of the window. */
+.version-menu > div {
+  top: auto;
+  bottom: 38px;
+  left: 0;
+  right: auto;
+  width: 190px;
+}
+/* Where versions are kept, in plain words for whoever opens it. */
+.versions-note {
+  font-size: var(--t-label);
+  color: var(--soft);
+}
+.versions-note summary {
+  list-style: none;
+  cursor: default;
+}
+.versions-note summary::-webkit-details-marker {
+  display: none;
+}
+.versions-note summary u {
+  color: var(--ev);
+  text-decoration: none;
+}
+.versions-note summary:hover u {
+  text-decoration: underline;
+}
+.versions-note summary:focus-visible {
+  outline: 2px solid var(--ev);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.versions-note ul {
+  margin: 6px 0 0;
+  padding: 9px 12px 9px 26px;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--mid);
+}
+.versions-note li + li {
+  margin-top: 4px;
+}
+
+/* ---- Make: lanes under the timeline, choices beside the video ---- */
+.watch.make {
+  grid-template-columns: minmax(0, 1fr) 264px;
+}
+.tl-cut {
+  position: absolute;
+  top: 13px;
+  height: 8px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--paper) 0 3px,
+    color-mix(in srgb, var(--brand) 30%, var(--paper)) 3px 6px
+  );
+  pointer-events: none;
+}
+.lanes {
+  display: grid;
+  gap: 5px;
+}
+.lane-row {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+/* In Make the timeline starts where the lanes do, so a cut sits right above its block. */
+.watch.make .tl,
+.watch.make .tl-chapters {
+  margin-left: 70px;
+}
+.lane {
+  position: relative;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--fill);
+  overflow: hidden;
+}
+.lane i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 2px;
+  border-radius: 3px;
+}
+.lane i.x {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--brand) 35%, var(--paper)) 0 3px,
+    var(--paper) 3px 6px
+  );
+}
+.lane i.s {
+  background: color-mix(in srgb, #5b7fe0 55%, var(--paper));
+}
+.lane i.t {
+  background: var(--ink);
+}
+.make-panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-height: 0;
+  padding: 14px;
+  border-left: 1px solid var(--line);
+  background: var(--sub);
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.make-panel .caption,
+.make-panel .reading-empty {
+  margin: 0;
+}
+.recipes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+/* One line: the name, then what it is for. */
+.recipe {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: var(--t-caption);
+  color: var(--soft);
+  white-space: nowrap;
+}
+.recipe b {
+  font-size: var(--t-label);
+  font-weight: 500;
+  color: var(--ink);
+}
+.recipe.on {
+  border-color: color-mix(in srgb, var(--brand) 78%, #000);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 78%, #000);
+}
+.opts {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.opt-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  font-size: var(--t-body);
+  text-align: left;
+}
+.opt-row:first-child {
+  border-top: 0;
+}
+.opt-row:hover:not(:disabled) {
+  background: var(--sub);
+}
+.opt-row:disabled {
+  color: var(--soft);
+}
+.opt-row:focus-visible {
+  outline: 2px solid var(--ev);
+  outline-offset: -2px;
+}
+.opt-check {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--line2);
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 1;
+  color: #fff;
+}
+.opt-row[aria-checked='true'] .opt-check {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--brand) 78%, #000);
+}
+.opt-field {
+  display: grid;
+  gap: 6px;
+  padding: 0 10px 9px;
+}
+/* The title's styles: three small pictures of where it sits, each with its name. */
+.title-styles {
+  display: flex;
+  gap: 6px;
+}
+.title-style {
+  /* Each as wide as its name needs, sharing what is left over. */
+  flex: 1 1 auto;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 5px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: var(--t-caption);
+  color: var(--mid);
+  white-space: nowrap;
+}
+.title-style:hover {
+  border-color: var(--line2);
+}
+.title-style.on {
+  border-color: color-mix(in srgb, var(--brand) 78%, #000);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 78%, #000);
+  color: var(--ink);
+}
+.title-style:focus-visible {
+  outline: 2px solid var(--ev);
+  outline-offset: 2px;
+}
+/* A miniature of the frame, with the title drawn where that style puts it. The colours
+   are the video's, not the window's: a dark title on a light picture in either theme. */
+.mini {
+  position: relative;
+  width: 44px;
+  aspect-ratio: 16 / 9;
+  border-radius: 3px;
+  background: #d9d9e0;
+  overflow: hidden;
+}
+.mini i {
+  position: absolute;
+  border-radius: 1.5px;
+  background: #17171c;
+}
+.mini.over i {
+  inset: 38% 22%;
+}
+.mini.card {
+  background: #17171c;
+}
+.mini.card i {
+  inset: 42% 26%;
+  background: #fff;
+}
+.mini.third i {
+  left: 8%;
+  bottom: 14%;
+  width: 42%;
+  height: 20%;
+}
+/* The words typed here are detail under a row, so they are no larger than its name. */
+.opt-field .field {
+  height: 28px;
+  font-size: var(--t-label);
+}
+/* A card adds time outside the recording, so it is a block at the lane's very end. */
+.lane i.t.card {
+  width: 8px;
+}
+/* The chosen title over the picture while the video is at its start. */
+.title-preview {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding: 0 8%;
+  color: #fff;
+  font-weight: 600;
+  font-size: clamp(14px, 2.2vw, 26px);
+  letter-spacing: -0.01em;
+  text-align: center;
+  pointer-events: none;
+}
+.player.at-start:not(.playing) .title-preview {
+  display: grid;
+}
+.title-preview.over span {
+  padding: 0.25em 0.6em;
+  background: rgba(23, 23, 28, 0.85);
+}
+.title-preview.card {
+  background: #17171c;
+}
+.title-preview.third {
+  place-items: end start;
+  padding: 0 0 12% 4%;
+  font-size: clamp(11px, 1.4vw, 17px);
+}
+.title-preview.third span {
+  padding: 0.3em 0.7em;
+  background: rgba(23, 23, 28, 0.88);
+}
+.make-length {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.make-length b {
+  font-weight: 500;
+}
+.btn.make-go {
+  justify-content: center;
+  height: 34px;
+  border-color: transparent;
+  background: color-mix(in srgb, var(--brand) 78%, #000);
+  color: #fff;
+}
+.btn.make-go:hover {
+  background: color-mix(in srgb, var(--brand) 70%, #000);
+}
+.make-problem {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--badbg);
+  color: var(--bad);
+  font-size: var(--t-label);
+}
+
+/* ---- reading column ---- */
+.reading .label {
+  margin: 0 0 8px;
+}
+#transcript {
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink2);
+  overflow-wrap: anywhere;
+  user-select: text;
+  cursor: text;
+}
+.para {
+  margin: 0 0 12px;
+}
+.para .ts {
+  margin-right: 8px;
+  border: 0;
+  vertical-align: 2px;
+  user-select: none;
+}
+.para .ts:hover {
+  color: var(--ink);
+}
+#transcript ::selection {
+  background: var(--evbg);
+}
+.reading-empty {
+  margin: 0 0 8px;
+  color: var(--mid);
+}
+.reading .caption {
+  margin: 0;
+}
+
+/* ---- marks ---- */
+.mark-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  text-align: left;
+}
+.mark-row:hover {
+  background: var(--fill);
+}
+
+/* ---- tabs: what can be done with the recording ---- */
+.tabs {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.tab {
+  margin-bottom: -1px;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--mid);
+  font-weight: 500;
+}
+.tab:hover {
+  color: var(--ink);
+}
+.tab.on {
+  border-bottom-color: color-mix(in srgb, var(--brand) 78%, #000);
+  color: var(--ink);
+}
+
+/* ---- summary ---- */
+#summary {
+  font-size: var(--t-body);
+  line-height: 1.55;
+  color: var(--ink2);
+  user-select: text;
+}
+#summary .label {
+  margin: 14px 0 6px;
+}
+.points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.points li {
+  margin: 0 0 6px;
+}
+.points .ts {
+  margin-right: 8px;
+  border: 0;
+  vertical-align: 2px;
+  user-select: none;
+}
+.summary-foot {
+  margin: 14px 0 0;
+}
+.recording > .progress {
+  margin: 0 20px 12px;
+}

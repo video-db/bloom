@@ -1,0 +1,64 @@
+// The capture engine is the only part of the new app that talks to capture and VideoDB.
+// Everything else (tray, panel, windows) reads one state object and sends named commands:
+//
+//   getState()            -> state
+//   onState(listener)     -> unsubscribe
+//   command(name, args)   -> boolean   false when the name is unknown or the arguments are
+//                                       malformed; the command did not run
+//   dispose()                          stops every timer the engine started
+//
+// The commands, grouped as the sample engine's files are:
+//   capture    start | cancel | stop | pause | resume | mark | setPurpose | retry | keep |
+//              answerAsk | trimEnding | newRecording | discard | retryProcessing | simulate
+//   sources    setSource | configure | setPermission | checkPermission
+//   access     signIn | signInWithBrowser | cancelSignIn | signOut | checkConnection
+//   uploads    resumeUpload | discardUpload
+//   library    rename | renameRecording | deleteRecording | restoreRecording | saveDraft |
+//              retryRecording
+//   versions   saveVersion | renameVersion | deleteVersion
+//
+// The real VideoDB engine and the sample design engine implement the same surface.
+// The main process always selects the real engine; the sample engine backs the main-process tests.
+//
+// State also carries `capabilities` (see capabilities.js): windows hide what a build cannot do.
+const { createSampleEngine } = require('./sample');
+
+function createEngine(options = {}) {
+  if (options.mode === 'videodb') {
+    const path = require('node:path');
+    const { createVideoDBBoundary } = require('./videodb');
+    const { createVideoDBEngine } = require('./videodb/engine');
+    const { createLocalRecorder } = require('./videodb/local-recorder');
+    const { createRecordingCache } = require('./videodb/cache');
+    const { CaptureClient } = require('videodb-capture/capture');
+    const service = createVideoDBBoundary(options);
+    const directory = path.join(
+      options.dataDir,
+      service.apiUrl.includes('.dev.') ? 'videodb-dev' : 'videodb-prod',
+    );
+    const recorder = createLocalRecorder({
+      CaptureClient,
+      service,
+      permissionStatus: options.permissionStatus,
+      permissionDecided: options.permissionDecided,
+      askMicrophone: options.askMicrophone,
+    });
+    const { createBrowserSignIn } = require('./videodb/browser-sign-in');
+    const browserSignIn = options.openExternal
+      ? createBrowserSignIn({
+          apiUrl: service.apiUrl,
+          openExternal: options.openExternal,
+          registrationFile: path.join(directory, 'sign-in-client.json'),
+        })
+      : null;
+    return createVideoDBEngine({
+      service,
+      recorder,
+      browserSignIn,
+      cache: createRecordingCache(path.join(directory, 'library.json')),
+    });
+  }
+  return createSampleEngine(options);
+}
+
+module.exports = { createEngine };

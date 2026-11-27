@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src https:; media-src https: blob:; worker-src blob:"
+    />
+    <title>Bloom</title>
+    <link rel="stylesheet" href="shared/base.css" />
+    <link rel="stylesheet" href="panel/panel.css" />
+    <link rel="stylesheet" href="workspace/workspace.css" />
+    <link rel="stylesheet" href="workspace/home.css" />
+    <link rel="stylesheet" href="workspace/recordings.css" />
+    <link rel="stylesheet" href="workspace/recording.css" />
+    <link rel="stylesheet" href="workspace/search.css" />
+    <link rel="stylesheet" href="settings/settings.css" />
+    <link rel="stylesheet" href="onboarding/onboarding.css" />
+    <link rel="stylesheet" href="control/control.css" />
+    <link rel="stylesheet" href="camera/camera.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="../../node_modules/hls.js/dist/hls.min.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

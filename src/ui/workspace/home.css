@@ -1,0 +1,54 @@
+/* Home: the counts and the recent recordings. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.stat {
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.stat b {
+  display: block;
+  font-size: var(--t-page);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+.stat span {
+  font-size: var(--t-label);
+  color: var(--soft);
+}
+.recent-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 13px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  text-align: left;
+}
+.card-head + .recent-row {
+  border-top: 0;
+}
+.recent-row:hover {
+  background: var(--sub);
+}
+.recent-copy b,
+.recent-copy small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recent-copy b {
+  font-weight: 500;
+}
+.recent-copy small {
+  font-size: var(--t-caption);
+  color: var(--soft);
+}

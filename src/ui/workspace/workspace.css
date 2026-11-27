@@ -1,0 +1,379 @@
+/* The main window's frame: title bar, sidebar of places, the page area and what every page
+   shares (heads, cards, empty states, dialogs). Each page's own styles sit beside its view. */
+.app {
+  display: grid;
+  grid-template-rows: 48px minmax(0, 1fr);
+  height: 100%;
+  background: var(--paper);
+}
+
+/* ---- title bar ---- */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 0 78px; /* clear of the window buttons */
+  border-bottom: 1px solid var(--line);
+  background: var(--sub);
+}
+.bar > .right {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+.bar-record {
+  height: 28px;
+  padding: 0 12px;
+  font-size: var(--t-body);
+  border-radius: 7px;
+}
+.bar-record .bloom-logo {
+  height: 13px;
+  width: 13px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: var(--t-caption);
+}
+.badge.rec {
+  color: var(--rect);
+  background: var(--recbg);
+}
+.badge.warn {
+  color: var(--warn);
+  background: var(--warnbg);
+}
+.badge button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* ---- sidebar ---- */
+.body {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr);
+  min-height: 0;
+}
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  padding: 10px 8px 8px;
+  border-right: 1px solid var(--line);
+  background: var(--sub);
+}
+.sidebar-brand {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 9px 10px;
+  font-size: var(--t-body);
+  font-weight: 600;
+}
+.sidebar-brand .bloom-logo {
+  width: 18px;
+  height: 18px;
+}
+.place {
+  display: flex;
+  flex: none; /* a long collections list scrolls; it never squeezes the places */
+  align-items: center;
+  gap: 9px;
+  height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink2);
+  font-size: var(--t-body);
+  font-weight: 500;
+  text-align: left;
+}
+.place .ic {
+  width: 16px;
+  height: 16px;
+  color: var(--mid);
+}
+.place:hover {
+  background: var(--fill);
+}
+.place.on {
+  background: var(--paper);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 1px 2px rgba(20, 20, 30, 0.06);
+  color: var(--ink);
+}
+.place.on .ic {
+  color: var(--ev);
+}
+.place-count {
+  margin-left: auto;
+  font-size: var(--t-caption);
+  font-weight: 400;
+  color: var(--soft);
+}
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 8px;
+  margin-top: auto;
+  padding: 9px 4px 0;
+  border-top: 1px solid var(--line);
+}
+.sidebar-footer .icon-button.on {
+  background: var(--fill);
+  color: var(--ink);
+}
+.sidebar-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+.videodb-wordmark {
+  display: block;
+  width: 62px;
+  height: auto;
+  opacity: 0.8;
+}
+@media (prefers-color-scheme: dark) {
+  .videodb-wordmark {
+    filter: brightness(0) invert(1);
+    opacity: 0.7;
+  }
+}
+
+/* ---- the page area, and what every page shares ---- */
+.view {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+.view > .note {
+  margin: 12px 26px 0;
+}
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 26px 32px;
+}
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.page-head h1 {
+  margin: 0;
+  font-size: var(--t-page);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.page-head .grow {
+  flex: 1;
+}
+.page-head .caption,
+.page-head .btn,
+.page-head .seg,
+.page-head select {
+  flex: none;
+}
+.caption {
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+.page-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+.page-link:hover {
+  color: var(--ink);
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 500;
+}
+.page-empty {
+  padding: 28px 13px;
+  color: var(--mid);
+  text-align: center;
+}
+.page-empty b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.page-empty p {
+  margin: 4px 0 0;
+  font-size: var(--t-label);
+}
+main.page-empty {
+  padding: 40px;
+}
+.processing-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 13px;
+  border: 1px solid var(--warnline);
+  border-radius: 10px;
+  background: var(--warnbg);
+  font-size: var(--t-label);
+}
+.processing-banner p {
+  margin: 4px 0 0;
+  color: var(--mid);
+}
+
+/* ---- dialogs ---- */
+dialog {
+  width: 440px;
+  max-height: 85vh;
+  padding: 24px;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 15px 60px #0003;
+}
+dialog::backdrop {
+  background: #1114;
+}
+dialog h2 {
+  margin: 0 0 16px;
+  font-size: var(--t-page);
+}
+dialog p {
+  font-size: var(--t-body);
+  color: var(--mid);
+  overflow-wrap: anywhere;
+}
+dialog label {
+  font-size: var(--t-label);
+  color: var(--mid);
+}
+dialog .field {
+  margin-top: 8px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* ---- quiet focus and the single orange, as in the tray ---- */
+.app .field:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--ink) 26%, var(--line2));
+  background: color-mix(in srgb, var(--brand) 3%, var(--paper));
+}
+@media (forced-colors: active) {
+  .app .field:focus {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+.app .btn.pri {
+  background: color-mix(in srgb, var(--brand) 78%, #000);
+  border-color: transparent;
+  color: #fff;
+}
+.app .btn.pri:hover {
+  background: color-mix(in srgb, var(--brand) 70%, #000);
+  opacity: 1;
+}
+
+/* ---- sidebar: collections and the balance ---- */
+.sidebar-group {
+  flex: none;
+  padding: 14px 9px 4px;
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+.collections {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+.collection {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 8px;
+  height: 28px;
+  padding: 0 9px 0 34px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink2);
+  font-size: var(--t-label);
+  text-align: left;
+}
+.collection > span:first-child {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.collection:hover {
+  background: var(--fill);
+}
+.collection.on {
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--line);
+  color: var(--ink);
+  font-weight: 500;
+}
+.balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 5px;
+  font-size: var(--t-label);
+  color: var(--soft);
+}
+.balance strong {
+  color: var(--ink2);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.sidebar-foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 5px;
+}

@@ -1,0 +1,89 @@
+/* Recordings: tiles, grouped by date under small headings. */
+.tile-group {
+  display: grid;
+  gap: 10px;
+}
+.tile-group .label {
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 18px 14px;
+}
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+.tile .shot {
+  width: 100%;
+  border-radius: 9px;
+}
+.tile:hover .shot {
+  border-color: var(--line2);
+  box-shadow: 0 2px 10px rgba(20, 20, 30, 0.08);
+}
+.tile b,
+.tile small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tile b {
+  font-weight: 500;
+}
+.tile small {
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+
+/* Filter and sort, behind one icon in the header. */
+.browse-menu summary {
+  position: relative;
+  border: 1px solid var(--line2);
+  background: var(--paper);
+}
+.browse-menu summary .ic {
+  width: 16px;
+  height: 16px;
+}
+.browse-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ev);
+}
+.browse-menu .menu-label {
+  display: block;
+  padding: 6px 9px 3px;
+  font-size: var(--t-caption);
+  color: var(--soft);
+}
+/* More specific than the menu's own rule, which is in a stylesheet loaded later. */
+.record-menu.browse-menu button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.menu-tick {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  color: var(--ev);
+}
+.menu-tick .ic {
+  width: 13px;
+  height: 13px;
+}

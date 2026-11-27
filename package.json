@@ -1,18 +1,20 @@
 {
   "name": "bloom",
-  "version": "2.2.0",
+  "version": "2.4.0",
   "description": "Bloom — Screen recorder powered by VideoDB",
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder",
-    "pack": "electron-builder --dir"
+    "test": "node --test src/tests/*.test.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "keywords": [],
   "author": "VideoDB",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
+    "@electron/osx-sign": "1.0.5",
     "electron": "^39.7.0",
     "electron-builder": "^24.6.4"
   },
@@ -21,11 +23,13 @@
     "productName": "Bloom",
     "files": [
       "src/**/*",
+      "!src/tests/**",
+      "!src/README.md",
       "package.json"
     ],
     "asar": true,
     "asarUnpack": [
-      "node_modules/videodb/bin/**"
+      "node_modules/videodb-capture/bin/**"
     ],
     "mac": {
       "identity": null,
@@ -34,9 +38,9 @@
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
-        "NSScreenCaptureUsageDescription": "Bloom needs screen recording permission to capture your display during sessions.",
-        "NSMicrophoneUsageDescription": "Bloom needs microphone access to capture audio during sessions.",
-        "NSCameraUsageDescription": "Bloom needs camera access to capture your webcam during sessions."
+        "NSScreenCaptureUsageDescription": "Bloom needs screen recording permission to capture your display and system audio.",
+        "NSMicrophoneUsageDescription": "Bloom needs microphone access to record your voice.",
+        "NSCameraUsageDescription": "Bloom shows your camera on screen while you record."
       },
       "target": [
         {
@@ -47,7 +51,7 @@
           ]
         }
       ],
-      "artifactName": "bloom-${version}-${arch}.${ext}"
+      "artifactName": "bloom-${version}-mac-${arch}.${ext}"
     },
     "dmg": {
       "title": "Bloom ${version}",
@@ -57,12 +61,23 @@
         "height": 380
       },
       "contents": [
-        { "x": 140, "y": 200, "type": "file" },
-        { "x": 400, "y": 200, "type": "link", "path": "/Applications" }
+        {
+          "x": 140,
+          "y": 200,
+          "type": "file"
+        },
+        {
+          "x": 400,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "build/icon.ico",
       "artifactName": "bloom-${version}-${arch}.${ext}"
     },
@@ -73,8 +88,7 @@
     "afterPack": "./build/afterPack.js"
   },
   "dependencies": {
-    "dotenv": "^17.2.3",
-    "sql.js": "^1.11.0",
-    "videodb": "^0.2.4"
+    "hls.js": "^1.7.4",
+    "videodb-capture": "file:vendor/videodb-0.4.3.tgz"
   }
 }

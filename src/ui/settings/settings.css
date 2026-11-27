@@ -1,0 +1,93 @@
+/* Settings: grouped cards of rows with switches, segmented choices and chips. */
+/* settings */
+.set {
+  padding: 22px 26px 40px;
+  max-width: 760px;
+  margin: auto;
+}
+.set h1 {
+  font-size: var(--t-page);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin: 0 0 4px;
+}
+.set h2 {
+  font-size: var(--t-label);
+  font-weight: 500;
+  color: var(--soft);
+  margin: 22px 0 8px;
+}
+.srow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 14px;
+  border-top: 1px solid var(--line);
+}
+.srow:first-child {
+  border-top: 0;
+}
+.srow b {
+  display: block;
+  font-weight: 500;
+}
+.srow small {
+  display: block;
+  color: var(--soft);
+  font-size: var(--t-label);
+}
+.tgl {
+  width: 36px;
+  border-radius: 999px;
+  background: var(--line2);
+  position: relative;
+  flex: none;
+  border: 0;
+  padding: 0;
+  transition: background 0.15s;
+  height: 24px;
+}
+.tgl::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+  top: 3.5px;
+}
+.tgl.on {
+  background: var(--ok);
+}
+.tgl.on::after {
+  transform: translateX(15px);
+}
+.settings-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.settings-heading h1 {
+  margin: 0;
+}
+.set .srow > div:first-child {
+  min-width: 0;
+}
+/* ---- settings ---- */
+.set-note {
+  font-size: var(--t-label);
+}
+.set-actions {
+  display: inline-flex;
+  flex: none;
+  gap: 8px;
+}
+.set .srow > .soft,
+.set .srow > .chip,
+.set .srow > .btn {
+  flex: none;
+}

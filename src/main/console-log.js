@@ -37,9 +37,13 @@ function sourceOf(line) {
   return tag ? tag[1] : 'bloom';
 }
 
+// The SDK prints all of the capture program's output to stderr, so its lines are judged by
+// their words; Bloom's own console.error still counts as an error.
 function levelOf(method, line) {
-  if (method === 'error' || /\b(ERROR|FATAL)\b|panicked/.test(line)) return 'error';
-  if (method === 'warn' || /\bWARN(ING)?\b/.test(line)) return 'warn';
+  const capture = /^(\[Capture Binary|VideoDB Capture:)/.test(line);
+  if ((method === 'error' && !capture) || /\b(ERROR|FATAL)\b|panicked/.test(line))
+    return 'error';
+  if ((method === 'warn' && !capture) || /\bWARN(ING)?\b/.test(line)) return 'warn';
   return 'info';
 }
 

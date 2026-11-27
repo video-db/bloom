@@ -46,10 +46,11 @@ test('what main prints goes to the log, redacted, labelled and rate limited', ()
   const target = { log() {}, info() {}, warn() {}, error() {} };
   let clock = 0;
   hookConsole((level, msg, extra) => lines.push({ level, msg, ...extra }), {
-    perMin: 3,
+    perMin: 4,
     now: () => clock,
     target,
   });
+  target.error('[Capture Binary]: Capture v0.3.6');
   target.log('[Capture Binary]: ERROR stream stalled');
   target.log('[update] apiKey=sk-abcdefghijklmnop');
   target.warn('plain');
@@ -58,9 +59,9 @@ test('what main prints goes to the log, redacted, labelled and rate limited', ()
   target.log('after');
   assert.deepEqual(
     lines.map((l) => [l.level, l.msg]),
-    [['error', 'capture'], ['info', 'update'], ['warn', 'bloom'], ['warn', 'log lines skipped'], ['info', 'bloom']],
+    [['info', 'capture'], ['error', 'capture'], ['info', 'update'], ['warn', 'bloom'], ['warn', 'log lines skipped'], ['info', 'bloom']],
   );
-  assert(!lines[1].line.includes('sk-abcdefghijklmnop'));
+  assert(!lines[2].line.includes('sk-abcdefghijklmnop'));
 });
 
 test('the diagnostics zip holds a README, the facts and recent logs, and nothing secret', (t) => {

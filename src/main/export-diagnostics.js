@@ -8,7 +8,13 @@ const { collectReport, newReportId, zip } = require('./diagnostics');
 
 function sdkFacts() {
   try {
-    const pkg = require('videodb-capture/package.json');
+    // The SDK does not export its package.json; it sits beside its dist folder.
+    const pkg = JSON.parse(
+      fs.readFileSync(
+        path.join(path.dirname(require.resolve('videodb-capture')), '..', 'package.json'),
+        'utf8',
+      ),
+    );
     return {
       sdk: pkg.version || null,
       capture: pkg.binaryConfig?.platformVersions?.[`${process.platform}-${process.arch}`] ||

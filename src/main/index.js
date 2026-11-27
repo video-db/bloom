@@ -190,7 +190,7 @@ function start() {
           logDir: LOG_DIR,
           state: engine.getState(),
           prefs: prefs.all(),
-          version: app.getVersion?.() || '',
+          version: require('../../package.json').version,
           log,
         })
         .catch((error) => {

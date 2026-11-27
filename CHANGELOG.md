@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Sign in with VideoDB: setup opens VideoDB's sign-in page in the browser and comes back signed in. An API key stays available under "Use an API key instead". A browser sign-in lasts 30 days; Bloom then asks to sign in again. Recordings stay with the same VideoDB account across sign-ins.
+
+- Help ▸ Export Diagnostics… saves a zip with Bloom's logs from the last 7 days and a short report (versions, permissions and recording states). Keys, tokens, signed links, email addresses and recording titles are left out, and nothing is sent anywhere. Bloom now keeps a log file a day, including what the capture program reports.
+
 - Bloom includes the internal Node SDK 0.4.3 with the four recorder 0.3.6 platform pins and instant-start live-session interface. Bloom requests authorized deferred recording with `live: false` and uses the selected channel IDs for pause and resume.
 
 - Internal Ubuntu amd64 preview 3 uses Linux recorder 0.3.6 for single-window capture and switching. Packaged builds check for Bloom updates on the hosted internal Linux channel. GNOME desktops can bind start/stop and mark commands as custom keyboard shortcuts.

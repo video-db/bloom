@@ -33,6 +33,7 @@ With Playwright available, run the Electron walkthroughs one at a time (the app 
 | `node src/tests/window-ui.cjs light` | The floating camera (drawn without opening the camera), then recording a single window: named, switched, hidden and shown, the floating control, paused, stopped |
 | `node src/tests/quit-ui.cjs` | Quitting while a recording is being processed exits with no question |
 | `node src/tests/onboarding-ui.cjs light` | First run with a fake service and recorder: key check, automatic advance, recorder failure, reopen, optional microphone, hand-off to the menu bar |
+| `node src/tests/sign-in-ui.cjs light` | Setup's Sign in with VideoDB with a stand-in browser: waiting, open again, cancel, cancelled in the browser, the API key instead, connected |
 
 On macOS, `node src/tests/dock-ui.cjs` checks native Dock visibility through tray creation/show/hide, workspace/setup and window closure, plus preservation of accessory mode for background automation. It uses isolated blank windows without accounts or capture.
 

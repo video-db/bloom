@@ -5,7 +5,18 @@ const { createSourceDiscovery } = require('./source-discovery');
 // Who is signed in, what macOS allows, and whether the recorder is ready. These are three
 // separate answers: a key that VideoDB accepted stays accepted even if the recorder or the
 // library then fails, so neither failure is ever reported as a bad key.
-function createAccess(ctx, { service, recorder, library, recover, leave = () => {}, stay = () => {} }) {
+function createAccess(
+  ctx,
+  {
+    service,
+    recorder,
+    library,
+    recover,
+    leave = () => {},
+    stay = () => {},
+    browserSignIn = null,
+  },
+) {
   let checking = false;
   const discovery = createSourceDiscovery(ctx, recorder);
 
@@ -71,29 +82,52 @@ function createAccess(ctx, { service, recorder, library, recover, leave = () => 
       checking = false;
     }
   }
+  // The same rule as signing out: a recording that needs recovery does not block it.
+  async function signInWith(work) {
+    if (checking || !canSignOut(ctx.get()))
+      throw new ServiceError(
+        'busy',
+        'Changing accounts is available once the recording has been processed.',
+      );
+    checking = true;
+    ctx.set({ account: { status: 'checking', label: '' }, problem: null });
+    try {
+      let identity;
+      try {
+        identity = await work();
+      } catch (error) {
+        // A browser sign-in that did not finish leaves the account signed out; only a lost
+        // connection reads as offline.
+        if (error.browser && error.code !== 'network')
+          ctx.set({ account: { status: 'signed-out', label: '' } });
+        else rejected(error);
+        throw error;
+      }
+      await connected(identity);
+    } finally {
+      checking = false;
+    }
+  }
   const commands = {
     refreshSources: () => discovery.refresh(),
     async signIn({ key }) {
-      // The same rule as signing out: a recording that needs recovery does not block it.
-      if (checking || !canSignOut(ctx.get()))
+      return signInWith(() => service.signIn(key));
+    },
+    // Sign in with VideoDB: the console's page opens in the browser and Bloom waits for it.
+    async signInWithBrowser() {
+      if (!browserSignIn?.available())
         throw new ServiceError(
-          'busy',
-          'Changing accounts is available once the recording has been processed.',
+          'unavailable',
+          'Sign in with VideoDB isn’t available in this build. Use an API key instead.',
         );
-      checking = true;
-      ctx.set({ account: { status: 'checking', label: '' }, problem: null });
-      try {
-        let identity;
-        try {
-          identity = await service.signIn(key);
-        } catch (error) {
-          rejected(error);
-          throw error;
-        }
-        await connected(identity);
-      } finally {
-        checking = false;
-      }
+      // Clicked again while waiting: the same page opens again.
+      if (browserSignIn.pending()) return browserSignIn.start();
+      return signInWith(async () =>
+        service.signInWithToken(await browserSignIn.start()),
+      );
+    },
+    cancelSignIn() {
+      browserSignIn?.cancel();
     },
     // Retry after the recorder failed to start. The account is untouched.
     async prepareRecorder() {

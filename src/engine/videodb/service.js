@@ -55,6 +55,73 @@ function createVideoDBService({
         'Your account changed. Open the recording again.',
       );
   }
+  // A fingerprint isolates accounts as well as environments; it is never a credential. A key is
+  // known by itself, so a rotated key is a new scope. A browser sign-in is known by its VideoDB
+  // user, so the next token (every 30 days) keeps the same recordings and recorder owner.
+  const scopeFor = (saved) =>
+    createHash('sha256')
+      .update(
+        saved.kind === 'token'
+          ? `${apiUrl}\0user:${saved.userId}`
+          : `${apiUrl}\0${saved.secret}`,
+      )
+      .digest('hex');
+  const expired = (saved) =>
+    Number.isFinite(saved.expiresAt) && Date.now() >= saved.expiresAt;
+
+  async function connectWith(saved, { save = true } = {}) {
+    if (authenticating || operations.busy())
+      throw new ServiceError(
+        'busy',
+        'Finish or reconcile pending work before changing accounts.',
+      );
+    const attempt = ++generation;
+    authenticating = true;
+    try {
+      const conn = await call(() =>
+        connect({ apiKey: saved.secret, baseUrl: apiUrl }),
+      );
+      const collections = await call(() => conn.getCollections());
+      if (!Array.isArray(collections))
+        throw new ServiceError(
+          'invalid-response',
+          'VideoDB returned an unreadable library. Try again.',
+        );
+      const matches = collections.filter(
+        (item) => item?.name === COLLECTION_NAME,
+      );
+      if (matches.length > 1)
+        throw new ServiceError(
+          'collection-ambiguous',
+          'More than one Bloom collection exists. The intended collection must be identified before continuing.',
+        );
+      if (attempt !== generation)
+        throw new ServiceError(
+          'account-changed',
+          'Sign-in was cancelled. Try again.',
+        );
+      const id = scopeFor(saved);
+      if (save) {
+        if (saved.kind === 'token')
+          credentials?.writeToken({
+            token: saved.secret,
+            userId: saved.userId,
+            expiresAt: saved.expiresAt ?? null,
+          });
+        else credentials?.write(saved.secret);
+      }
+      current = { id, conn, collection: matches[0] || null };
+      operations.restore(current);
+      return {
+        scopeId: id,
+        collectionId: current.collection?.id || null,
+        apiUrl,
+      };
+    } finally {
+      authenticating = false;
+    }
+  }
+
   async function read(scope, work) {
     assertCurrent(scope);
     const result = await call(work);
@@ -67,14 +134,10 @@ function createVideoDBService({
   return {
     apiUrl,
     cachedIdentity() {
-      const key = credentials?.read();
-      return key
-        ? {
-            scopeId: createHash('sha256')
-              .update(`${apiUrl}\0${key}`)
-              .digest('hex'),
-          }
-        : null;
+      const saved = credentials?.readCredential
+        ? credentials.readCredential()
+        : credentials?.read() && { kind: 'key', secret: credentials.read() };
+      return saved ? { scopeId: scopeFor(saved) } : null;
     },
     ...createLibrary({ account, read, assertCurrent, operations, journal }),
     ...createSessions({ account, read, mutate, operations }),
@@ -83,57 +146,41 @@ function createVideoDBService({
     ...createUnderstand({ account, read }),
     ...createEditing({ account, assertCurrent, editor }),
     async signIn(apiKey) {
-      if (authenticating || operations.busy())
-        throw new ServiceError(
-          'busy',
-          'Finish or reconcile pending work before changing accounts.',
-        );
       if (typeof apiKey !== 'string' || !apiKey.trim() || apiKey.length > 4096)
         throw new ServiceError('invalid-input', 'Enter a VideoDB API key.');
-      const attempt = ++generation;
-      authenticating = true;
-      try {
-        const conn = await call(() =>
-          connect({ apiKey: apiKey.trim(), baseUrl: apiUrl }),
-        );
-        const collections = await call(() => conn.getCollections());
-        if (!Array.isArray(collections))
-          throw new ServiceError(
-            'invalid-response',
-            'VideoDB returned an unreadable library. Try again.',
-          );
-        const matches = collections.filter(
-          (item) => item?.name === COLLECTION_NAME,
-        );
-        if (matches.length > 1)
-          throw new ServiceError(
-            'collection-ambiguous',
-            'More than one Bloom collection exists. The intended collection must be identified before continuing.',
-          );
-        if (attempt !== generation)
-          throw new ServiceError(
-            'account-changed',
-            'Sign-in was cancelled. Try again.',
-          );
-        // A fingerprint isolates rotated keys as well as environments; it is never a credential.
-        const id = createHash('sha256')
-          .update(`${apiUrl}\0${apiKey.trim()}`)
-          .digest('hex');
-        credentials?.write(apiKey.trim());
-        current = { id, conn, collection: matches[0] || null };
-        operations.restore(current);
-        return {
-          scopeId: id,
-          collectionId: current.collection?.id || null,
-          apiUrl,
-        };
-      } finally {
-        authenticating = false;
-      }
+      return connectWith({ kind: 'key', secret: apiKey.trim() });
+    },
+    // A browser sign-in (Sign in with VideoDB): the console's token and its VideoDB user.
+    async signInWithToken({ token, userId, expiresAt = null } = {}) {
+      if (
+        typeof token !== 'string' ||
+        !token ||
+        token.length > 4096 ||
+        typeof userId !== 'string' ||
+        !userId
+      )
+        throw new ServiceError('invalid-input', 'Sign in with VideoDB again.');
+      return connectWith({ kind: 'token', secret: token, userId, expiresAt });
     },
     async restore() {
-      const key = credentials?.read();
-      return key ? this.signIn(key) : null;
+      const saved = credentials?.readCredential
+        ? credentials.readCredential()
+        : credentials?.read() && { kind: 'key', secret: credentials.read() };
+      if (!saved) return null;
+      // The console's token has no refresh: once it runs out, the person signs in again.
+      if (saved.kind === 'token' && expired(saved))
+        throw new ServiceError(
+          'authentication',
+          'Your sign-in ran out. Sign in with VideoDB again.',
+        );
+      return connectWith(saved, { save: false });
+    },
+    signInMethod() {
+      try {
+        return credentials?.readCredential?.()?.kind || null;
+      } catch {
+        return null;
+      }
     },
     signOut() {
       if (operations.busy())

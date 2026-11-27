@@ -4,6 +4,8 @@ const id = (value) => text(value, 180) && value.length > 0;
 const none = (args) => Object.keys(args).length === 0;
 const commandArgs = {
   signIn: (a) => text(a.key, 4096) && !!a.key.trim(),
+  signInWithBrowser: none,
+  cancelSignIn: none,
   signOut: none,
   checkConnection: none,
   refresh: none,

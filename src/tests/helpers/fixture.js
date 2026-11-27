@@ -17,6 +17,7 @@ function createFixture({
   records = [],
   autoRestore = false,
   retryDelay,
+  browserSignIn = null,
 } = {}) {
   const events = new EventEmitter();
   const outcomes = new Map();
@@ -48,6 +49,7 @@ function createFixture({
     cachedIdentity: () => null,
     restore: async () => null,
     signIn: async () => ({ scopeId }),
+    signInWithToken: async () => ({ scopeId }),
     signOut() {},
     ensureCollection: async () => 'collection-1',
     createSession: async () => ({
@@ -277,6 +279,7 @@ function createFixture({
     autoRestore,
     now: () => clock,
     retryDelay,
+    browserSignIn,
   });
   async function command(name, args = {}) {
     engine.command(name, args);

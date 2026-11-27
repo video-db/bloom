@@ -86,3 +86,44 @@ test('the recorder passes through preparing, and signing out resets it', async (
     'no recorder without an account',
   );
 });
+
+test('Sign in with VideoDB signs in with the browser’s token, and a cancel leaves the account signed out', async (t) => {
+  let answer;
+  const browserSignIn = {
+    available: () => true,
+    pending: () => !!answer,
+    start: () => new Promise((resolve, reject) => (answer = { resolve, reject })),
+    cancel: () => {
+      answer?.reject(Object.assign(new ServiceError('cancelled', 'Sign-in was cancelled.'), { browser: true }));
+      answer = null;
+    },
+  };
+  const f = createFixture({ browserSignIn });
+  t.after(() => f.engine.dispose());
+  const tokens = [];
+  f.service.signInWithToken = async (credential) => {
+    tokens.push(credential);
+    return { scopeId: f.scopeId };
+  };
+  f.engine.command('signInWithBrowser');
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(f.engine.getState().account.status, 'checking');
+  await f.command('cancelSignIn');
+  assert.equal(f.engine.getState().account.status, 'signed-out');
+  assert.equal(f.engine.getState().problem.kind, 'cancelled');
+
+  f.engine.command('signInWithBrowser');
+  await new Promise((resolve) => setImmediate(resolve));
+  answer.resolve({ token: 'synthetic-console-token', userId: 'u-1', expiresAt: null });
+  answer = null;
+  await f.engine.whenIdle();
+  assert.equal(f.engine.getState().account.status, 'signed-in');
+  assert.deepEqual(tokens, [{ token: 'synthetic-console-token', userId: 'u-1', expiresAt: null }]);
+});
+
+test('Sign in with VideoDB says so when the build cannot open a browser', async (t) => {
+  const f = fixture(t);
+  await f.command('signInWithBrowser');
+  assert.equal(f.engine.getState().problem.kind, 'unavailable');
+  assert.equal(f.engine.getState().account.status, 'signed-out');
+});

@@ -10,6 +10,7 @@ const {
   dialog,
   systemPreferences,
   powerSaveBlocker,
+  shell,
 } = require('electron');
 const { createEngine } = require('../engine');
 const flags = require('./flags');
@@ -103,6 +104,11 @@ function start() {
       askMicrophone: process.platform === 'darwin'
         ? () => systemPreferences.askForMediaAccess('microphone')
         : null,
+      // Sign in with VideoDB opens the console's page in the person's browser.
+      openExternal: (url) =>
+        /^https:\/\//.test(url)
+          ? shell.openExternal(url)
+          : Promise.reject(new Error('not a web page')),
       scope: flags.flag('v1') ? 'v1' : 'full',
       // Someone who has been through onboarding already has an account.
       signedIn: flags.flag('skip-onboarding') || prefs.all().onboardingComplete,

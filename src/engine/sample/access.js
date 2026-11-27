@@ -35,6 +35,22 @@ function createAccess(ctx, { signedIn }) {
         publish();
       });
     },
+    // Stands in for the browser: the person signs in there a moment later.
+    signInWithBrowser() {
+      if (status === 'checking' || status === 'signed-in') return;
+      status = 'checking';
+      publish();
+      inBackground(1500, () => {
+        if (status !== 'checking') return;
+        status = 'signed-in';
+        publish();
+      });
+    },
+    cancelSignIn() {
+      if (status !== 'checking') return;
+      status = 'signed-out';
+      publish();
+    },
     signOut() {
       if (status !== 'signed-in' || !betweenSessions()) return;
       status = 'signed-out';

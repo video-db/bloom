@@ -16,6 +16,7 @@ function createVideoDBEngine({
   service,
   recorder,
   cache,
+  browserSignIn = null, // Sign in with VideoDB, when this build can open a browser
   autoRestore = true,
   now,
   retryDelay, // how long before a recording the connection let down is tried again
@@ -138,6 +139,7 @@ function createVideoDBEngine({
     recover: jobs.recover,
     leave: jobs.leave,
     stay: jobs.stay,
+    browserSignIn,
   });
   const capture = createCapture(ctx, { service, recorder, jobs, now });
   const between = () => ['idle', 'finished'].includes(state.phase);

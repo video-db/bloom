@@ -11,7 +11,7 @@
 //   capture    start | cancel | stop | pause | resume | mark | setPurpose | retry | keep |
 //              answerAsk | trimEnding | newRecording | discard | retryProcessing | simulate
 //   sources    setSource | configure | setPermission | checkPermission
-//   access     signIn | signOut | checkConnection
+//   access     signIn | signInWithBrowser | cancelSignIn | signOut | checkConnection
 //   uploads    resumeUpload | discardUpload
 //   library    rename | renameRecording | deleteRecording | restoreRecording | saveDraft |
 //              retryRecording
@@ -43,9 +43,18 @@ function createEngine(options = {}) {
       permissionDecided: options.permissionDecided,
       askMicrophone: options.askMicrophone,
     });
+    const { createBrowserSignIn } = require('./videodb/browser-sign-in');
+    const browserSignIn = options.openExternal
+      ? createBrowserSignIn({
+          apiUrl: service.apiUrl,
+          openExternal: options.openExternal,
+          registrationFile: path.join(directory, 'sign-in-client.json'),
+        })
+      : null;
     return createVideoDBEngine({
       service,
       recorder,
+      browserSignIn,
       cache: createRecordingCache(path.join(directory, 'library.json')),
     });
   }

@@ -17,8 +17,35 @@ function createFixture({
   records = [],
   autoRestore = false,
   retryDelay,
-  browserSignIn = null,
+  browserSignIn = null, // true: a stand-in browser the test answers through `browser`
 } = {}) {
+  let answer = null;
+  const browser = {
+    opened: 0,
+    resolve(credential) {
+      answer?.resolve(credential);
+      answer = null;
+    },
+    reject(code, message) {
+      const { ServiceError } = require('../../engine/videodb/errors');
+      answer?.reject(Object.assign(new ServiceError(code, message), { browser: true }));
+      answer = null;
+    },
+  };
+  if (browserSignIn === true)
+    browserSignIn = {
+      available: () => true,
+      pending: () => !!answer,
+      start() {
+        browser.opened += 1;
+        if (answer) return answer.promise;
+        let settle;
+        const promise = new Promise((resolve, reject) => (settle = { resolve, reject }));
+        answer = { ...settle, promise };
+        return promise;
+      },
+      cancel: () => browser.reject('cancelled', 'Sign-in was cancelled.'),
+    };
   const events = new EventEmitter();
   const outcomes = new Map();
   const waits = new Map();
@@ -288,6 +315,7 @@ function createFixture({
   return {
     engine,
     service,
+    browser,
     recorder,
     calls,
     remote,

@@ -81,7 +81,81 @@ const connectMessage = {
   invalid: `<p class="setup-message bad" role="alert">${icons.warning}<span>That key wasn’t accepted. Check it and try again.</span></p>`,
 };
 
+// Sign in with VideoDB leads when the build can open a browser; a saved key that stopped
+// working, or the person's choice, shows the key field instead.
+export function usesKey(s, flow) {
+  if (!s.browserSignIn) return true;
+  if (flow.useKey !== null && flow.useKey !== undefined) return flow.useKey;
+  return s.account.status === 'invalid' && s.account.method === 'key';
+}
+
+export function browserStatus(s, flow) {
+  const { status } = s.account;
+  if (status === 'checking') return flow.browser ? 'waiting' : 'checking';
+  if (status === 'signed-in') return 'connected';
+  if (status === 'invalid' && !flow.attempted) return 'ran-out';
+  if (status === 'offline') return 'offline';
+  // Cancel was the person's own click: nothing to explain.
+  if (flow.browser && s.problem?.message && s.problem.kind !== 'cancelled')
+    return 'unfinished';
+  return 'ready';
+}
+
+const browserButton = {
+  ready: `<button class="btn pri setup-action" data-act="browser">Sign in with VideoDB</button>`,
+  'ran-out': `<button class="btn pri setup-action" data-act="browser">Sign in with VideoDB</button>`,
+  unfinished: `<button class="btn pri setup-action" data-act="browser">Sign in with VideoDB</button>`,
+  waiting: `<button class="btn pri setup-action busy" disabled><i class="setup-spinner"></i>Waiting for your browser…</button>`,
+  checking: `<button class="btn pri setup-action busy" disabled><i class="setup-spinner"></i>Connecting…</button>`,
+  connected: `<button class="btn pri setup-action done" disabled>${icons.check}Connected</button>`,
+  offline: `<button class="btn pri setup-action" data-act="retry">Try again</button>`,
+};
+
+function signInWithBrowser(s, flow) {
+  const status = browserStatus(s, flow);
+  const locked = ['waiting', 'checking', 'connected'].includes(status);
+  const message =
+    status === 'offline'
+      ? `<p class="setup-message warn" role="alert">${icons.warning}<span>${esc(s.problem?.message || 'Can’t reach VideoDB. Check your connection.')}</span></p>`
+      : status === 'unfinished'
+        ? `<p class="setup-message bad" role="alert">${icons.warning}<span>${esc(s.problem.message)}</span></p>`
+        : '';
+  const below =
+    status === 'waiting'
+      ? `<p class="setup-links"><button type="button" class="setup-link" data-act="browser">Open the page again</button><button type="button" class="setup-link" data-act="cancel-sign-in">Cancel</button></p>`
+      : `<p class="setup-links"><button type="button" class="setup-link" data-act="use-key" ${locked ? 'disabled' : ''}>Use an API key instead</button></p>`;
+  return /* HTML */ `${
+    status === 'ran-out'
+      ? `<p class="setup-notice" role="status">${icons.warning}<span>Your sign-in ran out. Sign in again to keep recording.</span></p>`
+      : ''
+  }
+    <div class="setup-form">${message}${browserButton[status]}</div>
+    ${below}
+    <button
+      type="button"
+      class="btn setup-create"
+      data-ui="get-api-key"
+      aria-label="Create a VideoDB account (opens browser)"
+      ${locked ? 'disabled' : ''}
+    >
+      Create a VideoDB account
+    </button>`;
+}
+
 export function connect(s, flow) {
+  if (!usesKey(s, flow))
+    return shell(
+      0,
+      /* HTML */ `<section class="setup-content" aria-labelledby="setup-title">
+        <h1 id="setup-title">Your work, ready to share.</h1>
+        <p class="setup-lede">Connect VideoDB to save and share recordings.</p>
+        ${signInWithBrowser(s, flow)}
+      </section>`,
+    );
+  return keyForm(s, flow);
+}
+
+function keyForm(s, flow) {
   const status = connectStatus(s, flow);
   const locked = status === 'checking' || status === 'connected';
   // While a saved key is being checked there is nothing in the field to show.
@@ -124,6 +198,11 @@ export function connect(s, flow) {
             : connectMessage[status] || ''
         }${connectButton[status]}
       </form>
+      ${
+        s.browserSignIn
+          ? `<p class="setup-links"><button type="button" class="setup-link" data-act="use-browser" ${locked ? 'disabled' : ''}>Sign in with VideoDB instead</button></p>`
+          : ''
+      }
       <button
         type="button"
         class="btn setup-create"

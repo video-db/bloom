@@ -52,6 +52,7 @@ function createSampleEngine({ scope = 'full', signedIn = true } = {}) {
   const initial = () => ({
     sample: true,
     capabilities,
+    browserSignIn: true,
     ...access.view(),
     ...uploads.view(),
     sessionId: null,

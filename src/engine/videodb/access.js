@@ -54,11 +54,13 @@ function createAccess(
     if (ready) ctx.run(recover);
   }
 
+  // `method` tells setup how the saved sign-in was made, so it can ask for the same again.
   const rejected = (error) =>
     ctx.set({
       account: {
         status: error.code === 'authentication' ? 'invalid' : 'offline',
         label: '',
+        method: service.signInMethod?.() || null,
       },
     });
   async function bootstrap() {

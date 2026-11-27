@@ -214,6 +214,16 @@
   color: var(--warn);
   font-size: var(--t-label);
 }
+/* Quiet choices under the main button: another way to sign in, or leave the browser. */
+.setup-links {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 12px 0 0;
+}
+.setup-link:disabled {
+  opacity: 0.45;
+}
 /* The design had a note line between the two buttons; this is the space it gave. */
 .setup-create {
   width: 100%;

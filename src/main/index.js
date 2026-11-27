@@ -83,7 +83,9 @@ function start() {
   });
   // Walkthroughs drive the real engine against a fake service and recorder; never when packaged.
   if (flags.flag('fixture') && !app.isPackaged)
-    fixture = require('../tests/helpers/fixture').createFixture();
+    fixture = require('../tests/helpers/fixture').createFixture({
+      browserSignIn: flags.flag('fixture-browser'),
+    });
   engine =
     fixture?.engine ||
     createEngine({

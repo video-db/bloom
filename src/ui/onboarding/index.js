@@ -18,6 +18,8 @@ export function createOnboarding(root) {
     micAsking: false,
     micAskedAt: 0,
     micDenied: false,
+    browser: false, // this window started Sign in with VideoDB
+    useKey: null, // the person chose the key field (true) or the browser (false)
   };
   let state = null;
   let shape = '';
@@ -36,6 +38,8 @@ export function createOnboarding(root) {
     const next = JSON.stringify([
       { ...flow, key: !!flow.key },
       state.account.status,
+      state.account.method,
+      state.browserSignIn,
       state.problem,
       state.recorder,
       state.permissions,
@@ -85,6 +89,7 @@ export function createOnboarding(root) {
         if (!signedIn()) return;
         flow.key = '';
         flow.attempted = false;
+        flow.browser = false;
         goTo(1);
       }, pause);
     }
@@ -108,6 +113,31 @@ export function createOnboarding(root) {
   }
 
   const actions = {
+    browser() {
+      // Clicked again while waiting: the engine opens the same page again.
+      flow.browser = true;
+      flow.attempted = true;
+      window.bloom.command('signInWithBrowser');
+      render();
+    },
+    'cancel-sign-in'() {
+      window.bloom.command('cancelSignIn');
+    },
+    retry() {
+      if (flow.browser) return actions.browser();
+      window.bloom.command('checkConnection');
+    },
+    'use-key'() {
+      flow.useKey = true;
+      flow.browser = false;
+      render();
+      root.querySelector('[data-focus="key"]')?.focus();
+    },
+    'use-browser'() {
+      flow.useKey = false;
+      flow.key = '';
+      render();
+    },
     async paste() {
       flow.key = String((await window.bloom.clipboardText()) || '').trim();
       if (flow.key) submit();

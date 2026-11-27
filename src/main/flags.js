@@ -9,7 +9,13 @@ const PRELOAD = path.join(ROOT, 'preload.js');
 
 // Flags that exist for the tests. A packaged app ignores them, so nothing in someone's
 // shell or launch arguments can make their Bloom start empty or skip setup.
-const TEST_ONLY = ['fresh', 'fixture', 'skip-onboarding', 'keep-open'];
+const TEST_ONLY = [
+  'fresh',
+  'fixture',
+  'fixture-browser',
+  'skip-onboarding',
+  'keep-open',
+];
 
 // On when passed as --name, or as BLOOM_NAME=1 in the environment.
 const flag = (name) =>

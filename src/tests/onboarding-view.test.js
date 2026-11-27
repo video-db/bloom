@@ -35,3 +35,48 @@ test('setup escapes the problem message and retains a fallback for older state',
     ),
   );
 });
+
+test('Connect leads with Sign in with VideoDB when the build can open a browser', async () => {
+  const { connect } = await import('../ui/onboarding/views.js');
+  const fresh = { attempted: false, cleared: false, key: '', browser: false, useKey: null };
+  const draw = (account, extra = {}, f = fresh) =>
+    connect({ browserSignIn: true, account, problem: null, ...extra }, f);
+
+  const ready = draw({ status: 'signed-out' });
+  assert.match(ready, /data-act="browser">Sign in with VideoDB</);
+  assert.match(ready, /Use an API key instead/);
+  assert.match(ready, /Create a VideoDB account/);
+  assert.doesNotMatch(ready, /setup-key/, 'no key field until asked for');
+
+  const waiting = draw({ status: 'checking' }, {}, { ...fresh, browser: true, attempted: true });
+  assert.match(waiting, /Waiting for your browser…/);
+  assert.match(waiting, /Open the page again/);
+  assert.match(waiting, /data-act="cancel-sign-in">Cancel/);
+
+  assert.match(draw({ status: 'checking' }), /Connecting…/, 'a saved sign-in being checked');
+  assert.match(
+    draw({ status: 'invalid', method: 'token' }),
+    /Your sign-in ran out. Sign in again to keep recording./,
+  );
+  // A saved key that stopped working asks for a key, as before.
+  assert.match(draw({ status: 'invalid', method: 'key' }), /Your saved key stopped working/);
+
+  const browser = { ...fresh, browser: true, attempted: true };
+  assert.match(
+    draw({ status: 'signed-out' }, { problem: { kind: 'denied', message: 'Sign-in was cancelled in the browser.' } }, browser),
+    /setup-message bad[^]*Sign-in was cancelled in the browser./,
+  );
+  assert.doesNotMatch(
+    draw({ status: 'signed-out' }, { problem: { kind: 'cancelled', message: 'Sign-in was cancelled.' } }, browser),
+    /setup-message/,
+    'a cancel the person clicked is not explained back to them',
+  );
+
+  const keyed = draw({ status: 'signed-out' }, {}, { ...fresh, useKey: true });
+  assert.match(keyed, /setup-key/);
+  assert.match(keyed, /Sign in with VideoDB instead/);
+  // A build that cannot open a browser keeps today's step exactly.
+  const plain = connect({ account: { status: 'signed-out' }, problem: null }, fresh);
+  assert.match(plain, /setup-key/);
+  assert.doesNotMatch(plain, /Sign in with VideoDB/);
+});

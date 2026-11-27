@@ -24,6 +24,8 @@ function createVideoDBEngine({
   const bus = new EventEmitter();
   const commandsInFlight = new Set();
   let state = initialState();
+  // Whether the Connect step can offer Sign in with VideoDB.
+  state.browserSignIn = !!browserSignIn?.available?.();
   state.environment = service.apiUrl.includes('.dev.')
     ? 'VideoDB development'
     : 'VideoDB production';
